@@ -6,6 +6,8 @@ import com.example.data.local.CachedWeatherEntity
 import com.example.data.local.TelemetryCacheDao
 import com.example.data.local.VeridiaDatabase
 import com.example.data.location.LocationMaskingUtility
+import com.example.data.security.NetworkSecurityInterceptor
+import com.example.data.security.TelemetryCrypto
 import com.example.data.model.AirQualityTelemetry
 import com.example.data.model.AqiSeverity
 import com.example.data.model.CityLocation
@@ -82,6 +84,7 @@ class VeridiaRepository(
     }
 
     private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(NetworkSecurityInterceptor())
         .connectTimeout(7, TimeUnit.SECONDS)
         .readTimeout(7, TimeUnit.SECONDS)
         .build()
@@ -264,17 +267,42 @@ class VeridiaRepository(
             else -> WeatherConditionKind.PARTLY_CLOUDY
         }
         val isBmkg = resolveAdm4ForCity(city) != null
-        val defaultTrend = listOf(
-            HourlyForecastItem("Now", baseTemp, conditionKind, isCurrent = true, precipPercent = if (conditionKind == WeatherConditionKind.RAIN) 78 else 22, precipMm = if (conditionKind == WeatherConditionKind.RAIN) 3.4 else 0.2),
-            HourlyForecastItem("+3h", baseTemp - 1, conditionKind, precipPercent = if (conditionKind == WeatherConditionKind.RAIN) 84 else 30, precipMm = if (conditionKind == WeatherConditionKind.RAIN) 4.8 else 0.4),
-            HourlyForecastItem("+6h", baseTemp - 2, WeatherConditionKind.CLOUDY, precipPercent = 65, precipMm = 2.1),
-            HourlyForecastItem("+9h", baseTemp - 3, WeatherConditionKind.CLOUDY, precipPercent = 45, precipMm = 0.8),
-            HourlyForecastItem("+12h", baseTemp - 4, WeatherConditionKind.FOG, isSunset = true, precipPercent = 32, precipMm = 0.3),
-            HourlyForecastItem("+15h", baseTemp - 4, WeatherConditionKind.PARTLY_CLOUDY, precipPercent = 24, precipMm = 0.1),
-            HourlyForecastItem("+18h", baseTemp - 2, WeatherConditionKind.PARTLY_CLOUDY, precipPercent = 28, precipMm = 0.2),
-            HourlyForecastItem("+21h", baseTemp, conditionKind, precipPercent = 52, precipMm = 1.6),
-            HourlyForecastItem("+24h", baseTemp + 1, conditionKind, precipPercent = 68, precipMm = 2.9),
-        )
+        val defaultTrend = List(25) { hourOffset ->
+            val cal = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.HOUR_OF_DAY, hourOffset)
+            }
+            val hr = cal.get(java.util.Calendar.HOUR_OF_DAY)
+            val label = if (hourOffset == 0) "Now" else String.format(Locale.US, "%02d:00", hr)
+            val diurnalOffset = when (hr) {
+                in 12..15 -> 1
+                in 0..5 -> -4
+                in 6..8 -> -2
+                in 19..23 -> -2
+                else -> 0
+            }
+            val slotKind = when {
+                hr in 17..18 -> WeatherConditionKind.SUNSET
+                hourOffset in 1..4 -> conditionKind
+                hr in 10..15 && conditionKind != WeatherConditionKind.RAIN -> WeatherConditionKind.PARTLY_CLOUDY
+                else -> conditionKind
+            }
+            val precipPct = when (slotKind) {
+                WeatherConditionKind.THUNDERSTORM -> 88
+                WeatherConditionKind.RAIN -> 74
+                WeatherConditionKind.CLOUDY -> 42
+                else -> 18
+            }
+            HourlyForecastItem(
+                timeLabel = label,
+                tempC = baseTemp + diurnalOffset,
+                condition = slotKind,
+                isCurrent = hourOffset == 0,
+                isSunset = hr == 17 || hr == 18,
+                precipPercent = precipPct,
+                precipMm = if (precipPct >= 65) 2.8 else 0.2,
+            )
+        }
+        val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics("05:38", "17:52")
         return WeatherTelemetry(
             city = city,
             currentTempC = baseTemp,
@@ -296,9 +324,9 @@ class VeridiaRepository(
             uvPeakWindow = "Peak solar window 11:00 - 14:00",
             sunriseTime = "05:38",
             sunsetTime = "17:52",
-            daylightDuration = "12h 14m Daylight",
-            solarProgress = 0.62f,
-            hourlyForecast = defaultTrend.take(5),
+            daylightDuration = daylightLabel,
+            solarProgress = solarProgressNow,
+            hourlyForecast = defaultTrend,
             dailyForecast = listOf(
                 DailyForecastItem("Today", 75, conditionKind, baseTemp - 4, baseTemp + 1),
                 DailyForecastItem("Thu", 40, WeatherConditionKind.PARTLY_CLOUDY, baseTemp - 4, baseTemp + 2),
@@ -429,11 +457,11 @@ class VeridiaRepository(
             longitude = weather.city.longitude,
             enabled = true,
         )
-        val weatherJson = runCatching { weatherAdapter.toJson(weather) }.getOrNull() ?: return@withContext
-        val aqiJson = airQuality?.let { runCatching { airQualityAdapter.toJson(it) }.getOrNull() }
+        val weatherJson = runCatching { TelemetryCrypto.encrypt(weatherAdapter.toJson(weather)) }.getOrNull() ?: return@withContext
+        val aqiJson = airQuality?.let { runCatching { TelemetryCrypto.encrypt(airQualityAdapter.toJson(it)) }.getOrNull() }
             ?: existing?.airQualityJson
         val stationsJson = stations?.takeIf { it.isNotEmpty() }
-            ?.let { runCatching { stationsAdapter.toJson(it) }.getOrNull() }
+            ?.let { runCatching { TelemetryCrypto.encrypt(stationsAdapter.toJson(it)) }.getOrNull() }
             ?: existing?.stationsJson
 
         dao.upsertWeather(
@@ -458,7 +486,7 @@ class VeridiaRepository(
         fetchedAtMillis: Long = System.currentTimeMillis(),
     ) = withContext(Dispatchers.IO) {
         val dao = cacheDao ?: return@withContext
-        val seismicJson = runCatching { seismicAdapter.toJson(seismic) }.getOrNull() ?: return@withContext
+        val seismicJson = runCatching { TelemetryCrypto.encrypt(seismicAdapter.toJson(seismic)) }.getOrNull() ?: return@withContext
         dao.upsertSeismic(
             CachedSeismicEntity(
                 cacheKey = CachedSeismicEntity.LATEST_KEY,
@@ -474,9 +502,14 @@ class VeridiaRepository(
     }
 
     private fun decodeWeatherEntity(entity: CachedWeatherEntity): CachedWeatherSnapshot? {
-        val weather = runCatching { weatherAdapter.fromJson(entity.weatherJson) }.getOrNull() ?: return null
-        val aqi = entity.airQualityJson?.let { runCatching { airQualityAdapter.fromJson(it) }.getOrNull() }
-        val stations = entity.stationsJson?.let { runCatching { stationsAdapter.fromJson(it) }.getOrNull() }
+        val weatherPlain = TelemetryCrypto.decrypt(entity.weatherJson)
+        val weather = runCatching { weatherAdapter.fromJson(weatherPlain) }.getOrNull() ?: return null
+        val aqi = entity.airQualityJson?.let {
+            runCatching { airQualityAdapter.fromJson(TelemetryCrypto.decrypt(it)) }.getOrNull()
+        }
+        val stations = entity.stationsJson?.let {
+            runCatching { stationsAdapter.fromJson(TelemetryCrypto.decrypt(it)) }.getOrNull()
+        }
         return CachedWeatherSnapshot(
             cityId = entity.cityId,
             weather = weather.copy(isLiveSynced = false),
@@ -487,7 +520,8 @@ class VeridiaRepository(
     }
 
     private fun decodeSeismicEntity(entity: CachedSeismicEntity): CachedSeismicSnapshot? {
-        val seismic = runCatching { seismicAdapter.fromJson(entity.seismicJson) }.getOrNull() ?: return null
+        val seismicPlain = TelemetryCrypto.decrypt(entity.seismicJson)
+        val seismic = runCatching { seismicAdapter.fromJson(seismicPlain) }.getOrNull() ?: return null
         return CachedSeismicSnapshot(
             seismic = seismic,
             fetchedAtMillis = entity.fetchedAtMillis,
@@ -577,12 +611,12 @@ class VeridiaRepository(
 
         if (bmkgSlots.isNotEmpty()) {
             val currentSlot = bmkgSlots.first()
-            val tempC = (currentSlot.t ?: city.summaryTempC.toDouble()).roundToInt()
-            val humidity = (currentSlot.hu ?: 75.0).roundToInt()
-            val windSpeed = (currentSlot.ws ?: 12.0).roundToInt()
-            val windBearing = (currentSlot.wdDeg ?: 240.0).roundToInt()
-            val windDirLabel = currentSlot.wd?.takeIf { it.isNotBlank() }?.let(::expandBmkgDirection)
-                ?: bearingToLabel(windBearing)
+            val omCurrent = omResponse?.current
+            val tempC = (omCurrent?.temperature2m ?: currentSlot.t ?: city.summaryTempC.toDouble()).roundToInt()
+            val humidity = (omCurrent?.relativeHumidity2m?.toDouble() ?: currentSlot.hu ?: 75.0).roundToInt()
+            val windSpeed = (omCurrent?.windSpeed10m ?: currentSlot.ws ?: 12.0).roundToInt()
+            val windBearing = (omCurrent?.windDirection10m?.toDouble() ?: currentSlot.wdDeg ?: 240.0).roundToInt()
+            val windDirLabel = bearingToLabel(windBearing)
             val bmkgCode = currentSlot.weather ?: 3
             val kind = mapBmkgCodeToKind(bmkgCode, currentSlot.weatherDescEn ?: currentSlot.weatherDesc)
             val conditionLabel = currentSlot.weatherDescEn?.takeIf { it.isNotBlank() }
@@ -596,7 +630,8 @@ class VeridiaRepository(
                 else -> (cloudCover * 0.35f).roundToInt().coerceIn(5, 45)
             }
 
-            val trend24hList = bmkgSlots.take(9).mapIndexed { index, slot ->
+            val om24hList = parseOpenMeteo24hHourly(omResponse, tempC, kind)
+            val bmkg3hTrend = bmkgSlots.take(9).mapIndexed { index, slot ->
                 val rawTime = slot.localDatetime ?: slot.datetime ?: ""
                 val hhmm = rawTime.substringAfter(" ", rawTime.substringAfter("T", "12:00")).take(5)
                 val slotKind = mapBmkgCodeToKind(slot.weather ?: bmkgCode, slot.weatherDescEn ?: slot.weatherDesc)
@@ -618,9 +653,14 @@ class VeridiaRepository(
                     precipMm = slotPrecipMm,
                 )
             }
-            val hourlyList = trend24hList.take(6)
+            val trend24hList = if (om24hList.size >= 24) {
+                om24hList.mapIndexed { idx, item ->
+                    if (idx == 0) item.copy(tempC = tempC, condition = kind, isCurrent = true) else item
+                }
+            } else {
+                expandThreeHourSlotsTo24h(bmkg3hTrend, tempC, kind)
+            }
 
-            val omCurrent = omResponse?.current
             val pressureHpa = (omCurrent?.surfacePressure ?: 1011.0).roundToInt()
             val windGust = (omCurrent?.windGusts10m ?: (windSpeed + 12.0)).roundToInt()
             val feelsC = (omCurrent?.apparentTemperature ?: (tempC + if (humidity > 75) 2 else 0).toDouble()).roundToInt()
@@ -629,6 +669,7 @@ class VeridiaRepository(
             val uvMax = omResponse?.daily?.uvIndexMax?.firstOrNull() ?: 7.0
             val sunrise = omResponse?.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5) ?: "05:38"
             val sunset = omResponse?.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5) ?: "17:52"
+            val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics(sunrise, sunset)
             val dailyList = parseOpenMeteoDaily(omResponse, tempC, kind)
 
             val resolvedLocationName = bmkgResponse?.lokasi?.kotkab
@@ -664,11 +705,11 @@ class VeridiaRepository(
                     uvPeakWindow = "Peak solar window 11:00 - 14:00",
                     sunriseTime = sunrise,
                     sunsetTime = sunset,
-                    daylightDuration = "12h 14m Daylight",
-                    solarProgress = 0.62f,
-                    hourlyForecast = if (hourlyList.isNotEmpty()) hourlyList else defaultWeatherFor(city).hourlyForecast,
+                    daylightDuration = daylightLabel,
+                    solarProgress = solarProgressNow,
+                    hourlyForecast = trend24hList,
                     dailyForecast = if (dailyList.isNotEmpty()) dailyList else defaultWeatherFor(city).dailyForecast,
-                    next24hForecast = if (trend24hList.isNotEmpty()) trend24hList else defaultWeatherFor(city).next24hForecast,
+                    next24hForecast = trend24hList,
                     isLiveSynced = true,
                     dataSourceLabel = "BMKG (api.bmkg.go.id)",
                 )
@@ -691,41 +732,17 @@ class VeridiaRepository(
             val windSpeed = (current.windSpeed10m ?: 18.0).roundToInt()
             val windGust = (current.windGusts10m ?: (windSpeed + 12.0)).roundToInt()
 
-            val trend24hList = mutableListOf<HourlyForecastItem>()
-            val hourlyTimes = response.hourly?.time.orEmpty()
-            val hourlyTemps = response.hourly?.temperature2m.orEmpty()
-            val hourlyCodes = response.hourly?.weatherCode.orEmpty()
-            val hourlyPrecip = response.hourly?.precipitationProbability.orEmpty()
-            val hourlyPrecipMm = response.hourly?.precipitation.orEmpty()
-            val hourlyUv = response.hourly?.uvIndex.orEmpty()
-            val hourlyDew = response.hourly?.dewPoint2m.orEmpty()
-
-            for (i in 0 until minOf(25, hourlyTimes.size)) {
-                val timeStr = hourlyTimes[i].substringAfter("T", "15:00").take(5)
-                val hTemp = hourlyTemps.getOrNull(i)?.roundToInt() ?: tempC
-                val hKind = mapWmoCodeToKind(hourlyCodes.getOrNull(i) ?: code)
-                val hPrecipPct = hourlyPrecip.getOrNull(i) ?: if (hKind == WeatherConditionKind.RAIN) 75 else 15
-                val hPrecipMm = ((hourlyPrecipMm.getOrNull(i) ?: 0.0) * 10.0).roundToInt() / 10.0
-                trend24hList.add(
-                    HourlyForecastItem(
-                        timeLabel = if (i == 0) "Now" else timeStr,
-                        tempC = hTemp,
-                        condition = hKind,
-                        isCurrent = i == 0,
-                        isSunset = i == 4,
-                        precipPercent = hPrecipPct.coerceIn(0, 100),
-                        precipMm = hPrecipMm,
-                    )
-                )
-            }
-            val hourlyList = trend24hList.take(6)
-
+            val trend24hList = parseOpenMeteo24hHourly(response, tempC, kind)
             val dailyList = parseOpenMeteoDaily(response, tempC, kind)
-            val precipProb = hourlyPrecip.firstOrNull() ?: if (kind == WeatherConditionKind.RAIN) 85 else 15
-            val uvMax = response.daily?.uvIndexMax?.firstOrNull() ?: hourlyUv.firstOrNull() ?: 5.0
-            val dew = hourlyDew.firstOrNull() ?: 14.0
+            val precipProb = response.hourly?.precipitationProbability?.firstOrNull()
+                ?: if (kind == WeatherConditionKind.RAIN) 85 else 15
+            val uvMax = response.daily?.uvIndexMax?.firstOrNull()
+                ?: response.hourly?.uvIndex?.firstOrNull()
+                ?: 5.0
+            val dew = response.hourly?.dewPoint2m?.firstOrNull() ?: 14.0
             val sunrise = response.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5) ?: "05:38"
             val sunset = response.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5) ?: "18:42"
+            val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics(sunrise, sunset)
 
             WeatherTelemetry(
                 city = apiCity.copy(summaryCondition = conditionLabel, summaryTempC = tempC),
@@ -748,9 +765,9 @@ class VeridiaRepository(
                 uvPeakWindow = "Peak solar window 11:30 - 14:00",
                 sunriseTime = sunrise,
                 sunsetTime = sunset,
-                daylightDuration = "12h 48m Daylight",
-                solarProgress = 0.65f,
-                hourlyForecast = if (hourlyList.isNotEmpty()) hourlyList else defaultWeatherFor(city).hourlyForecast,
+                daylightDuration = daylightLabel,
+                solarProgress = solarProgressNow,
+                hourlyForecast = if (trend24hList.isNotEmpty()) trend24hList else defaultWeatherFor(city).hourlyForecast,
                 dailyForecast = if (dailyList.isNotEmpty()) dailyList else defaultWeatherFor(city).dailyForecast,
                 next24hForecast = if (trend24hList.isNotEmpty()) trend24hList else defaultWeatherFor(city).next24hForecast,
                 isLiveSynced = true,
@@ -1149,6 +1166,94 @@ class VeridiaRepository(
             )
         }
         return dailyList
+    }
+
+    private fun parseOpenMeteo24hHourly(
+        response: com.example.data.network.OpenMeteoForecastResponse?,
+        fallbackTemp: Int,
+        fallbackKind: WeatherConditionKind,
+    ): List<HourlyForecastItem> {
+        val hourly = response?.hourly ?: return emptyList()
+        val hourlyTimes = hourly.time
+        val hourlyTemps = hourly.temperature2m
+        val hourlyCodes = hourly.weatherCode
+        val hourlyPrecip = hourly.precipitationProbability
+        val hourlyPrecipMm = hourly.precipitation
+        if (hourlyTimes.isEmpty()) return emptyList()
+
+        val currentHourPrefix = SimpleDateFormat("yyyy-MM-dd'T'HH", Locale.US).format(Date())
+        val startIndex = hourlyTimes.indexOfFirst { it.startsWith(currentHourPrefix) }.coerceAtLeast(0)
+        val endIndex = minOf(startIndex + 25, hourlyTimes.size)
+        val items = mutableListOf<HourlyForecastItem>()
+
+        for (i in startIndex until endIndex) {
+            val timeStr = hourlyTimes[i].substringAfter("T", "12:00").take(5)
+            val hTemp = hourlyTemps.getOrNull(i)?.roundToInt() ?: fallbackTemp
+            val hKind = mapWmoCodeToKind(hourlyCodes.getOrNull(i) ?: 3)
+            val hPrecipPct = hourlyPrecip.getOrNull(i) ?: if (hKind == WeatherConditionKind.RAIN) 75 else 15
+            val hPrecipMm = ((hourlyPrecipMm.getOrNull(i) ?: 0.0) * 10.0).roundToInt() / 10.0
+            items.add(
+                HourlyForecastItem(
+                    timeLabel = if (i == startIndex) "Now" else timeStr,
+                    tempC = hTemp,
+                    condition = if (i == startIndex) fallbackKind else hKind,
+                    isCurrent = i == startIndex,
+                    isSunset = timeStr.startsWith("17:") || timeStr.startsWith("18:"),
+                    precipPercent = hPrecipPct.coerceIn(0, 100),
+                    precipMm = hPrecipMm,
+                )
+            )
+        }
+        return items
+    }
+
+    private fun expandThreeHourSlotsTo24h(
+        threeHourSlots: List<HourlyForecastItem>,
+        fallbackTemp: Int,
+        fallbackKind: WeatherConditionKind,
+    ): List<HourlyForecastItem> {
+        if (threeHourSlots.isEmpty()) return emptyList()
+        val baseCal = java.util.Calendar.getInstance()
+        return List(25) { hourOffset ->
+            val slotFloat = (hourOffset / 3f).coerceIn(0f, (threeHourSlots.size - 1).toFloat())
+            val idx0 = slotFloat.toInt()
+            val idx1 = minOf(idx0 + 1, threeHourSlots.lastIndex)
+            val frac = slotFloat - idx0
+            val a = threeHourSlots[idx0]
+            val b = threeHourSlots[idx1]
+            val cal = (baseCal.clone() as java.util.Calendar).apply {
+                add(java.util.Calendar.HOUR_OF_DAY, hourOffset)
+            }
+            val hr = cal.get(java.util.Calendar.HOUR_OF_DAY)
+            val label = if (hourOffset == 0) "Now" else String.format(Locale.US, "%02d:00", hr)
+            HourlyForecastItem(
+                timeLabel = label,
+                tempC = (a.tempC + (b.tempC - a.tempC) * frac).roundToInt(),
+                condition = if (hourOffset == 0) fallbackKind else a.condition,
+                isCurrent = hourOffset == 0,
+                isSunset = hr == 17 || hr == 18,
+                precipPercent = (a.precipPercent + (b.precipPercent - a.precipPercent) * frac).roundToInt().coerceIn(0, 100),
+                precipMm = ((a.precipMm + (b.precipMm - a.precipMm) * frac) * 10.0).roundToInt() / 10.0,
+            )
+        }
+    }
+
+    private fun computeSolarCycleMetrics(sunrise: String, sunset: String): Pair<Float, String> {
+        fun toMinutes(hhmm: String, defaultMin: Int): Int {
+            val parts = hhmm.split(":")
+            val h = parts.getOrNull(0)?.toIntOrNull() ?: return defaultMin
+            val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            return h * 60 + m
+        }
+        val riseMin = toMinutes(sunrise, 5 * 60 + 38)
+        val setMin = toMinutes(sunset, 17 * 60 + 52)
+        val totalMin = (setMin - riseMin).coerceAtLeast(60)
+        val cal = java.util.Calendar.getInstance()
+        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        val progress = ((nowMin - riseMin).toFloat() / totalMin.toFloat()).coerceIn(0.04f, 0.96f)
+        val hours = totalMin / 60
+        val mins = totalMin % 60
+        return progress to "${hours}h ${mins}m Daylight"
     }
 
     private fun categoryForAqi(aqi: Int): String = when {

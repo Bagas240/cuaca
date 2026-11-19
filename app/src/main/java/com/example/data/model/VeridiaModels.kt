@@ -211,5 +211,7 @@ data class UserSettings(
     val gyroParallaxEnabled: Boolean = true,
     val gpsPrivacyMode: Boolean = true,
     val offlineCacheLabel: String = "Cached · Nov 2026",
+    val backgroundSyncEnabled: Boolean = true,
+    val lastBackgroundSyncMillis: Long = 0L,
 )
 

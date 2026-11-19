@@ -15,4 +15,5 @@
     <string name="gps_enable_cta">Allow Approximate Zone</string>
     <string name="gps_denied_body">Location permission denied. Enable it in Settings or pick a city manually.</string>
     <string name="gps_open_settings">Settings</string>
+    <string name="cd_wind_indicator">Wind %1$s %2$s from %3$s at %4$d degrees, %5$s</string>
 </resources>

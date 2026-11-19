@@ -1,0 +1,12 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_aqi_pulse">
+    <target
+        android:name="aqi_outer_ring"
+        android:animation="@animator/anim_aqi_glow_ring" />
+    <target
+        android:name="aqi_mid_halo"
+        android:animation="@animator/anim_aqi_glow_ring" />
+    <target
+        android:name="aqi_inner_core"
+        android:animation="@animator/anim_aqi_core_pulse" />
+</animated-vector>

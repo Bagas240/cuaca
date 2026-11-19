@@ -1,0 +1,9 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_weather_sun_cloud">
+    <target
+        android:name="weather_sun_group"
+        android:animation="@animator/anim_weather_sun_spin" />
+    <target
+        android:name="weather_cloud_group"
+        android:animation="@animator/anim_weather_cloud_drift" />
+</animated-vector>

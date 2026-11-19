@@ -1,8 +1,23 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.alerts.DisasterAlertEvent
+import com.example.alerts.DisasterKind
+import com.example.alerts.DisasterNotificationManager
+import com.example.alerts.DisasterSirenPlayer
+import com.example.alerts.SeismicAccelerometerDetector
 import com.example.data.location.LocationMaskingUtility
 import com.example.data.location.LocationTracker
 import com.example.data.model.AirQualityTelemetry
@@ -21,6 +36,10 @@ import com.example.data.model.WeatherTelemetry
 import com.example.data.model.WindUnit
 import com.example.data.preferences.SettingsDataStore
 import com.example.data.repository.VeridiaRepository
+import com.example.data.security.SecurityGuard
+import com.example.data.security.SecurityPosture
+import com.example.work.SyncBatteryProfile
+import com.example.work.WeatherSyncScheduler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -31,6 +50,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 enum class DashboardMetricCard {
     TEMPERATURE,
@@ -69,15 +89,59 @@ data class VeridiaUiState(
     val gpsCoordinatesLabel: String? = null,
     val gpsErrorMessage: String? = null,
     val expandedMetricCard: DashboardMetricCard? = null,
+    val activeDisasterAlert: DisasterAlertEvent? = null,
+    val isSirenPlaying: Boolean = false,
+    val seismicSensorAvailable: Boolean = false,
+    val seismicSensorMonitoringEnabled: Boolean = true,
+    val liveAccelerometerMs2: Float = 0f,
+    val seismicPatternDetectedCount: Int = 0,
+    val securityPosture: SecurityPosture = SecurityGuard.currentPosture(),
+    val syncBatteryProfile: SyncBatteryProfile = SyncBatteryProfile(),
 )
 
-class VeridiaViewModel(application: Application) : AndroidViewModel(application) {
+typealias WeatherViewModel = VeridiaViewModel
+
+class VeridiaViewModel(application: Application) : AndroidViewModel(application), SensorEventListener {
 
     private val repository = VeridiaRepository.create(application.applicationContext)
     private val settingsStore = SettingsDataStore(application.applicationContext)
     private val locationTracker = LocationTracker(application.applicationContext)
+    private val disasterManager = DisasterNotificationManager(application.applicationContext)
+    private val sirenPlayer = DisasterSirenPlayer(application.applicationContext)
+    private val sensorManager = application.applicationContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+    private val accelerometerSensor: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val seismicDetector = SeismicAccelerometerDetector()
 
-    private val initialCity = repository.presetCities.first()
+    private var lastSensorUiEmitMs: Long = 0L
+    private var isAccelerometerRegistered: Boolean = false
+
+    private val initialCity: CityLocation
+    private val restoredGpsLabel: String?
+    private val restoredGpsActive: Boolean
+
+    init {
+        val storedGps = settingsStore.getStoredGpsCoordinates()
+        val initialSettings = settingsStore.currentSettings
+        val presetMatch = repository.presetCities.first()
+        if (storedGps != null && initialSettings.selectedCityId == "gps_current") {
+            initialCity = CityLocation(
+                id = "gps_current",
+                name = storedGps.localityName,
+                country = storedGps.countryName,
+                latitude = storedGps.latitude,
+                longitude = storedGps.longitude,
+                summaryCondition = "Protected Zone",
+                summaryTempC = presetMatch.summaryTempC,
+                isCurrent = true,
+            )
+            restoredGpsLabel = storedGps.zoneLabel
+            restoredGpsActive = true
+        } else {
+            initialCity = presetMatch
+            restoredGpsLabel = null
+            restoredGpsActive = false
+        }
+    }
 
     private val _uiState = MutableStateFlow(
         VeridiaUiState(
@@ -90,21 +154,74 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
             seismic = repository.defaultSeismicTelemetry(),
             radar = repository.defaultRadarTelemetry(),
             hasLocationPermission = locationTracker.hasLocationPermission(),
+            isGpsActive = restoredGpsActive,
+            gpsCoordinatesLabel = restoredGpsLabel,
+            seismicSensorAvailable = accelerometerSensor != null,
+            syncBatteryProfile = WeatherSyncScheduler.readBatteryPowerProfile(application.applicationContext),
         )
     )
     val uiState: StateFlow<VeridiaUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var isBatteryReceiverRegistered = false
+
+    private val batteryStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            refreshBatterySyncProfile()
+        }
+    }
 
     init {
         observeSettings()
         observeRoomTelemetryCache()
+        registerBatteryStateReceiver()
+        if (_uiState.value.seismicSensorMonitoringEnabled) {
+            startSeismicAccelerometerMonitoring()
+        }
+        if (settingsStore.currentSettings.backgroundSyncEnabled) {
+            runCatching {
+                val profile = WeatherSyncScheduler.schedulePeriodicWeatherSync(application.applicationContext)
+                _uiState.update { it.copy(syncBatteryProfile = profile) }
+            }
+        }
         if (locationTracker.hasLocationPermission()) {
             fetchWeatherForCurrentGps()
         } else {
-            refreshTelemetryFor(initialCity)
+            refreshTelemetryFor(initialCity, preserveGpsActive = restoredGpsActive)
         }
         startRealtimeAutoRefresh()
+    }
+
+    private fun registerBatteryStateReceiver() {
+        val appContext = getApplication<Application>().applicationContext
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_BATTERY_LOW)
+            addAction(Intent.ACTION_BATTERY_OKAY)
+            addAction(Intent.ACTION_POWER_CONNECTED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
+            addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        }
+        runCatching {
+            ContextCompat.registerReceiver(
+                appContext,
+                batteryStateReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            isBatteryReceiverRegistered = true
+        }
+    }
+
+    fun refreshBatterySyncProfile() {
+        val appContext = getApplication<Application>().applicationContext
+        val previousTier = _uiState.value.syncBatteryProfile.tier
+        val nextProfile = WeatherSyncScheduler.readBatteryPowerProfile(appContext)
+        _uiState.update { it.copy(syncBatteryProfile = nextProfile) }
+        if (settingsStore.currentSettings.backgroundSyncEnabled && nextProfile.tier != previousTier) {
+            runCatching {
+                WeatherSyncScheduler.adaptScheduleForBatteryProfile(appContext, nextProfile)
+            }
+        }
     }
 
     private fun observeRoomTelemetryCache() {
@@ -145,33 +262,27 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             var tickCount = 0
             while (isActive) {
-                delay(60_000L) // Refresh BMKG seismic alerts & radar every 60 seconds
+                delay(20_000L) // Real-time 20-second telemetry cycle for wind, weather, AQI, radar & seismic
                 tickCount += 1
                 val activeCity = _uiState.value.selectedCity
                 val maskCoords = _uiState.value.settings.gpsPrivacyMode
                 val seismicDeferred = async { repository.fetchRecentEarthquakesWithCache() }
                 val radarDeferred = async { repository.fetchRainViewerTilePrefix() }
-
-                val shouldRefreshWeather = tickCount % 3 == 0 // Every 3 minutes refresh weather, AQI & BMKG stations
-                val weatherDeferred = if (shouldRefreshWeather) {
-                    async { repository.fetchLiveWeatherWithCache(activeCity, maskCoordinates = maskCoords) }
-                } else null
-                val aqiDeferred = if (shouldRefreshWeather) {
-                    async { repository.fetchLiveAirQuality(activeCity, maskCoordinates = maskCoords) }
-                } else null
-                val stationsDeferred = if (shouldRefreshWeather) {
+                val weatherDeferred = async { repository.fetchLiveWeatherWithCache(activeCity, maskCoordinates = maskCoords) }
+                val aqiDeferred = async { repository.fetchLiveAirQuality(activeCity, maskCoordinates = maskCoords) }
+                val stationsDeferred = if (tickCount % 3 == 0) {
                     async { runCatching { repository.fetchWeatherMapStations(activeCity, maskCoordinates = maskCoords) } }
                 } else null
 
                 val seismicResult = seismicDeferred.await()
                 val radarPrefix = radarDeferred.await()
-                val weatherResult = weatherDeferred?.await()
-                val aqiResult = aqiDeferred?.await()
+                val weatherResult = weatherDeferred.await()
+                val aqiResult = aqiDeferred.await()
                 val stationsResult = stationsDeferred?.await()
 
                 val seismicOutcome = seismicResult.getOrNull()
-                val weatherOutcome = weatherResult?.getOrNull()
-                val liveAqi = aqiResult?.getOrNull()
+                val weatherOutcome = weatherResult.getOrNull()
+                val liveAqi = aqiResult.getOrNull()
                 val liveStations = stationsResult?.getOrNull()?.takeIf { it.isNotEmpty() }
 
                 if (weatherOutcome != null && !weatherOutcome.fromCache) {
@@ -192,13 +303,17 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                     ?: seismicOutcome?.takeIf { it.fromCache }?.fetchedAtMillis
 
                 _uiState.update { state ->
+                    val nextWeather = weatherOutcome?.data ?: state.weather
+                    val nextAqi = liveAqi ?: state.airQuality
+                    val nextSeismic = seismicOutcome?.data ?: state.seismic
                     state.copy(
-                        seismic = seismicOutcome?.data ?: state.seismic,
+                        seismic = nextSeismic,
                         rainViewerTilePrefix = radarPrefix ?: state.rainViewerTilePrefix,
-                        weather = weatherOutcome?.data ?: state.weather,
-                        airQuality = liveAqi ?: state.airQuality,
+                        weather = nextWeather,
+                        airQuality = nextAqi,
                         weatherMapStations = liveStations ?: state.weatherMapStations,
                         isOfflineMode = isOfflineFallback,
+                        securityPosture = SecurityGuard.currentPosture(),
                         lastUpdatedLabel = if (isOfflineFallback && cachedStamp != null) {
                             repository.formatOfflineCacheTimestamp(cachedStamp)
                         } else if (!isOfflineFallback) {
@@ -206,6 +321,15 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                         } else {
                             state.lastUpdatedLabel
                         },
+                    )
+                }
+
+                if (!isOfflineFallback) {
+                    evaluateDisasterConditions(
+                        city = _uiState.value.selectedCity,
+                        weather = _uiState.value.weather,
+                        airQuality = _uiState.value.airQuality,
+                        seismic = _uiState.value.seismic,
                     )
                 }
             }
@@ -293,6 +417,13 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                     isCurrent = true,
                 )
                 settingsStore.setSelectedCityId("gps_current")
+                settingsStore.saveEncryptedGpsCoordinates(
+                    latitude = maskedCoords.latitude,
+                    longitude = maskedCoords.longitude,
+                    localityName = resolved.localityName,
+                    countryName = resolved.countryName,
+                    zoneLabel = coordLabel,
+                )
                 _uiState.update {
                     it.copy(
                         isLocatingGps = false,
@@ -401,6 +532,7 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                     rainViewerTilePrefix = radarPrefix ?: state.rainViewerTilePrefix,
                     airQuality = nextAqi,
                     seismic = nextSeismic,
+                    securityPosture = SecurityGuard.currentPosture(),
                     lastUpdatedLabel = if (offlineFallback && oldestCacheMillis != null) {
                         repository.formatOfflineCacheTimestamp(oldestCacheMillis)
                     } else if (offlineFallback) {
@@ -408,6 +540,15 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                     } else {
                         repository.formatLiveClockTimestamp()
                     },
+                )
+            }
+
+            if (hasLiveSeismic || hasLiveWeather) {
+                evaluateDisasterConditions(
+                    city = nextWeather.city,
+                    weather = nextWeather,
+                    airQuality = nextAqi,
+                    seismic = nextSeismic,
                 )
             }
         }
@@ -521,6 +662,21 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun setBackgroundSyncEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setBackgroundSyncEnabled(enabled)
+        }
+        val appContext = getApplication<Application>().applicationContext
+        runCatching {
+            if (enabled) {
+                val profile = WeatherSyncScheduler.schedulePeriodicWeatherSync(appContext)
+                _uiState.update { it.copy(syncBatteryProfile = profile) }
+            } else {
+                WeatherSyncScheduler.cancelPeriodicWeatherSync(appContext)
+            }
+        }
+    }
+
     fun refreshOfflineCache() {
         viewModelScope.launch {
             _uiState.update { it.copy(cacheRefreshing = true) }
@@ -530,5 +686,140 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
             settingsStore.setOfflineCacheLabel(stamp)
             _uiState.update { it.copy(cacheRefreshing = false) }
         }
+    }
+
+    private fun evaluateDisasterConditions(
+        city: CityLocation,
+        weather: WeatherTelemetry,
+        airQuality: AirQualityTelemetry,
+        seismic: SeismicTelemetry,
+    ) {
+        val alert = disasterManager.evaluateTelemetryForDisaster(
+            city = city,
+            weather = weather,
+            airQuality = airQuality,
+            seismic = seismic,
+            settings = _uiState.value.settings,
+        ) ?: return
+
+        if (disasterManager.notifyIfNew(alert)) {
+            _uiState.update { it.copy(activeDisasterAlert = alert, isSirenPlaying = true) }
+            sirenPlayer.playSiren(kind = alert.kind, cycles = 2) {
+                _uiState.update { it.copy(isSirenPlaying = false) }
+            }
+        }
+    }
+
+    fun triggerSampleDisasterAlert(kind: DisasterKind) {
+        val sample = disasterManager.buildSampleEvent(kind, _uiState.value.selectedCity)
+        disasterManager.notifyIfNew(sample, force = true)
+        _uiState.update { it.copy(activeDisasterAlert = sample, isSirenPlaying = true) }
+        sirenPlayer.playSiren(kind = kind, cycles = 2) {
+            _uiState.update { it.copy(isSirenPlaying = false) }
+        }
+    }
+
+    fun stopDisasterSiren() {
+        sirenPlayer.stopSiren()
+        _uiState.update { it.copy(isSirenPlaying = false) }
+    }
+
+    fun dismissActiveDisasterAlert() {
+        sirenPlayer.stopSiren()
+        _uiState.update { it.copy(activeDisasterAlert = null, isSirenPlaying = false) }
+    }
+
+    fun startSeismicAccelerometerMonitoring() {
+        val sensor = accelerometerSensor
+        if (sensor != null && !isAccelerometerRegistered) {
+            sensorManager?.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+            isAccelerometerRegistered = true
+        }
+        _uiState.update { it.copy(seismicSensorMonitoringEnabled = true) }
+    }
+
+    fun stopSeismicAccelerometerMonitoring() {
+        if (isAccelerometerRegistered) {
+            sensorManager?.unregisterListener(this)
+            isAccelerometerRegistered = false
+        }
+        seismicDetector.reset()
+        _uiState.update { it.copy(seismicSensorMonitoringEnabled = false, liveAccelerometerMs2 = 0f) }
+    }
+
+    fun setSeismicSensorMonitoring(enabled: Boolean) {
+        if (enabled) {
+            startSeismicAccelerometerMonitoring()
+        } else {
+            stopSeismicAccelerometerMonitoring()
+        }
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event == null || event.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+        if (!_uiState.value.seismicSensorMonitoringEnabled) return
+        onAccelerometerSample(
+            rawX = event.values.getOrElse(0) { 0f },
+            rawY = event.values.getOrElse(1) { 0f },
+            rawZ = event.values.getOrElse(2) { 0f },
+            timestampNanos = event.timestamp,
+        )
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+    fun onAccelerometerSample(
+        rawX: Float,
+        rawY: Float,
+        rawZ: Float,
+        timestampNanos: Long = System.nanoTime(),
+    ) {
+        if (!_uiState.value.seismicSensorMonitoringEnabled) return
+        val result = seismicDetector.onAccelerometerReading(rawX, rawY, rawZ, timestampNanos)
+
+        val nowMs = System.currentTimeMillis()
+        if (result.patternRecognized) {
+            val activeCity = _uiState.value.selectedCity
+            val alert = DisasterAlertEvent(
+                signature = "accel_seismic_${nowMs / 15_000L}",
+                kind = DisasterKind.EARTHQUAKE,
+                title = "Seismic Vibration Detected",
+                message = String.format(
+                    Locale.US,
+                    "Device accelerometer detected oscillatory tremor (%.1f m/s²) in %s.",
+                    result.peakMagnitudeMs2,
+                    activeCity.name,
+                ),
+                guidance = "Drop, Cover under sturdy furniture, and Hold On.",
+                distanceKm = 0,
+            )
+            disasterManager.notifyIfNew(alert, force = true)
+            _uiState.update {
+                it.copy(
+                    liveAccelerometerMs2 = result.linearMagnitudeMs2,
+                    seismicPatternDetectedCount = it.seismicPatternDetectedCount + 1,
+                    activeDisasterAlert = alert,
+                    isSirenPlaying = true,
+                )
+            }
+            sirenPlayer.playSiren(kind = DisasterKind.EARTHQUAKE, cycles = 2) {
+                _uiState.update { state -> state.copy(isSirenPlaying = false) }
+            }
+        } else if (nowMs - lastSensorUiEmitMs >= 140L) {
+            lastSensorUiEmitMs = nowMs
+            _uiState.update { it.copy(liveAccelerometerMs2 = result.linearMagnitudeMs2) }
+        }
+    }
+
+    override fun onCleared() {
+        stopSeismicAccelerometerMonitoring()
+        sirenPlayer.stopSiren()
+        if (isBatteryReceiverRegistered) {
+            runCatching {
+                getApplication<Application>().applicationContext.unregisterReceiver(batteryStateReceiver)
+            }
+            isBatteryReceiverRegistered = false
+        }
+        super.onCleared()
     }
 }

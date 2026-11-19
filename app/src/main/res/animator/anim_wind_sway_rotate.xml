@@ -1,0 +1,17 @@
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="together">
+    <objectAnimator
+        android:duration="1600"
+        android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+        android:propertyName="rotation"
+        android:valueFrom="-8"
+        android:valueTo="8"
+        android:valueType="floatType" />
+    <objectAnimator
+        android:duration="1600"
+        android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+        android:propertyName="translateX"
+        android:valueFrom="-1.6"
+        android:valueTo="1.6"
+        android:valueType="floatType" />
+</set>

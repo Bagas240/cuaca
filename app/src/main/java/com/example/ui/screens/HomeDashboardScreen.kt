@@ -7,6 +7,9 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,7 +17,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,12 +32,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -49,11 +49,9 @@ import androidx.compose.material.icons.rounded.NearMe
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Radar
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -72,6 +70,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -98,11 +97,26 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.R
 import com.example.data.model.CityLocation
 import com.example.data.model.TemperatureUnit
-import com.example.data.model.WeatherConditionKind
+import com.example.ui.components.AnimatedAirQualityWindIcon
+import com.example.ui.components.AnimatedHomeWeatherAvdIcon
+import com.example.ui.components.AnimatedHumidityDropletIcon
+import com.example.ui.components.AnimatedThermometerIcon
+import com.example.ui.components.AnimatedWeatherConditionIcon
+import com.example.ui.components.AnimatedWindSwayAvdIcon
 import com.example.ui.components.HomeWeatherBackdrop
+import com.example.ui.components.HourlyForecast24hCard
+import com.example.ui.components.LiveTelemetryPulseDot
+import com.example.ui.components.LocalHomeWeatherIconController
+import com.example.ui.components.PulsatingAqiGlowAvdBadge
+import com.example.ui.components.SunCycleCard
 import com.example.ui.components.VeridiaCard
+import com.example.ui.components.WindIndicatorStyle
+import com.example.ui.components.WindSpeedDirectionIndicator
+import com.example.ui.components.aqiGlowColorFor
+import com.example.ui.components.aqiPulsatingGlow
 import com.example.ui.components.conditionIcon
 import com.example.ui.components.conditionTint
+import com.example.ui.components.rememberHomeWeatherIconAnimationController
 import com.example.ui.components.formatPressureValue
 import com.example.ui.components.formatTempString
 import com.example.ui.components.formatTempValue
@@ -190,6 +204,16 @@ fun HomeDashboardScreen(
     val todayMin = weather.dailyForecast.firstOrNull()?.minTempC ?: (weather.currentTempC - 4)
     val todayMax = weather.dailyForecast.firstOrNull()?.maxTempC ?: (weather.currentTempC + 3)
 
+    val iconController = rememberHomeWeatherIconAnimationController(
+        windSpeedKmh = weather.windSpeedKmh,
+        aqiScore = state.airQuality.homeCardAqi,
+    )
+
+    LaunchedEffect(state.lastUpdatedLabel, state.selectedCity.id) {
+        iconController.triggerTelemetryImpulse()
+    }
+
+    CompositionLocalProvider(LocalHomeWeatherIconController provides iconController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -404,11 +428,10 @@ fun HomeDashboardScreen(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = conditionIcon(weather.conditionKind),
-                                    contentDescription = null,
+                                AnimatedHomeWeatherAvdIcon(
+                                    controller = iconController,
+                                    size = 18.dp,
                                     tint = PastelPrimary,
-                                    modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -429,11 +452,9 @@ fun HomeDashboardScreen(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.WaterDrop,
-                                    contentDescription = null,
+                                AnimatedHumidityDropletIcon(
+                                    size = 15.dp,
                                     tint = PastelPrimary,
-                                    modifier = Modifier.size(14.dp),
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -446,6 +467,17 @@ fun HomeDashboardScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    WindSpeedDirectionIndicator(
+                        windSpeedKmh = weather.windSpeedKmh,
+                        windBearingDeg = weather.windBearingDeg,
+                        windDirectionLabel = weather.windDirectionLabel,
+                        windUnit = windUnit,
+                        style = WindIndicatorStyle.COMPACT_PILL,
+                        modifier = Modifier.testTag("hero_wind_indicator"),
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -463,15 +495,22 @@ fun HomeDashboardScreen(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                imageVector = if (state.isOfflineMode) Icons.Rounded.CloudOff else Icons.Rounded.Public,
-                                contentDescription = if (state.isOfflineMode) "Offline Room Cache" else "Live Telemetry Source",
-                                tint = if (state.isOfflineMode) Color(0xFFFCD34D) else Color(0xFF7DD3FC),
-                                modifier = Modifier.size(12.dp),
-                            )
+                            if (state.isOfflineMode) {
+                                Icon(
+                                    imageVector = Icons.Rounded.CloudOff,
+                                    contentDescription = "Offline Room Cache",
+                                    tint = Color(0xFFFCD34D),
+                                    modifier = Modifier.size(12.dp),
+                                )
+                            } else {
+                                LiveTelemetryPulseDot(
+                                    color = Color(0xFF4ADE80),
+                                    size = 6.dp,
+                                )
+                            }
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "Source: ${weather.dataSourceLabel} · ${state.lastUpdatedLabel}",
+                                text = "${if (state.isOfflineMode) "Cached" else "LIVE"} · ${weather.dataSourceLabel} · ${state.lastUpdatedLabel}",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = Color.White,
                             )
@@ -616,11 +655,9 @@ fun HomeDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Thermostat,
-                                        contentDescription = null,
+                                    AnimatedThermometerIcon(
+                                        size = 18.dp,
                                         tint = WarningAmber,
-                                        modifier = Modifier.size(16.dp),
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
@@ -661,8 +698,13 @@ fun HomeDashboardScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
+                            val animatedTempProgress by animateFloatAsState(
+                                targetValue = ((weather.currentTempC + 10) / 50f).coerceIn(0.15f, 1f),
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "home_temp_progress",
+                            )
                             LinearProgressIndicator(
-                                progress = { ((weather.currentTempC + 10) / 50f).coerceIn(0.15f, 1f) },
+                                progress = { animatedTempProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -725,11 +767,9 @@ fun HomeDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.WaterDrop,
-                                        contentDescription = null,
+                                    AnimatedHumidityDropletIcon(
+                                        size = 18.dp,
                                         tint = PastelPrimary,
-                                        modifier = Modifier.size(16.dp),
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
@@ -778,8 +818,13 @@ fun HomeDashboardScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
+                            val animatedHumidityProgress by animateFloatAsState(
+                                targetValue = (weather.humidityPercent / 100f).coerceIn(0.1f, 1f),
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "home_humidity_progress",
+                            )
                             LinearProgressIndicator(
-                                progress = { (weather.humidityPercent / 100f).coerceIn(0.1f, 1f) },
+                                progress = { animatedHumidityProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -847,11 +892,10 @@ fun HomeDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.NearMe,
-                                        contentDescription = null,
+                                    AnimatedWindSwayAvdIcon(
+                                        controller = iconController,
+                                        size = 18.dp,
                                         tint = PastelPrimary,
-                                        modifier = Modifier.size(16.dp),
                                     )
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
@@ -870,22 +914,19 @@ fun HomeDashboardScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = windVal,
-                                    style = MaterialTheme.typography.displaySmall,
-                                    color = PastelTextMain,
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = windUnitLabel,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextSub,
-                                    modifier = Modifier.padding(bottom = 4.dp),
-                                )
-                            }
+                            WindSpeedDirectionIndicator(
+                                windSpeedKmh = weather.windSpeedKmh,
+                                windBearingDeg = weather.windBearingDeg,
+                                windDirectionLabel = weather.windDirectionLabel,
+                                windUnit = windUnit,
+                                style = WindIndicatorStyle.DETAILED_DIAL,
+                                useLargeReadout = false,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "${weather.windDirectionLabel} · $pressureVal $pressureUnitLabel",
+                                text = "Pressure $pressureVal $pressureUnitLabel",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PastelTextSub,
                                 maxLines = 1,
@@ -943,13 +984,18 @@ fun HomeDashboardScreen(
                             }
                         }
 
-                        // Interactive Card 4: Air Quality (Pastel Mint)
+                        // Interactive Card 4: Air Quality (Pastel Mint + controller-driven pulsating glow)
+                        val aqiGlowColor = aqiGlowColorFor(state.airQuality.homeCardAqi)
                         VeridiaCard(
                             modifier = Modifier
                                 .weight(1f)
+                                .aqiPulsatingGlow(
+                                    glowPulse = iconController.aqiGlowPulse,
+                                    glowColor = aqiGlowColor,
+                                )
                                 .testTag("home_aqi_tile"),
-                            containerColor = PastelMint,
-                            borderColor = SecondaryGreenBright.copy(alpha = 0.35f),
+                            containerColor = PastelMint.copy(alpha = 0.94f),
+                            borderColor = aqiGlowColor.copy(alpha = 0.30f + iconController.aqiGlowPulse * 0.35f),
                             onClick = onOpenAirQuality,
                         ) {
                             Row(
@@ -958,11 +1004,11 @@ fun HomeDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Air,
-                                        contentDescription = null,
-                                        tint = SecondaryGreenDark,
-                                        modifier = Modifier.size(16.dp),
+                                    PulsatingAqiGlowAvdBadge(
+                                        aqiScore = state.airQuality.homeCardAqi,
+                                        controller = iconController,
+                                        size = 20.dp,
+                                        coreTint = SecondaryGreenDark,
                                     )
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
@@ -971,11 +1017,9 @@ fun HomeDashboardScreen(
                                         color = SecondaryGreenDark,
                                     )
                                 }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                                    contentDescription = null,
+                                AnimatedAirQualityWindIcon(
+                                    size = 15.dp,
                                     tint = SecondaryGreenDark,
-                                    modifier = Modifier.size(14.dp),
                                 )
                             }
 
@@ -1003,8 +1047,13 @@ fun HomeDashboardScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
+                            val animatedAqiProgress by animateFloatAsState(
+                                targetValue = (state.airQuality.homeCardAqi / 150f).coerceIn(0.1f, 1f),
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "home_aqi_progress",
+                            )
                             LinearProgressIndicator(
-                                progress = { (state.airQuality.homeCardAqi / 150f).coerceIn(0.1f, 1f) },
+                                progress = { animatedAqiProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -1018,88 +1067,25 @@ fun HomeDashboardScreen(
                 }
             }
 
-            // Hourly Forecast Horizontal Widget
+            // 24-Hour Horizontal Scrollable Forecast Widget
             item {
-                VeridiaCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Schedule,
-                                contentDescription = null,
-                                tint = PastelTextSub,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "HOURLY FORECAST",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
-                            )
-                        }
-                        Text(
-                            text = "Next 24 Hours",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
-                        )
-                    }
+                HourlyForecast24hCard(
+                    hourlyItems = weather.next24hForecast.ifEmpty { weather.hourlyForecast },
+                    tempUnit = tempUnit,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder.copy(alpha = 0.6f))
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        weather.hourlyForecast.forEach { hour ->
-                            val bg = when {
-                                hour.isCurrent -> PastelSky.copy(alpha = 0.7f)
-                                hour.isSunset -> WarningAmber.copy(alpha = 0.12f)
-                                else -> Color.Transparent
-                            }
-                            Column(
-                                modifier = Modifier
-                                    .width(60.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(bg)
-                                    .padding(vertical = 10.dp, horizontal = 6.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(
-                                    text = hour.timeLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = if (hour.isCurrent || hour.isSunset) FontWeight.Bold else FontWeight.Medium,
-                                    ),
-                                    color = if (hour.isSunset) PastelSunset else PastelTextSub,
-                                )
-                                Icon(
-                                    imageVector = conditionIcon(hour.condition),
-                                    contentDescription = null,
-                                    tint = conditionTint(hour.condition),
-                                    modifier = Modifier.size(22.dp),
-                                )
-                                Text(
-                                    text = formatTempString(hour.tempC, tempUnit),
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                        fontWeight = if (hour.isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                    ),
-                                    color = PastelTextMain,
-                                )
-                            }
-                        }
-                    }
-                }
+            // Sun Cycle Card (Sunrise & Sunset with animated solar arc)
+            item {
+                SunCycleCard(
+                    locationName = state.selectedCity.name,
+                    sunriseTime = weather.sunriseTime,
+                    sunsetTime = weather.sunsetTime,
+                    daylightDuration = weather.daylightDuration,
+                    solarProgress = weather.solarProgress,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
             }
 
             // 7-Day Summary Widget
@@ -1244,6 +1230,7 @@ fun HomeDashboardScreen(
                 onDismiss = onCloseCityModal,
             )
         }
+    }
     }
 }
 

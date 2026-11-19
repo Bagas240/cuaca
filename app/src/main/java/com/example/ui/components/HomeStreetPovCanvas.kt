@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.WeatherConditionKind
+import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.PastelSky
 import kotlin.math.PI
 import kotlin.math.cos
@@ -200,49 +201,65 @@ fun WeatherParticlesLayer(
     parallaxOffset: Offset = Offset.Zero,
     modifier: Modifier = Modifier,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "weather_particles")
-    val rainPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = if (windSpeedKmh >= 24) 680 else 940,
-                easing = LinearEasing,
+    val isAnimating = rememberIsDestinationAnimating()
+    val rainPhase: Float
+    val cloudDrift: Float
+    val pulsePhase: Float
+    val lightningCycle: Float
+    if (isAnimating) {
+        val infiniteTransition = rememberInfiniteTransition(label = "weather_particles")
+        val animatedRain by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = if (windSpeedKmh >= 24) 680 else 940,
+                    easing = LinearEasing,
+                ),
+                repeatMode = RepeatMode.Restart,
             ),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "rain_fall",
-    )
-    val cloudDrift by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = (26000 - (windSpeedKmh * 220)).coerceIn(12000, 26000),
-                easing = LinearEasing,
+            label = "rain_fall",
+        )
+        val animatedCloud by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = (26000 - (windSpeedKmh * 220)).coerceIn(12000, 26000),
+                    easing = LinearEasing,
+                ),
+                repeatMode = RepeatMode.Restart,
             ),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "cloud_drift",
-    )
-    val pulsePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2f * PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4800, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "solar_pulse",
-    )
-    val lightningCycle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 5400, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "lightning_cycle",
-    )
+            label = "cloud_drift",
+        )
+        val animatedPulse by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = (2f * PI).toFloat(),
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 4800, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "solar_pulse",
+        )
+        val animatedLightning by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 5400, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "lightning_cycle",
+        )
+        rainPhase = animatedRain
+        cloudDrift = animatedCloud
+        pulsePhase = animatedPulse
+        lightningCycle = animatedLightning
+    } else {
+        rainPhase = 0f
+        cloudDrift = 0f
+        pulsePhase = 0f
+        lightningCycle = 0f
+    }
 
     val lightningFlash = if (conditionKind == WeatherConditionKind.THUNDERSTORM) {
         when {

@@ -71,6 +71,7 @@ import coil.request.ImageRequest
 import com.example.data.location.LocationTracker
 import com.example.data.model.SeismicEventItem
 import com.example.data.model.SeismicSeverity
+import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.PastelAccent
 import com.example.ui.theme.PastelBorder
@@ -385,25 +386,38 @@ private fun Epicenter2DRadarMap(
     onZoomOut: () -> Unit,
     onReset: () -> Unit,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "seismic_2d_radar")
-    val pWavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart),
-        label = "p_wave_2d",
-    )
-    val sWavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2900, easing = LinearEasing), RepeatMode.Restart),
-        label = "s_wave_2d",
-    )
-    val sweepAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
-        label = "seismic_radar_sweep",
-    )
+    val isAnimating = rememberIsDestinationAnimating()
+    val pWavePhase: Float
+    val sWavePhase: Float
+    val sweepAngle: Float
+    if (isAnimating) {
+        val infiniteTransition = rememberInfiniteTransition(label = "seismic_2d_radar")
+        val animatedPWave by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart),
+            label = "p_wave_2d",
+        )
+        val animatedSWave by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(2900, easing = LinearEasing), RepeatMode.Restart),
+            label = "s_wave_2d",
+        )
+        val animatedSweep by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
+            label = "seismic_radar_sweep",
+        )
+        pWavePhase = animatedPWave
+        sWavePhase = animatedSWave
+        sweepAngle = animatedSweep
+    } else {
+        pWavePhase = 0.35f
+        sWavePhase = 0.65f
+        sweepAngle = 0f
+    }
 
     BoxWithConstraints(
         modifier = Modifier

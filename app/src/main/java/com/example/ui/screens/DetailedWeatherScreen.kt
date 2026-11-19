@@ -1,5 +1,14 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,15 +30,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
-import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.NearMe
 import androidx.compose.material.icons.rounded.Radar
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.WbSunny
-import androidx.compose.material.icons.rounded.WbTwilight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -37,9 +43,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
@@ -49,11 +57,18 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.AtmosphereStratum
 import com.example.data.model.WeatherConditionKind
 import com.example.data.model.WeatherMapLayer
+import com.example.ui.components.AnimatedAirQualityWindIcon
+import com.example.ui.components.AnimatedHumidityDropletIcon
+import com.example.ui.components.AnimatedWeatherConditionIcon
 import com.example.ui.components.BmkgInteractiveWeatherMap
-import com.example.ui.components.SolarArcCanvas
+import com.example.ui.components.HourlyForecast24hCard
+import com.example.ui.components.LiveTelemetryPulseDot
+import com.example.ui.components.SunCycleCard
 import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
-import com.example.ui.components.conditionIcon
+import com.example.ui.components.WeatherParticlesLayer
+import com.example.ui.components.WindIndicatorStyle
+import com.example.ui.components.WindSpeedDirectionIndicator
 import com.example.ui.components.conditionTint
 import com.example.ui.components.formatPressureValue
 import com.example.ui.components.formatTempString
@@ -80,7 +95,7 @@ fun DetailedWeatherScreen(
 ) {
     val weather = state.weather
     val tempUnit = state.settings.temperatureUnit
-    val (windVal, windUnitLabel) = formatWindValue(weather.windSpeedKmh, state.settings.windUnit)
+    val (_, windUnitLabel) = formatWindValue(weather.windSpeedKmh, state.settings.windUnit)
     val (gustVal, _) = formatWindValue(weather.windGustKmh, state.settings.windUnit)
     val (pressureVal, pressureUnitLabel) = formatPressureValue(weather.pressureHpa, state.settings.pressureUnit)
 
@@ -144,6 +159,75 @@ fun DetailedWeatherScreen(
                         }
                     },
                 )
+            }
+
+            // Live Animated Atmospheric Header Card
+            item {
+                val skyColors = when (weather.conditionKind) {
+                    WeatherConditionKind.SUNNY -> listOf(Color(0xFF1E88E5), Color(0xFF64B5F6))
+                    WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF141E30), Color(0xFF2B3E5A))
+                    WeatherConditionKind.RAIN -> listOf(Color(0xFF223349), Color(0xFF45607D))
+                    WeatherConditionKind.SUNSET -> listOf(Color(0xFF3E356B), Color(0xFFD97757))
+                    else -> listOf(Color(0xFF2C537A), Color(0xFF6C9BC5))
+                }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(142.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .testTag("weather_live_sky_header"),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.dp, PastelBorder),
+                    shadowElevation = 4.dp,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Brush.linearGradient(skyColors)),
+                    ) {
+                        WeatherParticlesLayer(
+                            conditionKind = weather.conditionKind,
+                            windSpeedKmh = weather.windSpeedKmh,
+                            precipChancePercent = weather.precipChancePercent,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(18.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    LiveTelemetryPulseDot(color = Color(0xFF4ADE80), size = 6.dp)
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = "REAL-TIME ATMOSPHERE",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White.copy(alpha = 0.88f),
+                                    )
+                                }
+                                Text(
+                                    text = formatTempString(weather.currentTempC, tempUnit),
+                                    style = MaterialTheme.typography.displayMedium.copy(fontSize = 42.sp),
+                                    color = Color.White,
+                                )
+                                Text(
+                                    text = "${weather.conditionLabel} · Feels ${formatTempString(weather.feelsLikeC, tempUnit)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.92f),
+                                )
+                            }
+                            AnimatedWeatherConditionIcon(
+                                kind = weather.conditionKind,
+                                size = 54.dp,
+                                tint = Color.White,
+                            )
+                        }
+                    }
+                }
             }
 
             // Dedicated Interactive Open-Source Map (osmdroid) with Real-Time BMKG Precipitation Overlay
@@ -215,11 +299,9 @@ fun DetailedWeatherScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Air,
-                                contentDescription = null,
+                            AnimatedAirQualityWindIcon(
+                                size = 18.dp,
                                 tint = PastelPrimary,
-                                modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -254,11 +336,17 @@ fun DetailedWeatherScreen(
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = strataRangeLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PastelTextSub,
-                    )
+                    AnimatedContent(
+                        targetState = strataRangeLabel,
+                        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(180)) },
+                        label = "stratum_range_anim",
+                    ) { rangeLabel ->
+                        Text(
+                            text = rangeLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PastelTextSub,
+                        )
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -306,20 +394,14 @@ fun DetailedWeatherScreen(
                                 Icon(Icons.Rounded.NearMe, null, tint = PastelPrimary, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(windVal, style = MaterialTheme.typography.displayMedium, color = PastelTextMain)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = windUnitLabel,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
-                                    modifier = Modifier.padding(bottom = 6.dp),
-                                )
-                            }
-                            Text(
-                                text = "${weather.windDirectionLabel} · Bearing ${weather.windBearingDeg}°",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                            WindSpeedDirectionIndicator(
+                                windSpeedKmh = weather.windSpeedKmh,
+                                windBearingDeg = weather.windBearingDeg,
+                                windDirectionLabel = weather.windDirectionLabel,
+                                windUnit = state.settings.windUnit,
+                                style = WindIndicatorStyle.DETAILED_DIAL,
+                                useLargeReadout = true,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             HorizontalDivider(color = PastelBorder)
@@ -367,8 +449,13 @@ fun DetailedWeatherScreen(
                                 color = PastelTextSub,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
+                            val animatedUvProgress by animateFloatAsState(
+                                targetValue = (weather.uvIndex / 10.0).toFloat().coerceIn(0.1f, 1f),
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "detail_uv_progress",
+                            )
                             LinearProgressIndicator(
-                                progress = { (weather.uvIndex / 10.0).toFloat().coerceIn(0.1f, 1f) },
+                                progress = { animatedUvProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -391,7 +478,7 @@ fun DetailedWeatherScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text("HUMIDITY", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                Icon(Icons.Rounded.WaterDrop, null, tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                                AnimatedHumidityDropletIcon(size = 18.dp, tint = PastelPrimary)
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
@@ -405,8 +492,13 @@ fun DetailedWeatherScreen(
                                 color = PastelTextSub,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
+                            val animatedHumidityDetail by animateFloatAsState(
+                                targetValue = (weather.humidityPercent / 100f).coerceIn(0.1f, 1f),
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                                label = "detail_humidity_progress",
+                            )
                             LinearProgressIndicator(
-                                progress = { (weather.humidityPercent / 100f).coerceIn(0.1f, 1f) },
+                                progress = { animatedHumidityDetail },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -466,40 +558,25 @@ fun DetailedWeatherScreen(
                 }
             }
 
-            // Sunrise & Sunset Celestial Tracker
+            // 24-Hour Horizontal Scrollable Hourly Forecast
             item {
-                VeridiaCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.WbTwilight, null, tint = WarningAmber, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "SOLAR PATH & DAYLIGHT",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
-                            )
-                        }
-                        Text(
-                            text = weather.daylightDuration,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    SolarArcCanvas(
-                        sunriseTime = weather.sunriseTime,
-                        sunsetTime = weather.sunsetTime,
-                        solarProgress = weather.solarProgress,
-                    )
-                }
+                HourlyForecast24hCard(
+                    hourlyItems = weather.next24hForecast.ifEmpty { weather.hourlyForecast },
+                    tempUnit = tempUnit,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+
+            // Sun Cycle Tracker Card
+            item {
+                SunCycleCard(
+                    locationName = state.selectedCity.name,
+                    sunriseTime = weather.sunriseTime,
+                    sunsetTime = weather.sunsetTime,
+                    daylightDuration = weather.daylightDuration,
+                    solarProgress = weather.solarProgress,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
             }
 
             // 7-Day Extended Forecast
@@ -557,11 +634,9 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.width(72.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = conditionIcon(day.condition),
-                                    contentDescription = null,
-                                    tint = conditionTint(day.condition),
-                                    modifier = Modifier.size(18.dp),
+                                AnimatedWeatherConditionIcon(
+                                    kind = day.condition,
+                                    size = 18.dp,
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
@@ -621,12 +696,17 @@ private fun StratumSegmentButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pillColor by animateColorAsState(
+        targetValue = if (selected) PastelPrimary else Color.Transparent,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "stratum_pill_color",
+    )
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) PastelPrimary else Color.Transparent,
+        color = pillColor,
     ) {
         Box(
             modifier = Modifier.padding(vertical = 8.dp),

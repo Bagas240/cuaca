@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,14 +26,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Emergency
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Thunderstorm
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.Volcano
+import androidx.compose.material.icons.rounded.VolumeOff
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,26 +46,35 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.alerts.DisasterKind
 import com.example.data.model.SeismicSeverity
 import com.example.ui.components.BmkgShakemapCard
+import com.example.ui.components.LiveTelemetryPulseDot
 import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
+import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.PastelAccent
 import com.example.ui.theme.PastelBorder
@@ -81,8 +101,28 @@ fun DisasterMonitorScreen(
     onBack: () -> Unit,
     onOpenSosModal: () -> Unit,
     onCloseSosModal: () -> Unit,
+    onTriggerSampleAlert: (DisasterKind) -> Unit = {},
+    onStopSiren: () -> Unit = {},
+    onToggleSeismicSensor: (Boolean) -> Unit = {},
 ) {
     val seismic = state.seismic
+    val isAnimating = rememberIsDestinationAnimating()
+    val sensorScale: Float
+    if (isAnimating) {
+        val pulseTransition = rememberInfiniteTransition(label = "seismic_pulse")
+        val animatedScale by pulseTransition.animateFloat(
+            initialValue = 0.94f,
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "sensor_scale",
+        )
+        sensorScale = animatedScale
+    } else {
+        sensorScale = 1f
+    }
 
     Box(
         modifier = Modifier
@@ -170,7 +210,12 @@ fun DisasterMonitorScreen(
                             shape = RoundedCornerShape(12.dp),
                             color = PastelDangerBg,
                             border = BorderStroke(1.dp, PastelDangerBorder),
-                            modifier = Modifier.size(42.dp),
+                            modifier = Modifier
+                                .size(42.dp)
+                                .graphicsLayer {
+                                    scaleX = sensorScale
+                                    scaleY = sensorScale
+                                },
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(Icons.Rounded.Sensors, null, tint = PastelDangerText, modifier = Modifier.size(22.dp))
@@ -242,6 +287,223 @@ fun DisasterMonitorScreen(
                             modifier = Modifier.weight(1f),
                         )
                     }
+                }
+            }
+
+            // Early Warning Civil-Defense Notification & Disaster Siren Controls
+            item {
+                VeridiaCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .testTag("disaster_siren_panel"),
+                    borderColor = if (state.isSirenPlaying) DangerCrimson.copy(alpha = 0.6f) else PastelBorder,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.NotificationsActive,
+                                contentDescription = null,
+                                tint = DangerCrimson,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = "CIVIL-DEFENSE DISASTER SIREN",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PastelTextSub,
+                                )
+                                Text(
+                                    text = "Zone Early Warning & Notification",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = PastelTextMain,
+                                )
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LiveTelemetryPulseDot(
+                                color = if (state.isSirenPlaying) DangerCrimson else PastelAccent,
+                                size = 6.dp,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (state.isSirenPlaying) "SIREN ACTIVE" else "ARMED",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (state.isSirenPlaying) DangerCrimson else SecondaryGreenDark,
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Automatically dispatches disaster-specific notifications & a sweeping civil-defense siren (non-ambulance) when earthquakes, tsunami advisories, extreme storms, or hazardous air strike ${state.selectedCity.name}.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PastelTextSub,
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DisasterSirenChip(
+                            label = "Earthquake",
+                            icon = Icons.Rounded.Vibration,
+                            accent = DangerCrimson,
+                            onClick = { onTriggerSampleAlert(DisasterKind.EARTHQUAKE) },
+                            modifier = Modifier.weight(1f).testTag("test_siren_earthquake"),
+                        )
+                        DisasterSirenChip(
+                            label = "Tsunami",
+                            icon = Icons.Rounded.Waves,
+                            accent = PastelPrimary,
+                            onClick = { onTriggerSampleAlert(DisasterKind.TSUNAMI) },
+                            modifier = Modifier.weight(1f).testTag("test_siren_tsunami"),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DisasterSirenChip(
+                            label = "Storm",
+                            icon = Icons.Rounded.Thunderstorm,
+                            accent = WarningAmber,
+                            onClick = { onTriggerSampleAlert(DisasterKind.SEVERE_STORM) },
+                            modifier = Modifier.weight(1f).testTag("test_siren_storm"),
+                        )
+                        DisasterSirenChip(
+                            label = "Air Hazard",
+                            icon = Icons.Rounded.Air,
+                            accent = PastelSunset,
+                            onClick = { onTriggerSampleAlert(DisasterKind.HAZARDOUS_AIR) },
+                            modifier = Modifier.weight(1f).testTag("test_siren_air"),
+                        )
+                    }
+
+                    if (state.isSirenPlaying) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = onStopSiren,
+                            colors = ButtonDefaults.buttonColors(containerColor = DangerCrimson),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("disaster_stop_siren_button"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.VolumeOff,
+                                contentDescription = "Silence Disaster Siren",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Silence Civil-Defense Siren", color = Color.White)
+                        }
+                    }
+                }
+            }
+
+            // On-Device Accelerometer Seismic Vibration Pattern Detector Card
+            item {
+                VeridiaCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .testTag("accelerometer_seismic_card"),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Rounded.Vibration,
+                                contentDescription = null,
+                                tint = PastelPrimary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "ACCELEROMETER SEISMIC SENSOR",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PastelTextSub,
+                                )
+                                Text(
+                                    text = if (!state.seismicSensorAvailable) {
+                                        "Hardware Accelerometer Unavailable"
+                                    } else if (state.seismicSensorMonitoringEnabled) {
+                                        "Active · Pattern Detector Armed"
+                                    } else {
+                                        "Sensor Monitoring Paused"
+                                    },
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = PastelTextMain,
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = state.seismicSensorMonitoringEnabled,
+                            onCheckedChange = onToggleSeismicSensor,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = PastelPrimary,
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = PastelBorder,
+                            ),
+                            modifier = Modifier.testTag("switch_accelerometer_seismic"),
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = PastelBorder)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Live Linear Vibration: ${String.format(Locale.US, "%.2f", state.liveAccelerometerMs2)} m/s²",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PastelTextMain,
+                        )
+                        Text(
+                            text = "Detections: ${state.seismicPatternDetectedCount}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (state.seismicPatternDetectedCount > 0) DangerCrimson else PastelTextSub,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { (state.liveAccelerometerMs2 / 6.0f).coerceIn(0.03f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(CircleShape),
+                        color = if (state.liveAccelerometerMs2 >= 2.4f) DangerCrimson else PastelPrimary,
+                        trackColor = PastelSubtle,
+                        strokeCap = StrokeCap.Round,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Monitors sustained oscillatory tremor patterns (≥2.4 m/s² with axis reversals) to trigger instant siren alerts.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PastelTextSub,
+                    )
                 }
             }
 
@@ -483,6 +745,50 @@ private fun HazardMetricCard(
         ) {
             Text(footerLeft, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
             Text(footerRight, style = MaterialTheme.typography.labelSmall, color = footerRightColor)
+        }
+    }
+}
+
+@Composable
+private fun DisasterSirenChip(
+    label: String,
+    icon: ImageVector,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = accent.copy(alpha = 0.09f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.30f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(15.dp),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = PastelTextMain,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Rounded.VolumeUp,
+                contentDescription = "Test Siren",
+                tint = accent,
+                modifier = Modifier.size(13.dp),
+            )
         }
     }
 }

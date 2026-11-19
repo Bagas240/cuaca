@@ -65,11 +65,8 @@ class LocationTracker(private val context: Context) {
                     IllegalStateException("Unable to acquire coarse location. Ensure device location is turned on.")
                 )
 
-            val (effLat, effLon) = if (privacyMasking) {
-                obfuscateForPrivacy(location.latitude, location.longitude)
-            } else {
-                location.latitude to location.longitude
-            }
+            // Immediately discard exact GPS fix and quantize to coarse regency/kabupaten grid (~11 km)
+            val (effLat, effLon) = obfuscateForPrivacy(location.latitude, location.longitude)
             val (locality, country) = reverseGeocode(effLat, effLon)
             Result.success(
                 ResolvedGpsLocation(
@@ -125,7 +122,6 @@ class LocationTracker(private val context: Context) {
     private fun getFrameworkLastKnownLocation(): Location? {
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
         val providers = listOf(
-            LocationManager.GPS_PROVIDER,
             LocationManager.NETWORK_PROVIDER,
             LocationManager.PASSIVE_PROVIDER,
         )
@@ -136,7 +132,7 @@ class LocationTracker(private val context: Context) {
 
     private suspend fun reverseGeocode(lat: Double, lon: Double): Pair<String, String> {
         if (!Geocoder.isPresent()) {
-            return "Current GPS" to formatCoordLabel(lat, lon)
+            return "Regency Zone" to formatCoordLabel(lat, lon)
         }
         val geocoder = Geocoder(context, Locale.getDefault())
         val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -154,10 +150,11 @@ class LocationTracker(private val context: Context) {
             runCatching { geocoder.getFromLocation(lat, lon, 1)?.firstOrNull() }.getOrNull()
         }
 
-        val locality = address?.locality
-            ?: address?.subAdminArea
+        // Prefer regency/kabupaten/city level (subAdminArea/locality/adminArea), never street/subLocality
+        val locality = address?.subAdminArea
+            ?: address?.locality
             ?: address?.adminArea
-            ?: "Current GPS"
+            ?: "Protected Zone"
         val country = address?.countryName ?: formatCoordLabel(lat, lon)
         return locality to country
     }

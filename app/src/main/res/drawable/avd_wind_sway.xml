@@ -1,0 +1,6 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_wind_sway">
+    <target
+        android:name="wind_sway_group"
+        android:animation="@animator/anim_wind_sway_rotate" />
+</animated-vector>
