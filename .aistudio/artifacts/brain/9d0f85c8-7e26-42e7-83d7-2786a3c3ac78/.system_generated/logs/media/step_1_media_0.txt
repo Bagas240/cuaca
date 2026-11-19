@@ -1,0 +1,3509 @@
+<!-- Home Dashboard (Overview Hub) -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Home Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Solid Surface Elevation */
+    .ios-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E5E9EE;
+      box-shadow: 0 2px 8px -2px rgba(20, 30, 45, 0.05), 0 1px 2px rgba(20, 30, 45, 0.03);
+    }
+    .ios-dock {
+      background-color: #FFFFFF;
+      border: 1px solid #E5E9EE;
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+
+    /* 3D POV Interactive Street/Sky Stage */
+    .pov-stage {
+      perspective: 1000px;
+      transform-style: preserve-3d;
+      transition: all 0.7s cubic-bezier(0.2, 0.8, 0.25, 1);
+    }
+    
+    .pov-environment {
+      transform-origin: center bottom;
+      transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.25, 1);
+    }
+
+    /* Multi-Plane 3D Falling Rain Keyframes */
+    @keyframes rainDropFast {
+      0% { transform: translate3d(0, -120px, 60px); opacity: 0; }
+      15% { opacity: 0.85; }
+      85% { opacity: 0.85; }
+      100% { transform: translate3d(-35px, 640px, 60px); opacity: 0; }
+    }
+    @keyframes rainDropMid {
+      0% { transform: translate3d(0, -90px, 0px); opacity: 0; }
+      20% { opacity: 0.65; }
+      80% { opacity: 0.65; }
+      100% { transform: translate3d(-25px, 620px, 0px); opacity: 0; }
+    }
+    @keyframes rainDropDistant {
+      0% { transform: translate3d(0, -60px, -50px); opacity: 0; }
+      25% { opacity: 0.4; }
+      80% { opacity: 0.4; }
+      100% { transform: translate3d(-15px, 600px, -50px); opacity: 0; }
+    }
+    @keyframes rainSplash {
+      0% { transform: scale(0.1) rotateX(65deg); opacity: 0.9; }
+      50% { opacity: 0.6; }
+      100% { transform: scale(2.4) rotateX(65deg); opacity: 0; }
+    }
+    .rain-fast {
+      animation: rainDropFast 0.85s linear infinite;
+    }
+    .rain-mid {
+      animation: rainDropMid 1.25s linear infinite;
+    }
+    .rain-distant {
+      animation: rainDropDistant 1.8s linear infinite;
+    }
+    .splash-ring {
+      animation: rainSplash 1.4s ease-out infinite;
+    }
+
+    /* Hyper-Realistic 3D Volumetric Cloud System */
+    @keyframes cloudRollFore {
+      0%, 100% { transform: translate3d(0, 0, 70px) scale(1) rotate(0deg); }
+      33% { transform: translate3d(24px, -8px, 95px) scale(1.05) rotate(0.8deg); }
+      66% { transform: translate3d(-18px, 6px, 80px) scale(1.02) rotate(-0.5deg); }
+    }
+    @keyframes cloudRollMid {
+      0%, 100% { transform: translate3d(0, 0, 20px) scale(1); }
+      50% { transform: translate3d(-28px, 6px, 40px) scale(1.04); }
+    }
+    @keyframes cloudRollDeep {
+      0%, 100% { transform: translate3d(0, 0, -45px) scale(1); }
+      50% { transform: translate3d(22px, -5px, -15px) scale(1.03); }
+    }
+    @keyframes puffBreatheA {
+      0%, 100% { transform: scale(1) translate(0, 0); }
+      50% { transform: scale(1.06) translate(4px, -3px); }
+    }
+    @keyframes puffBreatheB {
+      0%, 100% { transform: scale(1) translate(0, 0); }
+      50% { transform: scale(1.08) translate(-5px, 2px); }
+    }
+    @keyframes atmosphericHaze {
+      0%, 100% { opacity: 0.94; }
+      50% { opacity: 1; }
+    }
+    .animate-cloud-fore {
+      animation: cloudRollFore 14s ease-in-out infinite, atmosphericHaze 8s ease-in-out infinite;
+      transform-origin: center center;
+    }
+    .animate-cloud-mid {
+      animation: cloudRollMid 19s ease-in-out infinite;
+      transform-origin: center center;
+    }
+    .animate-cloud-deep {
+      animation: cloudRollDeep 28s ease-in-out infinite;
+      transform-origin: center center;
+    }
+    .animate-puff-a {
+      animation: puffBreatheA 7s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .animate-puff-b {
+      animation: puffBreatheB 9s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none transition-colors duration-700" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- 3D POV INTERACTIVE ENVIRONMENT CANVAS (Background Layer) -->
+    <!-- When a weather condition pill (e.g. Rain) is clicked, camera drops to street level -->
+    <div id="weatherPOVStage" class="pov-stage absolute inset-0 w-full h-[580px] pointer-events-auto cursor-pointer z-0 overflow-hidden">
+      
+      <!-- Realistic Stormy Rainy Sky Backdrop (Photographic Natural Depth) -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <img src="https://lh3.googleusercontent.com/aida/ALJJyrBflIwXeKtgNlLCoxiar9VKrIzwk4NjTyfrY-IK3ea1NuAKt1NKY0JYm8MctLP9KyOJOmbOvg7CL3gi6EhZyGriELfsnEN8QsSoO1b01NkGDaIQwOSsHvfH9Zwza5I75RstpC9CP1J-jxfTyvjndlcTmewIKFBdsp4UoV_zZecGIsjZlqHOQnKrP3dPJe37teFyuH23IoRkqjX5a9H9yGjErBcBUUvvNaegkkzjOaPBPFNMcbHejyyWQg" alt="Natural stormy rain sky" class="w-full h-full object-cover object-center filter saturate-[0.95] contrast-[1.05]">
+        <!-- Soft diffused bottom mist transition so cards float clearly with ample negative space -->
+        <div class="absolute inset-0 bg-gradient-to-b from-[#1C2834]/40 via-transparent to-pastel-sky/95 pointer-events-none"></div>
+      </div>
+
+      <!-- 3D Environment Wrapper -->
+      <div id="environment3D" class="pov-environment absolute inset-0 w-full h-full pointer-events-none" style="transform: rotateX(10deg) translateY(0px);">
+
+        <!-- Dynamic 3D Natural Soft Cloud Formations with Multi-plane Parallax -->
+        <div id="cloudFormations" class="absolute top-0 left-[-40px] right-[-40px] h-84 opacity-50 transition-all duration-700 pointer-events-none mix-blend-screen" style="transform-style: preserve-3d;">
+          
+          <!-- Shared SVG Definitions with Soft Filters and Natural Hazy Gradients -->
+          <svg class="absolute w-0 h-0" aria-hidden="true">
+            <defs>
+              <!-- Soft Atmospheric Cloud Blur Filter -->
+              <filter id="softCloudHaze" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="7" result="blur"></feGaussianBlur>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+              </filter>
+              <filter id="gentleEdgeBlur" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4"></feGaussianBlur>
+              </filter>
+
+              <!-- Deep distant overcast strata gradient -->
+              <linearGradient id="softDistantStrata" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#C2D6E6" stop-opacity="0.9"></stop>
+                <stop offset="60%" stop-color="#A5C1D8" stop-opacity="0.75"></stop>
+                <stop offset="100%" stop-color="#90B0CA" stop-opacity="0.6"></stop>
+              </linearGradient>
+
+              <!-- Natural organic mid-cloud gradient -->
+              <radialGradient id="softMidNimbus" cx="42%" cy="38%" r="65%">
+                <stop offset="0%" stop-color="#F2F8FC" stop-opacity="0.95"></stop>
+                <stop offset="45%" stop-color="#D7E7F4" stop-opacity="0.88"></stop>
+                <stop offset="85%" stop-color="#B2CDE0" stop-opacity="0.75"></stop>
+                <stop offset="100%" stop-color="#99BAD1" stop-opacity="0.6"></stop>
+              </radialGradient>
+
+              <!-- Soft foreground billow gradient -->
+              <radialGradient id="softForeCloud" cx="45%" cy="32%" r="60%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.98"></stop>
+                <stop offset="50%" stop-color="#EAF2F8" stop-opacity="0.92"></stop>
+                <stop offset="85%" stop-color="#CDE0EE" stop-opacity="0.8"></stop>
+                <stop offset="100%" stop-color="#B0CBE0" stop-opacity="0.65"></stop>
+              </radialGradient>
+
+              <!-- Soft diffused under-shadow -->
+              <radialGradient id="diffuseUnderShadow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#6A8FA8" stop-opacity="0.3"></stop>
+                <stop offset="70%" stop-color="#8BB0C9" stop-opacity="0.12"></stop>
+                <stop offset="100%" stop-color="#8BB0C9" stop-opacity="0"></stop>
+              </radialGradient>
+            </defs>
+          </svg>
+
+          <!-- Tier 1: Distant Soft Cloud Strata (Silky atmospheric backdrop) -->
+          <div class="absolute inset-0 animate-cloud-deep opacity-80" style="filter: url(#gentleEdgeBlur);">
+            <svg class="w-full h-full" viewBox="0 0 480 270" fill="none">
+              <path d="M 0 110 C 60 85, 130 95, 185 75 C 250 50, 320 60, 375 45 C 430 35, 465 55, 480 70 L 480 240 L 0 240 Z" fill="url(#softDistantStrata)"></path>
+              <path d="M 30 135 C 105 105, 195 120, 265 100 C 335 80, 405 95, 480 80 L 480 250 L 30 250 Z" fill="#B5CEE0" opacity="0.65"></path>
+            </svg>
+          </div>
+
+          <!-- Tier 2: Mid-Ground Natural Cumulus Mass (Organic curves with soft edge diffusion) -->
+          <div class="absolute inset-0 animate-cloud-mid opacity-95" style="filter: url(#softCloudHaze);">
+            <svg class="w-full h-full" viewBox="0 0 480 270" fill="none">
+              <!-- Soft diffuse base shadow -->
+              <ellipse cx="240" cy="195" rx="200" ry="26" fill="url(#diffuseUnderShadow)"></ellipse>
+              
+              <!-- Organic cumulus bank with flowing natural Bezier curves -->
+              <path d="M 25 170 C 20 120, 70 95, 120 100 C 145 68, 205 58, 245 78 C 285 52, 355 62, 385 95 C 420 85, 460 110, 460 155 C 460 195, 425 215, 385 215 L 65 215 C 30 215, 25 195, 25 170 Z" fill="url(#softMidNimbus)"></path>
+              
+              <!-- Soft organic billow puffs (feathered) -->
+              <path d="M 110 125 C 135 88, 195 82, 225 108 C 250 85, 310 85, 335 118 C 365 108, 400 122, 405 155 C 375 185, 310 185, 250 180 C 190 185, 135 175, 110 150 Z" fill="url(#softMidNimbus)" opacity="0.85"></path>
+            </svg>
+          </div>
+
+          <!-- Tier 3: Foreground Billow Cloud with Soft Airy Atmosphere -->
+          <div class="absolute inset-0 animate-cloud-fore" style="filter: url(#softCloudHaze);">
+            <svg class="w-full h-full" viewBox="0 0 480 270" fill="none">
+              <!-- Soft base occlusion -->
+              <ellipse cx="225" cy="188" rx="170" ry="20" fill="url(#diffuseUnderShadow)"></ellipse>
+              
+              <!-- Foreground airy natural cloud contour -->
+              <path d="M 40 165 C 35 125, 75 102, 120 108 C 145 72, 200 65, 240 82 C 275 62, 335 72, 362 105 C 395 100, 430 122, 430 158 C 430 195, 398 212, 360 212 L 75 212 C 45 212, 40 190, 40 165 Z" fill="url(#softForeCloud)"></path>
+              
+              <!-- Subtle top diffuse light wash (feathers into sky) -->
+              <path d="M 125 95 C 152 70, 200 66, 232 82 C 265 64, 322 72, 348 98 C 328 86, 275 78, 238 90 C 196 84, 155 88, 125 95 Z" fill="#FFFFFF" opacity="0.75"></path>
+              
+              <!-- Soft atmospheric moisture cores -->
+              <ellipse cx="180" cy="112" rx="55" ry="28" fill="#FFFFFF" opacity="0.6"></ellipse>
+              <ellipse cx="295" cy="122" rx="60" ry="30" fill="#FFFFFF" opacity="0.55"></ellipse>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Multi-Plane 3D Falling Rain Layer (Deep parallax in 3D volume) -->
+        <div id="fallingRainContainer" class="absolute inset-0 pointer-events-none overflow-hidden opacity-95 transition-opacity duration-700" style="transform-style: preserve-3d;">
+          
+          <!-- Plane 1: Distant Light Rain Mist (Background z = -50px) -->
+          <div class="absolute inset-0" style="transform: translateZ(-50px);">
+            <div class="rain-distant absolute top-[-50px] left-[12%] w-[1.5px] h-[32px] bg-gradient-to-b from-transparent via-[#88A8C2] to-transparent opacity-40"></div>
+            <div class="rain-distant absolute top-[-60px] left-[28%] w-[1.5px] h-[36px] bg-gradient-to-b from-transparent via-[#88A8C2] to-transparent opacity-40" style="animation-delay: 0.4s;"></div>
+            <div class="rain-distant absolute top-[-40px] left-[46%] w-[1.5px] h-[30px] bg-gradient-to-b from-transparent via-[#88A8C2] to-transparent opacity-40" style="animation-delay: 0.9s;"></div>
+            <div class="rain-distant absolute top-[-70px] left-[65%] w-[1.5px] h-[34px] bg-gradient-to-b from-transparent via-[#88A8C2] to-transparent opacity-40" style="animation-delay: 0.2s;"></div>
+            <div class="rain-distant absolute top-[-50px] left-[84%] w-[1.5px] h-[32px] bg-gradient-to-b from-transparent via-[#88A8C2] to-transparent opacity-40" style="animation-delay: 0.7s;"></div>
+          </div>
+
+          <!-- Plane 2: Mid-Ground Dynamic Rain Streaks (z = 0px) -->
+          <div class="absolute inset-0" style="transform: translateZ(0px);">
+            <div class="rain-mid absolute top-[-60px] left-[8%] w-[2px] h-[48px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-65" style="animation-delay: 0.15s;"></div>
+            <div class="rain-mid absolute top-[-80px] left-[22%] w-[2px] h-[55px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-70" style="animation-delay: 0.55s;"></div>
+            <div class="rain-mid absolute top-[-50px] left-[38%] w-[2px] h-[45px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-65" style="animation-delay: 0.85s;"></div>
+            <div class="rain-mid absolute top-[-70px] left-[54%] w-[2px] h-[52px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-75" style="animation-delay: 0.3s;"></div>
+            <div class="rain-mid absolute top-[-65px] left-[70%] w-[2px] h-[48px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-65" style="animation-delay: 1.05s;"></div>
+            <div class="rain-mid absolute top-[-75px] left-[88%] w-[2px] h-[54px] bg-gradient-to-b from-transparent via-[#6B90B0] to-white/70 rounded-full opacity-70" style="animation-delay: 0.65s;"></div>
+          </div>
+
+          <!-- Plane 3: Foreground Crisp Fast Droplets & Wind Angle (z = 60px) -->
+          <div class="absolute inset-0" style="transform: translateZ(60px);">
+            <div class="rain-fast absolute top-[-100px] left-[15%] w-[2.5px] h-[68px] bg-gradient-to-b from-transparent via-[#5A82A6] to-white rounded-full opacity-85" style="animation-delay: 0.05s;"></div>
+            <div class="rain-fast absolute top-[-110px] left-[32%] w-[2.5px] h-[75px] bg-gradient-to-b from-transparent via-[#5A82A6] to-white rounded-full opacity-90" style="animation-delay: 0.45s;"></div>
+            <div class="rain-fast absolute top-[-95px] left-[50%] w-[2.5px] h-[65px] bg-gradient-to-b from-transparent via-[#5A82A6] to-white rounded-full opacity-85" style="animation-delay: 0.25s;"></div>
+            <div class="rain-fast absolute top-[-115px] left-[68%] w-[2.5px] h-[78px] bg-gradient-to-b from-transparent via-[#5A82A6] to-white rounded-full opacity-90" style="animation-delay: 0.65s;"></div>
+            <div class="rain-fast absolute top-[-105px] left-[85%] w-[2.5px] h-[70px] bg-gradient-to-b from-transparent via-[#5A82A6] to-white rounded-full opacity-85" style="animation-delay: 0.18s;"></div>
+          </div>
+        </div>
+
+        <!-- Street Level Wet Ground Geometry & Dynamic Puddle Ripples -->
+        <div id="streetGeometry" class="absolute bottom-0 inset-x-0 h-44 opacity-80 transition-opacity duration-700 pointer-events-none" style="transform: rotateX(60deg) translateZ(-30px); transform-origin: bottom center;">
+          <!-- Asphalt Road & Rain Sheen -->
+          <div class="w-full h-full bg-gradient-to-t from-[#8EA6BA] via-[#A8BFD1] to-transparent"></div>
+          
+          <!-- Road Line Markings -->
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 w-48 h-1 bg-white/40 rounded-full blur-[0.5px]"></div>
+          
+          <!-- Dynamic Puddle Splash Ripples -->
+          <div id="streetRipples" class="absolute inset-0 pointer-events-none">
+            <div class="splash-ring absolute top-[35%] left-[24%] w-10 h-10 rounded-full border border-white/60"></div>
+            <div class="splash-ring absolute top-[55%] left-[62%] w-14 h-14 rounded-full border border-white/50" style="animation-delay: 0.5s;"></div>
+            <div class="splash-ring absolute top-[25%] left-[78%] w-8 h-8 rounded-full border border-white/60" style="animation-delay: 0.9s;"></div>
+            <div class="splash-ring absolute top-[65%] left-[38%] w-12 h-12 rounded-full border border-white/60" style="animation-delay: 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOREGROUND APP BAR -->
+    <header class="relative z-20 pt-12 px-5 flex items-center justify-between pointer-events-auto">
+      <!-- Location Selector Pill -->
+      <button id="openCityModalBtn" type="button" class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-pastel-border shadow-sm hover:border-pastel-primary/40 transition-all text-left" aria-label="Select City or Region">
+        <span class="material-symbols-outlined text-pastel-primary text-title-md">near_me</span>
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Tokyo</span>
+            <span class="material-symbols-outlined text-pastel-text-sub text-label-md">expand_more</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- Clean Header Actions -->
+      <div class="flex items-center gap-2">
+        <!-- Minimalist Floating Camera POV Button -->
+        <button id="cameraPOVBtn" type="button" aria-label="Toggle Sky and Street Camera POV" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border shadow-sm text-pastel-text-main hover:text-pastel-primary hover:border-pastel-primary/30 transition-all active:scale-95 group" title="Switch 3D Viewport Camera (Sky / Street Level)">
+          <span id="cameraPOVIcon" class="material-symbols-outlined text-title-md text-pastel-primary group-hover:rotate-12 transition-transform">videocam</span>
+          <span id="povLabel" class="font-label text-label-sm font-semibold tracking-wide text-pastel-text-main">Camera</span>
+        </button>
+
+        <button id="openSearchBtn" type="button" aria-label="Search Locations" class="w-9 h-9 rounded-full bg-white border border-pastel-border shadow-sm flex items-center justify-center text-pastel-text-main hover:text-pastel-primary hover:border-pastel-primary/30 transition-all active:scale-95">
+          <span class="material-symbols-outlined text-title-md">search</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="relative z-20 flex-1 px-5 pt-3 space-y-4 pointer-events-auto pb-28">
+
+      <!-- HERO WEATHER FOCUS HERO -->
+      <section class="text-center pt-2 pb-2">
+        <!-- Big Apple-style Crisp Floating Temperature Readout -->
+        <div class="flex items-start justify-center drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+          <span id="mainTempDisplay" class="font-display text-display-xl font-bold tracking-tight text-white">21</span>
+          <span class="font-display text-display-md text-white/90 mt-2 ml-0.5">°</span>
+        </div>
+
+        <p class="font-body text-body-md text-white/90 font-medium mt-0.5 drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]">
+          Feels like 20° · Light northwest breeze
+        </p>
+
+        <!-- Weather Condition & Precipitation Indicators (Clean, Soft-Cornered Badges) -->
+        <div class="flex items-center justify-center gap-2 mt-3.5">
+          <!-- Weather Condition Badge -->
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border shadow-sm text-pastel-text-main">
+            <span class="material-symbols-outlined text-pastel-primary text-title-sm">rainy</span>
+            <span class="font-headline text-label-md font-semibold tracking-tight text-pastel-text-main">Rain</span>
+          </div>
+
+          <!-- Precipitation Detail Badge -->
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border shadow-sm text-pastel-text-sub">
+            <span class="material-symbols-outlined text-pastel-primary text-label-md">water_drop</span>
+            <span class="font-label text-label-sm font-medium text-pastel-text-sub">85% Precip · Steady</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTIVE ADVISORY BANNER (Soft Minimalist Red Tint Card) -->
+      <section class="rounded-2xl px-4 py-3 bg-pastel-danger-bg border border-pastel-danger-border shadow-sm flex items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center text-pastel-danger-text flex-shrink-0">
+            <span class="material-symbols-outlined text-title-md">sensors</span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-headline text-label-md font-bold text-pastel-danger-text uppercase tracking-wider whitespace-nowrap">Seismic Notice</span>
+              <span class="font-label text-label-sm text-pastel-danger-text font-bold bg-danger/10 px-1.5 py-0.5 rounded whitespace-nowrap">M 5.8</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-main truncate mt-0.5">
+              Offshore Chiba trench tremor · Transit on schedule
+            </p>
+          </div>
+        </div>
+        <a href="../disaster-monitor/DisasterMonitor.html" class="px-3 py-1.5 rounded-xl bg-white border border-pastel-danger-border text-pastel-danger-text font-label text-label-sm font-semibold hover:bg-danger/10 transition-all flex-shrink-0 shadow-sm">
+          Details
+        </a>
+      </section>
+
+      <!-- HOURLY FORECAST HORIZONTAL WIDGET -->
+      <section class="ios-card rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between border-b border-pastel-border/60 pb-2">
+          <div class="flex items-center gap-1.5 text-pastel-text-sub">
+            <span class="material-symbols-outlined text-title-md">schedule</span>
+            <span class="font-label text-label-sm font-semibold uppercase tracking-wider">Hourly Forecast</span>
+          </div>
+          <span class="font-label text-label-sm text-pastel-text-sub font-medium">Next 24 Hours</span>
+        </div>
+
+        <!-- Clean Horizontal Scroll Track -->
+        <div class="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pt-1">
+          <!-- Now -->
+          <div class="flex flex-col items-center gap-2 p-2 rounded-xl bg-pastel-sky/60 min-w-14 text-center">
+            <span class="font-label text-label-sm text-pastel-text-sub font-semibold">Now</span>
+            <span class="material-symbols-outlined text-pastel-primary text-headline-sm">rainy</span>
+            <span class="font-display text-headline-sm font-bold text-pastel-text-main">21°</span>
+          </div>
+
+          <!-- 15:00 -->
+          <div class="flex flex-col items-center gap-2 p-2 rounded-xl min-w-14 text-center hover:bg-pastel-subtle transition-colors">
+            <span class="font-label text-label-sm text-pastel-text-sub">15:00</span>
+            <span class="material-symbols-outlined text-pastel-primary text-headline-sm">rainy</span>
+            <span class="font-display text-headline-sm font-medium text-pastel-text-main">20°</span>
+          </div>
+
+          <!-- 16:00 -->
+          <div class="flex flex-col items-center gap-2 p-2 rounded-xl min-w-14 text-center hover:bg-pastel-subtle transition-colors">
+            <span class="font-label text-label-sm text-pastel-text-sub">16:00</span>
+            <span class="material-symbols-outlined text-pastel-primary text-headline-sm">rainy</span>
+            <span class="font-display text-headline-sm font-medium text-pastel-text-main">19°</span>
+          </div>
+
+          <!-- 17:00 -->
+          <div class="flex flex-col items-center gap-2 p-2 rounded-xl min-w-14 text-center hover:bg-pastel-subtle transition-colors">
+            <span class="font-label text-label-sm text-pastel-text-sub">17:00</span>
+            <span class="material-symbols-outlined text-pastel-text-sub text-headline-sm">cloud</span>
+            <span class="font-display text-headline-sm font-medium text-pastel-text-main">19°</span>
+          </div>
+
+          <!-- 18:00 (Sunset) -->
+          <div class="flex flex-col items-center gap-2 p-2 rounded-xl min-w-14 text-center bg-warning/10">
+            <span class="font-label text-label-sm text-pastel-sunset font-bold">18:14</span>
+            <span class="material-symbols-outlined text-warning text-headline-sm">wb_twilight</span>
+            <span class="font-display text-headline-sm font-medium text-pastel-text-main">18°</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2-COLUMN MINIMALIST METRIC TILES -->
+      <section class="grid grid-cols-2 gap-3">
+        
+        <!-- Air Quality Index (Pastel Mint Card) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="rounded-2xl p-4 bg-pastel-mint border border-secondary/30 shadow-sm flex flex-col justify-between hover:border-pastel-accent transition-all group">
+          <div class="flex items-center justify-between text-secondary-container">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-title-md">air</span>
+              <span class="font-label text-label-sm font-bold uppercase tracking-wider">Air Quality</span>
+            </div>
+            <span class="material-symbols-outlined text-label-md group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+          </div>
+          
+          <div class="my-3">
+            <div class="flex items-center gap-1.5">
+              <span class="font-display text-display-md-mobile font-bold text-pastel-text-main">42</span>
+              <span class="font-label text-label-sm text-secondary-container font-bold">Good</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-main font-medium mt-0.5">PM2.5: 8.4 µg/m³</p>
+          </div>
+
+          <div class="w-full bg-white rounded-full h-1.5 overflow-hidden">
+            <div class="bg-pastel-accent h-full rounded-full" style="width: 32%;"></div>
+          </div>
+        </a>
+
+        <!-- Wind & Barometer (Pastel Sky Card) -->
+        <a href="../detailed-weather/DetailedWeather.html" class="rounded-2xl p-4 bg-white border border-pastel-border shadow-sm flex flex-col justify-between hover:border-pastel-primary transition-all group">
+          <div class="flex items-center justify-between text-pastel-primary">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-title-md">navigation</span>
+              <span class="font-label text-label-sm font-bold uppercase tracking-wider">Wind</span>
+            </div>
+            <span class="material-symbols-outlined text-pastel-text-sub text-label-md group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+          </div>
+
+          <div class="my-3">
+            <div class="flex items-center gap-1">
+              <span class="font-display text-display-md-mobile font-bold text-pastel-text-main">18</span>
+              <span class="font-body text-body-sm text-pastel-text-sub">km/h</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub mt-0.5">Northwest · 1,014 hPa</p>
+          </div>
+
+          <div class="w-full bg-pastel-sky rounded-full h-1.5 overflow-hidden">
+            <div class="bg-pastel-primary h-full rounded-full" style="width: 45%;"></div>
+          </div>
+        </a>
+
+      </section>
+
+      <!-- 7-DAY SUMMARY WIDGET -->
+      <section class="ios-card rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between border-b border-pastel-border/60 pb-2">
+          <div class="flex items-center gap-1.5 text-pastel-text-sub">
+            <span class="material-symbols-outlined text-title-md">calendar_today</span>
+            <span class="font-label text-label-sm font-semibold uppercase tracking-wider">7-Day Forecast</span>
+          </div>
+          <a href="../detailed-weather/DetailedWeather.html" class="font-label text-label-sm text-pastel-primary font-medium hover:underline">
+            Full Details
+          </a>
+        </div>
+
+        <div class="space-y-2 pt-1 text-body-sm">
+          <!-- Today -->
+          <div class="flex items-center justify-between py-1">
+            <span class="font-label text-label-md text-pastel-text-main font-semibold w-16">Today</span>
+            <div class="flex items-center gap-1.5 text-pastel-primary w-20">
+              <span class="material-symbols-outlined text-title-md">partly_cloudy_day</span>
+              <span class="font-label text-label-sm text-pastel-text-sub">10%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 justify-end">
+              <span class="font-mono text-label-sm text-pastel-text-sub">16°</span>
+              <div class="w-24 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[25%] right-[20%] h-full bg-pastel-primary rounded-full"></div>
+              </div>
+              <span class="font-mono text-label-sm text-pastel-text-main font-bold">24°</span>
+            </div>
+          </div>
+
+          <!-- Tomorrow -->
+          <div class="flex items-center justify-between py-1">
+            <span class="font-label text-label-md text-pastel-text-sub w-16">Wed</span>
+            <div class="flex items-center gap-1.5 text-warning w-20">
+              <span class="material-symbols-outlined text-title-md">wb_sunny</span>
+              <span class="font-label text-label-sm text-pastel-text-sub">0%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 justify-end">
+              <span class="font-mono text-label-sm text-pastel-text-sub">17°</span>
+              <div class="w-24 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[30%] right-[10%] h-full bg-pastel-primary rounded-full"></div>
+              </div>
+              <span class="font-mono text-label-sm text-pastel-text-main font-bold">26°</span>
+            </div>
+          </div>
+
+          <!-- Thursday (Rain) -->
+          <div class="flex items-center justify-between py-1">
+            <span class="font-label text-label-md text-pastel-text-sub w-16">Thu</span>
+            <div class="flex items-center gap-1.5 text-pastel-primary w-20">
+              <span class="material-symbols-outlined text-title-md">rainy</span>
+              <span class="font-label text-label-sm text-pastel-primary font-bold">85%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 justify-end">
+              <span class="font-mono text-label-sm text-pastel-text-sub">15°</span>
+              <div class="w-24 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[15%] right-[35%] h-full bg-pastel-primary rounded-full"></div>
+              </div>
+              <span class="font-mono text-label-sm text-pastel-text-main font-bold">20°</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom breathing clearance -->
+      <div class="h-20 w-full"></div>
+
+    </main>
+
+    <!-- CITY SELECTOR MODAL / SHEET -->
+    <div id="cityModal" class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none flex flex-col justify-end" aria-hidden="true">
+      <div id="modalSheet" class="w-full max-w-[390px] mx-auto bg-white rounded-t-3xl p-6 space-y-4 shadow-2xl transition-transform duration-300 translate-y-full max-h-[707px] overflow-y-auto" data-stitch-vh="max-h-[707px]===max-h-[80vh]">
+        <div class="w-12 h-1.5 bg-pastel-border rounded-full mx-auto -mt-2 mb-2"></div>
+        <div class="flex items-center justify-between pb-1">
+          <h2 class="font-headline text-headline-sm text-pastel-text-main font-bold">Locations</h2>
+          <button id="closeCityModalBtn" type="button" aria-label="Close Cities" class="p-1 rounded-full text-pastel-text-sub hover:text-pastel-text-main">
+            <span class="material-symbols-outlined text-title-lg">close</span>
+          </button>
+        </div>
+
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-pastel-text-sub text-title-md">search</span>
+          <input type="text" placeholder="Search city or airport..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-pastel-subtle border border-pastel-border text-pastel-text-main placeholder-pastel-text-sub text-body-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-pastel-primary">
+        </div>
+
+        <!-- City Cards -->
+        <div class="space-y-2 pt-1">
+          <div class="p-3.5 rounded-2xl bg-pastel-sky/60 border border-pastel-primary/30 flex items-center justify-between cursor-pointer">
+            <div>
+              <span class="font-headline text-headline-sm font-bold text-pastel-text-main block">Tokyo, Japan</span>
+              <span class="font-label text-label-sm text-pastel-primary">Current Location · 21°C</span>
+            </div>
+            <span class="material-symbols-outlined text-pastel-primary text-title-lg">check_circle</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-white border border-pastel-border hover:border-pastel-primary/40 flex items-center justify-between cursor-pointer transition-colors">
+            <div>
+              <span class="font-headline text-headline-sm font-medium text-pastel-text-main block">Kyoto, Japan</span>
+              <span class="font-label text-label-sm text-pastel-text-sub">Clear · 22°C</span>
+            </div>
+            <span class="material-symbols-outlined text-pastel-text-sub text-title-lg">chevron_right</span>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-white border border-pastel-border hover:border-pastel-primary/40 flex items-center justify-between cursor-pointer transition-colors">
+            <div>
+              <span class="font-headline text-headline-sm font-medium text-pastel-text-main block">Sapporo, Japan</span>
+              <span class="font-label text-label-sm text-pastel-text-sub">Light Rain · 14°C</span>
+            </div>
+            <span class="material-symbols-outlined text-pastel-text-sub text-title-lg">chevron_right</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home (Active) -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-primary transition-all group" aria-current="page">
+          <div class="w-8 h-8 rounded-full bg-pastel-primary/10 flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-bold tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (AQI) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-danger-text transition-all group relative">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-danger/10 transition-colors relative">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+            <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-pastel-danger-text ring-2 ring-white"></span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Alerts</span>
+        </a>
+
+        <!-- Tab 5: Settings -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- Interactive 3D POV Street-Level Shift Script -->
+  <script>
+    (function initWeatherPOV() {
+      try {
+        const stage = document.getElementById('weatherPOVStage');
+        const env = document.getElementById('environment3D');
+        const rainLayer = document.getElementById('fallingRainContainer');
+        const streetGeom = document.getElementById('streetGeometry');
+        const streetRipples = document.getElementById('streetRipples');
+        const clouds = document.getElementById('cloudFormations');
+        const skyBackdrop = document.getElementById('skySolidBackdrop');
+        const povLabel = document.getElementById('povLabel');
+        const liveConditionDot = document.getElementById('liveConditionDot');
+        const liveConditionText = document.getElementById('liveConditionText');
+        const mainTemp = document.getElementById('mainTempDisplay');
+        
+        const cameraBtn = document.getElementById('cameraPOVBtn');
+        const cameraDot = document.getElementById('cameraActiveDot');
+
+        let isStreetLevel = false;
+
+        function setPOVState(mode) {
+          if (mode === 'street-rain') {
+            isStreetLevel = true;
+            if (env) env.style.transform = "rotateX(24deg) translateY(110px) scale(1.15)";
+            if (rainLayer) rainLayer.style.opacity = "1";
+            if (streetGeom) streetGeom.style.opacity = "0.9";
+            if (streetRipples) streetRipples.style.opacity = "1";
+            if (clouds) clouds.style.transform = "translateY(55px) scale(1.15)";
+            if (povLabel) povLabel.textContent = "Street POV";
+          } else {
+            // Atmosphere POV with active rainstorm
+            isStreetLevel = false;
+            if (env) env.style.transform = "rotateX(12deg) translateY(15px) scale(1.02)";
+            if (rainLayer) rainLayer.style.opacity = "0.9";
+            if (streetGeom) streetGeom.style.opacity = "0.45";
+            if (streetRipples) streetRipples.style.opacity = "0.7";
+            if (clouds) clouds.style.transform = "translateY(0px) scale(1.02)";
+            if (povLabel) povLabel.textContent = "Camera";
+          }
+        }
+
+        // Initialize with default atmospheric rainstorm POV
+        setPOVState('atmosphere-rain');
+
+        if (cameraBtn) {
+          cameraBtn.addEventListener('click', () => {
+            if (isStreetLevel) {
+              setPOVState('atmosphere-rain');
+            } else {
+              setPOVState('street-rain');
+            }
+          });
+        }
+
+        if (stage) {
+          stage.addEventListener('click', (e) => {
+            if (e.target === stage || e.target === skyBackdrop) {
+              if (isStreetLevel) {
+                setPOVState('atmosphere-rain');
+              } else {
+                setPOVState('street-rain');
+              }
+            }
+          });
+        }
+
+        const openModalBtn = document.getElementById('openCityModalBtn');
+        const openSearchBtn = document.getElementById('openSearchBtn');
+        const closeModalBtn = document.getElementById('closeCityModalBtn');
+        const modal = document.getElementById('cityModal');
+        const sheet = document.getElementById('modalSheet');
+
+        function toggleModal(show) {
+          if (!modal || !sheet) return;
+          if (show) {
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            sheet.classList.remove('translate-y-full');
+            sheet.classList.add('translate-y-0');
+          } else {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            sheet.classList.add('translate-y-full');
+            sheet.classList.remove('translate-y-0');
+          }
+        }
+
+        if (openModalBtn) openModalBtn.addEventListener('click', () => toggleModal(true));
+        if (openSearchBtn) openSearchBtn.addEventListener('click', () => toggleModal(true));
+        if (closeModalBtn) closeModalBtn.addEventListener('click', () => toggleModal(false));
+        if (modal) {
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) toggleModal(false);
+          });
+        }
+
+      } catch (err) {
+        console.error("Weather POV init notice:", err);
+      }
+    })();
+  </script>
+
+
+</body></html>
+
+<!-- Detailed Weather & 3D Atmosphere -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Detailed Weather &amp; 3D Atmosphere</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Light Translucent Glass Surfaces */
+    .ios-light-glass {
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(229, 233, 238, 0.85);
+      box-shadow: 0 2px 10px -2px rgba(28, 29, 31, 0.04), 0 1px 3px rgba(28, 29, 31, 0.02);
+    }
+    .ios-light-glass:hover {
+      border-color: rgba(44, 110, 203, 0.25);
+    }
+    .ios-dock-light {
+      background-color: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(229, 233, 238, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+    
+    /* Atmospheric Parallax Layer Animation */
+    .strata-transition {
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.25, 1);
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none overflow-x-hidden" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- FOREGROUND APP BAR (Clean Minimalist iOS Header) -->
+    <header class="relative z-20 pt-12 px-5 flex items-center justify-between pointer-events-auto">
+      <div class="flex items-center gap-3">
+        <a href="../home-dashboard/HomeDashboard.html" class="w-9 h-9 rounded-xl bg-white border border-pastel-border flex items-center justify-center text-pastel-text-main hover:bg-pastel-subtle transition-all active:scale-95 shadow-sm" aria-label="Back to Home Dashboard">
+          <span class="material-symbols-outlined text-title-md">arrow_back</span>
+        </a>
+        <div>
+          <h1 class="font-headline text-headline-sm text-pastel-text-main font-bold tracking-tight">Weather &amp; Atmosphere</h1>
+          <p class="font-label text-label-xs text-pastel-text-sub">Tokyo · 1,200m Troposphere</p>
+        </div>
+      </div>
+
+      <!-- Quick Altitude Status Badge (Soft-Cornered Minimalist Badge) -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border text-pastel-text-main shadow-sm">
+        <span class="material-symbols-outlined text-pastel-primary text-title-sm">layers</span>
+        <span id="currentAltitudeText" class="font-label text-label-xs font-semibold tracking-wide">Surface · 42m</span>
+      </div>
+    </header>
+
+    <!-- MAIN METRIC & TELEMETRY BODY -->
+    <main class="relative z-20 flex-1 px-5 pt-4 space-y-4 pointer-events-auto pb-28">
+
+      <!-- ATMOSPHERIC STRATA LEVEL SELECTOR (iOS Segmented Pill Bar) -->
+      <section class="p-1 rounded-2xl bg-white border border-pastel-border flex items-center gap-1 shadow-sm">
+        <button id="btnStrataSurface" type="button" class="flex-1 py-1.5 rounded-xl bg-pastel-primary text-white font-label text-label-sm font-semibold tracking-wide transition-all shadow-sm">
+          Surface
+        </button>
+        <button id="btnStrataMid" type="button" class="flex-1 py-1.5 rounded-xl text-pastel-text-sub hover:text-pastel-text-main font-label text-label-sm font-medium tracking-wide transition-all">
+          Mid-Cloud
+        </button>
+        <button id="btnStrataHigh" type="button" class="flex-1 py-1.5 rounded-xl text-pastel-text-sub hover:text-pastel-text-main font-label text-label-sm font-medium tracking-wide transition-all">
+          Upper Stratum
+        </button>
+      </section>
+
+      <!-- 3D ATMOSPHERIC COLUMN VISUALIZER (Clean, Solid Layered Representation) -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">airwave</span>
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Atmosphere Stratum</span>
+          </div>
+          <span id="strataAltitudeIndicator" class="font-label text-label-xs text-pastel-text-sub font-mono">0 - 15,000m</span>
+        </div>
+
+        <div id="strataLayersContainer" class="strata-transition flex flex-col gap-2 pt-1">
+          <!-- Layer 3: Stratosphere (High) -->
+          <div id="layerHigh" class="p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border flex items-center justify-between transition-colors">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-pastel-primary"></span>
+              <span class="font-label text-label-sm font-semibold text-pastel-text-main">Upper Stratosphere</span>
+            </div>
+            <span class="font-label text-label-xs text-pastel-text-sub">12,000m · -52°C</span>
+          </div>
+
+          <!-- Layer 2: Mid-Troposphere (Cumulus) -->
+          <div id="layerMid" class="p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border flex items-center justify-between transition-colors">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-pastel-accent"></span>
+              <span class="font-label text-label-sm font-semibold text-pastel-text-main">Mid-Troposphere Rain Clouds</span>
+            </div>
+            <span class="font-label text-label-xs text-pastel-text-sub">4,200m · -8°C</span>
+          </div>
+
+          <!-- Layer 1: Surface Boundary (Active) -->
+          <div id="layerSurface" class="p-2.5 rounded-xl bg-pastel-sky/60 border border-pastel-primary/30 flex items-center justify-between transition-colors">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-pastel-primary animate-pulse"></span>
+              <span class="font-label text-label-sm font-bold text-pastel-text-main">Ground Boundary &amp; Precipitation</span>
+            </div>
+            <span class="font-label text-label-xs text-pastel-primary font-semibold">42m · 21°C</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONSOLIDATED DETAILED METRICS (Clean, Soft-Cornered Glassmorphic Cards with 1.4 Type-Scale Contrast) -->
+      <section class="grid grid-cols-2 gap-3">
+
+        <!-- 1. Wind Metrics Card -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Wind</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">navigation</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">24</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">km/h</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5">
+              Northwest · Bearing 315°
+            </p>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Gusts</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">38 km/h</span>
+          </div>
+        </div>
+
+        <!-- 2. UV Index Card -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">UV Index</span>
+            <span class="material-symbols-outlined text-warning text-title-md">wb_sunny</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">7.2</span>
+              <span class="font-label text-label-xs text-warning font-bold uppercase tracking-wide">High</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5">
+              Peak solar window 11:30 - 14:00
+            </p>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1.5 overflow-hidden">
+            <div class="bg-warning h-full rounded-full" style="width: 72%;"></div>
+          </div>
+        </div>
+
+        <!-- 3. Humidity Card -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Humidity</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">water_drop</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">68%</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5">
+              Dew point is 14.8°C right now
+            </p>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1.5 overflow-hidden">
+            <div class="bg-pastel-primary h-full rounded-full" style="width: 68%;"></div>
+          </div>
+        </div>
+
+        <!-- 4. Pressure Card -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Pressure</span>
+            <span class="material-symbols-outlined text-pastel-accent text-title-md">compress</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">1,014</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">hPa</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-accent font-medium mt-0.5 flex items-center gap-1">
+              <span class="material-symbols-outlined text-label-sm">trending_up</span> Steady Barometer
+            </p>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Reference</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">1,013.25 Std</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 5. SUNRISE & SUNSET CELESTIAL TRACKER (Clean, Soft-Cornered Glass Card) -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-warning text-title-md">wb_twilight</span>
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Solar Path &amp; Daylight</span>
+          </div>
+          <span class="font-label text-label-xs text-pastel-text-sub">13h 48m Daylight</span>
+        </div>
+
+        <div class="relative w-full h-24 flex items-center justify-center">
+          <svg class="w-full h-full" viewBox="0 0 320 90" fill="none">
+            <line x1="20" y1="75" x2="300" y2="75" stroke="#E5E9EE" stroke-dasharray="4 4" stroke-width="1.5"></line>
+            <path d="M 30 75 Q 160 12 290 75" stroke="rgba(255, 176, 32, 0.45)" stroke-width="2" fill="none"></path>
+            <circle cx="210" cy="38" r="6" fill="#FFB020" class="shadow-sm"></circle>
+            <circle cx="210" cy="38" r="10" stroke="#FFB020" stroke-opacity="0.3" stroke-width="2"></circle>
+          </svg>
+          <div class="absolute bottom-1 left-4 text-left">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Sunrise</span>
+            <span class="font-display text-headline-sm text-pastel-text-main font-bold">05:14</span>
+          </div>
+          <div class="absolute bottom-1 right-4 text-right">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Sunset</span>
+            <span class="font-display text-headline-sm text-pastel-text-main font-bold">19:02</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. 7-DAY EXTENDED FORECAST (Simple, Segmented List Using New Typography) -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-2">
+        <div class="flex items-center justify-between pb-2 border-b border-pastel-border">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">calendar_today</span>
+            <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">7-Day Forecast</h2>
+          </div>
+          <span class="font-label text-label-xs text-pastel-text-sub font-medium">Next 168 Hours</span>
+        </div>
+
+        <!-- Segmented Day Rows -->
+        <div class="divide-y divide-pastel-border pt-1">
+
+          <!-- Day 1: Today -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-main font-semibold w-16">Today</span>
+            <div class="flex items-center gap-1.5 w-20 text-pastel-primary">
+              <span class="material-symbols-outlined text-title-md">rainy</span>
+              <span class="font-label text-label-sm font-semibold">85%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">16°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[20%] right-[30%] h-full bg-pastel-primary rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">21°</span>
+            </div>
+          </div>
+
+          <!-- Day 2: Wed -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Wed</span>
+            <div class="flex items-center gap-1.5 w-20 text-warning">
+              <span class="material-symbols-outlined text-title-md">wb_sunny</span>
+              <span class="font-label text-label-sm font-medium">0%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">17°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[35%] right-[15%] h-full bg-warning rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">26°</span>
+            </div>
+          </div>
+
+          <!-- Day 3: Thu -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Thu</span>
+            <div class="flex items-center gap-1.5 w-20 text-pastel-primary">
+              <span class="material-symbols-outlined text-title-md">rainy</span>
+              <span class="font-label text-label-sm font-semibold">70%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">15°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[15%] right-[35%] h-full bg-pastel-primary rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">20°</span>
+            </div>
+          </div>
+
+          <!-- Day 4: Fri -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Fri</span>
+            <div class="flex items-center gap-1.5 w-20 text-pastel-text-sub">
+              <span class="material-symbols-outlined text-title-md">cloud</span>
+              <span class="font-label text-label-sm font-medium">20%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">16°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[25%] right-[25%] h-full bg-pastel-border rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">23°</span>
+            </div>
+          </div>
+
+          <!-- Day 5: Sat -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Sat</span>
+            <div class="flex items-center gap-1.5 w-20 text-warning">
+              <span class="material-symbols-outlined text-title-md">thunderstorm</span>
+              <span class="font-label text-label-sm font-semibold">60%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">18°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[30%] right-[15%] h-full bg-warning rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">25°</span>
+            </div>
+          </div>
+
+          <!-- Day 6: Sun -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Sun</span>
+            <div class="flex items-center gap-1.5 w-20 text-pastel-accent">
+              <span class="material-symbols-outlined text-title-md">wb_sunny</span>
+              <span class="font-label text-label-sm font-medium">10%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">17°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[30%] right-[10%] h-full bg-pastel-accent rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">27°</span>
+            </div>
+          </div>
+
+          <!-- Day 7: Mon -->
+          <div class="flex items-center justify-between py-2.5">
+            <span class="font-headline text-label-md text-pastel-text-sub font-medium w-16">Mon</span>
+            <div class="flex items-center gap-1.5 w-20 text-pastel-text-sub">
+              <span class="material-symbols-outlined text-title-md">partly_cloudy_day</span>
+              <span class="font-label text-label-sm font-medium">15%</span>
+            </div>
+            <div class="flex-1 flex items-center gap-2 px-2">
+              <span class="font-label text-label-sm text-pastel-text-sub w-7 text-right">16°</span>
+              <div class="flex-1 bg-pastel-subtle h-1.5 rounded-full overflow-hidden relative">
+                <div class="absolute left-[25%] right-[20%] h-full bg-pastel-border rounded-full"></div>
+              </div>
+              <span class="font-label text-label-sm text-pastel-text-main font-bold w-7 text-left">24°</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock-light rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather (Active) -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-primary transition-all group" aria-current="page">
+          <div class="w-8 h-8 rounded-full bg-pastel-primary/10 flex items-center justify-center mb-0.5 shadow-sm">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-bold tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (AQI) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-danger transition-all relative group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Alerts</span>
+          <span class="absolute top-1 right-3 w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+        </a>
+
+        <!-- Tab 5: Settings -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    (function initAtmosphereAltitude() {
+      try {
+        const altitudeText = document.getElementById('currentAltitudeText');
+        const strataIndicator = document.getElementById('strataAltitudeIndicator');
+        const btnSurface = document.getElementById('btnStrataSurface');
+        const btnMid = document.getElementById('btnStrataMid');
+        const btnHigh = document.getElementById('btnStrataHigh');
+
+        const layerHigh = document.getElementById('layerHigh');
+        const layerMid = document.getElementById('layerMid');
+        const layerSurface = document.getElementById('layerSurface');
+
+        function setAltitude(level) {
+          [btnSurface, btnMid, btnHigh].forEach(b => {
+            if (!b) return;
+            b.className = "flex-1 py-1.5 rounded-xl text-pastel-text-sub hover:text-pastel-text-main font-label text-label-sm font-medium tracking-wide transition-all";
+          });
+
+          [layerHigh, layerMid, layerSurface].forEach(l => {
+            if (!l) return;
+            l.className = "p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border flex items-center justify-between transition-colors";
+          });
+
+          if (level === 'surface') {
+            if (btnSurface) btnSurface.className = "flex-1 py-1.5 rounded-xl bg-pastel-primary text-white font-label text-label-sm font-semibold tracking-wide transition-all shadow-sm";
+            if (layerSurface) layerSurface.className = "p-2.5 rounded-xl bg-pastel-sky/60 border border-pastel-primary/30 flex items-center justify-between transition-colors";
+            if (altitudeText) altitudeText.textContent = "Surface · 42m";
+            if (strataIndicator) strataIndicator.textContent = "0 - 1,200m Ground Level";
+          } else if (level === 'mid') {
+            if (btnMid) btnMid.className = "flex-1 py-1.5 rounded-xl bg-pastel-primary text-white font-label text-label-sm font-semibold tracking-wide transition-all shadow-sm";
+            if (layerMid) layerMid.className = "p-2.5 rounded-xl bg-pastel-sky/60 border border-pastel-primary/30 flex items-center justify-between transition-colors";
+            if (altitudeText) altitudeText.textContent = "Mid-Cloud · 4,200m";
+            if (strataIndicator) strataIndicator.textContent = "1,200 - 8,000m Troposphere";
+          } else if (level === 'high') {
+            if (btnHigh) btnHigh.className = "flex-1 py-1.5 rounded-xl bg-pastel-primary text-white font-label text-label-sm font-semibold tracking-wide transition-all shadow-sm";
+            if (layerHigh) layerHigh.className = "p-2.5 rounded-xl bg-pastel-sky/60 border border-pastel-primary/30 flex items-center justify-between transition-colors";
+            if (altitudeText) altitudeText.textContent = "Stratosphere · 12,000m";
+            if (strataIndicator) strataIndicator.textContent = "8,000 - 15,000m Stratum";
+          }
+        }
+
+        if (btnSurface) btnSurface.addEventListener('click', () => setAltitude('surface'));
+        if (btnMid) btnMid.addEventListener('click', () => setAltitude('mid'));
+        if (btnHigh) btnHigh.addEventListener('click', () => setAltitude('high'));
+      } catch (e) {
+        console.error("Atmosphere altitude script:", e);
+      }
+    })();
+  </script>
+
+
+</body></html>
+
+<!-- Air Quality (AQI) & Pollution 3D Map -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Air Quality (AQI) &amp; Pollution 3D Map</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Light Translucent Glass Surfaces */
+    .ios-light-glass {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(229, 233, 238, 0.85);
+      box-shadow: 0 2px 10px -2px rgba(28, 29, 31, 0.04), 0 1px 3px rgba(28, 29, 31, 0.02);
+    }
+    .ios-light-glass:hover {
+      border-color: rgba(44, 110, 203, 0.25);
+    }
+    .ios-dock-light {
+      background-color: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(229, 233, 238, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+    
+    .spatial-stage {
+      perspective: 900px;
+      transform-style: preserve-3d;
+    }
+    .volumetric-smog-grid {
+      transform-origin: center bottom;
+      transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none overflow-x-hidden" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- 3D VOLUMETRIC SMOG / POLLUTION HEATMAP CAMERA (Light Minimalist Stage) -->
+    <div id="smogPOV" class="absolute inset-0 w-full h-[520px] pointer-events-auto cursor-grab active:cursor-grabbing overflow-hidden spatial-stage z-0">
+      
+      <!-- Solid Light Pastel Sky Floor -->
+      <div class="absolute inset-0 bg-[#E8F3FA]"></div>
+
+      <!-- 3D City Grid with Volumetric Pollution Clouds Overlaid -->
+      <div id="smogCityGrid" class="volumetric-smog-grid absolute bottom-0 left-[-40px] right-[-40px] h-[500px] pointer-events-none" style="transform: rotateX(28deg) rotateY(-6deg) translateZ(-20px);">
+        
+        <!-- Spatial Grid Floor with AQI Sector Zoning -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_30%,rgba(44,110,203,0.06)_80%),linear-gradient(90deg,rgba(44,110,203,0.08)_1px,transparent_1px),linear-gradient(rgba(44,110,203,0.08)_1px,transparent_1px)] bg-[size:36px_36px] [transform:perspective(600px)_rotateX(60deg)] origin-bottom"></div>
+
+        <!-- Volumetric Smog Heatmap Gradient Clouds -->
+        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 500 500" fill="none">
+          <ellipse cx="180" cy="300" rx="110" ry="60" fill="url(#smogPlume1)" opacity="0.55"></ellipse>
+          <ellipse cx="320" cy="240" rx="130" ry="70" fill="url(#smogPlume2)" opacity="0.6"></ellipse>
+          <ellipse cx="120" cy="400" rx="90" ry="45" fill="url(#cleanPlume)" opacity="0.5"></ellipse>
+
+          <!-- District Buildings -->
+          <rect x="150" y="280" width="24" height="40" fill="#FFFFFF" stroke="#FFB020" stroke-width="1.2"></rect>
+          <rect x="290" y="230" width="30" height="50" fill="#FFFFFF" stroke="#FF3366" stroke-width="1.2"></rect>
+          <rect x="330" y="250" width="20" height="35" fill="#FFFFFF" stroke="#FFB020" stroke-width="1.2"></rect>
+          <rect x="110" y="380" width="28" height="35" fill="#FFFFFF" stroke="#34C759" stroke-width="1.2"></rect>
+
+          <defs>
+            <radialGradient id="smogPlume1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(180 300) rotate(90) scale(60 110)">
+              <stop stop-color="#FFB020" stop-opacity="0.45"></stop>
+              <stop offset="1" stop-color="#FFB020" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="smogPlume2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(320 240) rotate(90) scale(70 130)">
+              <stop stop-color="#FF3366" stop-opacity="0.45"></stop>
+              <stop offset="0.7" stop-color="#FFB020" stop-opacity="0.2"></stop>
+              <stop offset="1" stop-color="#FF3366" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="cleanPlume" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(120 400) rotate(90) scale(45 90)">
+              <stop stop-color="#34C759" stop-opacity="0.4"></stop>
+              <stop offset="1" stop-color="#34C759" stop-opacity="0"></stop>
+            </radialGradient>
+          </defs>
+        </svg>
+
+        <!-- Dynamic Floating 3D Sector Badges in Spatial Plane -->
+        <div class="absolute left-28 top-44 px-2.5 py-1 rounded-xl bg-white/90 border border-warning/40 font-label text-label-xs text-pastel-sunset flex items-center gap-1.5 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-warning"></span> Shinjuku · AQI 112
+        </div>
+        <div class="absolute right-20 top-32 px-2.5 py-1 rounded-xl bg-white/90 border border-danger/40 font-label text-label-xs text-pastel-danger-text flex items-center gap-1.5 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span> Koto Bay · AQI 168
+        </div>
+        <div class="absolute left-16 bottom-16 px-2.5 py-1 rounded-xl bg-white/90 border border-pastel-accent/40 font-label text-label-xs text-secondary-container flex items-center gap-1.5 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-pastel-accent"></span> Shibuya · AQI 42
+        </div>
+      </div>
+
+      <!-- Subtle solid boundary line -->
+      <div class="absolute inset-x-0 bottom-0 h-px bg-pastel-border pointer-events-none"></div>
+    </div>
+
+    <!-- FOREGROUND APP BAR (Clean Minimalist iOS Header) -->
+    <header class="relative z-20 pt-12 px-5 flex items-center justify-between pointer-events-auto">
+      <div class="flex items-center gap-3">
+        <a href="../home-dashboard/HomeDashboard.html" class="w-9 h-9 rounded-xl bg-white border border-pastel-border flex items-center justify-center text-pastel-text-main hover:bg-pastel-subtle transition-all active:scale-95 shadow-sm" aria-label="Back to Home Dashboard">
+          <span class="material-symbols-outlined text-title-md">arrow_back</span>
+        </a>
+        <div>
+          <h1 class="font-headline text-headline-sm text-pastel-text-main font-bold tracking-tight">Air Quality &amp; Smog</h1>
+          <p class="font-label text-label-xs text-pastel-text-sub">Tokyo · Aerosol Sensor Array</p>
+        </div>
+      </div>
+
+      <!-- Live Sensor Link Badge (Soft-Cornered Minimalist Badge) -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border text-pastel-text-main shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-pastel-accent animate-pulse"></span>
+        <span class="font-label text-label-xs font-semibold tracking-wide">12 Sensors Live</span>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE CONTENT BODY -->
+    <main class="relative z-20 flex-1 px-5 pt-3 space-y-4 pointer-events-auto pb-28">
+
+      <!-- PRIMARY AQI HERO CARD (Clean Glassmorphic Card with 1.4 Type-Scale Contrast) -->
+      <section class="ios-light-glass rounded-2xl p-5 space-y-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Regional Air Quality Index</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="font-display text-display-xl text-pastel-sunset font-bold tracking-tight">112</span>
+              <span class="font-headline text-label-md font-semibold text-pastel-sunset">Moderate</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-1">
+              Thermal inversion trapping fine combustion particulates in eastern basin sectors.
+            </p>
+          </div>
+
+          <!-- Circular Metric Badge -->
+          <div class="w-12 h-12 rounded-xl bg-warning/15 border border-warning/30 flex flex-col items-center justify-center text-pastel-sunset shadow-sm flex-shrink-0">
+            <span class="material-symbols-outlined text-title-md">masks</span>
+            <span class="font-label text-label-xs font-bold mt-0.5">PM2.5</span>
+          </div>
+        </div>
+
+        <!-- AQI Multi-Stop Spectrum Bar -->
+        <div class="pt-2 space-y-1.5">
+          <div class="w-full h-1.5 rounded-full bg-pastel-border relative overflow-hidden flex">
+            <div class="h-full bg-pastel-accent" style="width: 25%;"></div>
+            <div class="h-full bg-warning" style="width: 25%;"></div>
+            <div class="h-full bg-danger" style="width: 25%;"></div>
+            <div class="h-full bg-neon-purple" style="width: 25%;"></div>
+            <div class="absolute top-0 bottom-0 w-1 bg-white shadow-sm" style="left: 38%;"></div>
+          </div>
+          <div class="flex justify-between font-label text-label-xs text-pastel-text-sub font-mono">
+            <span class="text-secondary-container font-semibold">0 Good</span>
+            <span class="text-pastel-sunset font-semibold">50 Moderate</span>
+            <span class="text-danger font-semibold">150 Poor</span>
+            <span class="text-neon-purple font-semibold">300+ Alert</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4-GAS POLLUTANT METRIC BREAKDOWN (Clean Soft-Cornered Glass Cards with 1.4 Contrast) -->
+      <section class="grid grid-cols-2 gap-3">
+        
+        <!-- PM2.5 -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">PM2.5 Particles</span>
+            <span class="material-symbols-outlined text-warning text-title-md">grain</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">38.4</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">µg/m³</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-sunset font-medium mt-0.5 block">2.4x WHO Threshold</span>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1 overflow-hidden">
+            <div class="bg-warning h-full rounded-full" style="width: 65%;"></div>
+          </div>
+        </div>
+
+        <!-- PM10 -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">PM10 Coarse</span>
+            <span class="material-symbols-outlined text-pastel-accent text-title-md">blur_on</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">52.1</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">µg/m³</span>
+            </div>
+            <span class="font-body text-body-sm text-secondary-container font-medium mt-0.5 block">Within Safety Band</span>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1 overflow-hidden">
+            <div class="bg-pastel-accent h-full rounded-full" style="width: 38%;"></div>
+          </div>
+        </div>
+
+        <!-- CO -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Carbon Monoxide</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">co2</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">420</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">ppb</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Normal Urban Base</span>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1 overflow-hidden">
+            <div class="bg-pastel-primary h-full rounded-full" style="width: 28%;"></div>
+          </div>
+        </div>
+
+        <!-- NO2 -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Nitrogen Dioxide</span>
+            <span class="material-symbols-outlined text-danger text-title-md">factory</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">46.8</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">ppb</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-danger-text font-medium mt-0.5 block">Highway Excursion</span>
+          </div>
+          <div class="w-full bg-pastel-border rounded-full h-1 overflow-hidden">
+            <div class="bg-danger h-full rounded-full" style="width: 78%;"></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- HEALTH PROTOCOLS & ACTION CARDS -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-warning text-title-md">medical_services</span>
+          <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Health &amp; Activity Protocols</h2>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+          <div class="p-3 rounded-xl bg-pastel-subtle border border-pastel-border space-y-1">
+            <span class="material-symbols-outlined text-warning text-title-lg">masks</span>
+            <span class="font-label text-label-xs text-pastel-text-main block font-bold">Wear Mask</span>
+            <span class="font-body text-label-xs text-pastel-text-sub block leading-tight">N95 for sensitive lungs</span>
+          </div>
+
+          <div class="p-3 rounded-xl bg-pastel-subtle border border-pastel-border space-y-1">
+            <span class="material-symbols-outlined text-danger text-title-lg">directions_run</span>
+            <span class="font-label text-label-xs text-pastel-text-main block font-bold">Limit Cardio</span>
+            <span class="font-body text-label-xs text-pastel-text-sub block leading-tight">Reduce outdoor training</span>
+          </div>
+
+          <div class="p-3 rounded-xl bg-pastel-subtle border border-pastel-border space-y-1">
+            <span class="material-symbols-outlined text-pastel-primary text-title-lg">window</span>
+            <span class="font-label text-label-xs text-pastel-text-main block font-bold">Close Vents</span>
+            <span class="font-body text-label-xs text-pastel-text-sub block leading-tight">Engage HEPA purifiers</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DISTRICT-BY-DISTRICT SEGMENTED MATRIX -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-2">
+        <div class="flex items-center justify-between pb-2 border-b border-pastel-border">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">domain</span>
+            <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">District Comparison</h2>
+          </div>
+          <span class="font-label text-label-xs text-pastel-text-sub font-medium">4 Key Sectors</span>
+        </div>
+
+        <div class="divide-y divide-pastel-border pt-1">
+          <!-- Shibuya -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-pastel-accent"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Shibuya Coastal Rim</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Clean sea wind corridor</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-secondary-container block">AQI 42</span>
+              <span class="font-label text-label-xs text-secondary-container font-semibold">Good</span>
+            </div>
+          </div>
+
+          <!-- Shinjuku -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-warning"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Shinjuku Core Grid</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Urban vehicle concentration</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-pastel-sunset block">AQI 112</span>
+              <span class="font-label text-label-xs text-pastel-sunset font-semibold">Moderate</span>
+            </div>
+          </div>
+
+          <!-- Koto Bay -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-danger animate-pulse"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Koto Bay Industrial Port</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Thermal inversion particulate trap</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-danger block">AQI 168</span>
+              <span class="font-label text-label-xs text-danger font-semibold">Unhealthy</span>
+            </div>
+          </div>
+
+          <!-- Hachioji -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-pastel-accent"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Hachioji Foothills</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Mountain air circulation</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-secondary-container block">AQI 28</span>
+              <span class="font-label text-label-xs text-secondary-container font-semibold">Excellent</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock-light rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (Active) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-primary transition-all group" aria-current="page">
+          <div class="w-8 h-8 rounded-full bg-pastel-primary/10 flex items-center justify-center mb-0.5 shadow-sm">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-bold tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-danger transition-all relative group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Alerts</span>
+          <span class="absolute top-1 right-3 w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+        </a>
+
+        <!-- Tab 5: Settings -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    (function initSmogCamera() {
+      try {
+        const stage = document.getElementById('smogPOV');
+        const grid = document.getElementById('smogCityGrid');
+        let currentPitch = 28;
+        let currentYaw = -6;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        function updateTransform() {
+          if (!grid) return;
+          grid.style.transform = `rotateX(${currentPitch}deg) rotateY(${currentYaw}deg) translateZ(-20px)`;
+        }
+
+        if (stage) {
+          stage.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+          });
+          window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            currentYaw = Math.max(-25, Math.min(25, currentYaw + deltaX * 0.15));
+            currentPitch = Math.max(10, Math.min(50, currentPitch - deltaY * 0.15));
+            updateTransform();
+          });
+          window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+      } catch (e) {
+        console.error("AQI 3D Camera notice:", e);
+      }
+    })();
+  </script>
+
+
+</body></html>
+
+<!-- Earthquake & Natural Disaster Hub -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Earthquake &amp; Natural Disaster Hub</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Light Translucent Glass Surfaces */
+    .ios-light-glass {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(229, 233, 238, 0.85);
+      box-shadow: 0 2px 10px -2px rgba(28, 29, 31, 0.04), 0 1px 3px rgba(28, 29, 31, 0.02);
+    }
+    .ios-light-glass:hover {
+      border-color: rgba(255, 51, 102, 0.25);
+    }
+    .ios-dock-light {
+      background-color: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(229, 233, 238, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+    
+    .spatial-stage {
+      perspective: 1100px;
+      transform-style: preserve-3d;
+    }
+    .faultline-mesh {
+      transform-origin: center center;
+      transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+    
+    @keyframes seismicPulse {
+      0% { r: 8; opacity: 0.9; }
+      100% { r: 64; opacity: 0; }
+    }
+    @keyframes sWavePropagation {
+      0% { r: 12; opacity: 0.7; }
+      100% { r: 110; opacity: 0; }
+    }
+    @keyframes feltRadiusPulse {
+      0% { r: 30; opacity: 0.4; }
+      100% { r: 160; opacity: 0; }
+    }
+    .pulse-epicenter {
+      animation: seismicPulse 2.2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    }
+    .pulse-swave {
+      animation: sWavePropagation 3.4s cubic-bezier(0.1, 0.7, 0.4, 1) infinite;
+    }
+    .pulse-feltradius {
+      animation: feltRadiusPulse 4.6s cubic-bezier(0.1, 0.7, 0.5, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none overflow-x-hidden" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- 3D TECTONIC FAULT-LINE & EPICENTER POV VIEWPORT (Light Minimalist Stage) -->
+    <div id="tectonicPOV" class="absolute inset-0 w-full h-[520px] pointer-events-auto cursor-grab active:cursor-grabbing overflow-hidden spatial-stage z-0">
+      
+      <!-- Solid Light Floor -->
+      <div class="absolute inset-0 bg-[#E8F3FA]"></div>
+
+      <!-- 3D Subduction Zone / Fault Mesh Plane -->
+      <div id="tectonicMesh" class="faultline-mesh absolute inset-0 w-full h-full pointer-events-none" style="transform: rotateX(32deg) rotateY(-8deg) translateY(-20px);">
+        
+        <div class="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_20%,rgba(44,110,203,0.06)_80%),linear-gradient(90deg,rgba(44,110,203,0.08)_1px,transparent_1px),linear-gradient(rgba(44,110,203,0.08)_1px,transparent_1px)] bg-[size:36px_36px] [transform:perspective(500px)_rotateX(60deg)] origin-bottom"></div>
+
+        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 400 800" fill="none">
+          <path d="M-20 620 C 80 580, 160 520, 220 440 C 260 380, 310 320, 420 280" stroke="#FF3366" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 3" opacity="0.85"></path>
+          <path d="M 220 440 C 180 390, 120 340, 40 310" stroke="#FFB020" stroke-width="2" stroke-linecap="round" opacity="0.75"></path>
+
+          <!-- Seismic Wave Propagation Waves & Impact Radius Overlay -->
+          <!-- Felt Radius 80km Buffer Ring -->
+          <circle cx="220" cy="440" r="160" stroke="#FF3366" stroke-opacity="0.15" stroke-dasharray="4 4" stroke-width="1.2" fill="#FF3366" fill-opacity="0.03" class="pulse-feltradius"></circle>
+          
+          <!-- S-Wave Shear Front (Secondary Shock) -->
+          <circle cx="220" cy="440" r="110" stroke="#FFB020" stroke-width="1.8" stroke-dasharray="6 3" fill="none" class="pulse-swave"></circle>
+          <circle cx="220" cy="440" r="64" stroke="#FF3366" stroke-width="1.5" fill="none" class="pulse-swave" style="animation-delay: 1.1s;"></circle>
+
+          <!-- P-Wave Compressional Wavefronts -->
+          <circle cx="220" cy="440" r="32" stroke="#FF3366" stroke-width="1.8" fill="none" class="pulse-epicenter"></circle>
+          <circle cx="220" cy="440" r="48" stroke="#FF3366" stroke-width="1.2" fill="none" class="pulse-epicenter" style="animation-delay: 0.7s;"></circle>
+
+          <!-- Epicenter Core -->
+          <circle cx="220" cy="440" r="9" fill="#FF3366"></circle>
+          <circle cx="220" cy="440" r="4" fill="#FFFFFF"></circle>
+
+          <!-- Wavefront Impact Radius Labels -->
+          <g font-family="Space Grotesk">
+            <rect x="235" y="420" width="85" height="18" rx="5" fill="#FFFFFF" fill-opacity="0.9" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="240" y="433" fill="#A82020" font-size="10" font-weight="700">M 5.8 · Chiba Trench</text>
+
+            <rect x="235" y="442" width="98" height="16" rx="4" fill="#FFFFFF" fill-opacity="0.85" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="240" y="454" fill="#4B515D" font-size="8.5" font-weight="600">S-Wave Lead: 04.2s</text>
+
+            <!-- 50km Impact Zone Pill -->
+            <rect x="135" y="490" width="76" height="16" rx="4" fill="#FFFFFF" fill-opacity="0.85" stroke="#FFB020" stroke-opacity="0.4" stroke-width="0.8"></rect>
+            <text x="140" y="502" fill="#7C5200" font-size="8.5" font-weight="600">Radius: 65km Felt</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Subtle solid boundary line -->
+      <div class="absolute inset-x-0 bottom-0 h-px bg-pastel-border pointer-events-none"></div>
+    </div>
+
+    <!-- FOREGROUND APP BAR (Clean Minimalist iOS Header) -->
+    <header class="relative z-20 pt-12 px-5 flex items-center justify-between pointer-events-auto">
+      <div class="flex items-center gap-3">
+        <a href="../home-dashboard/HomeDashboard.html" class="w-9 h-9 rounded-xl bg-white border border-pastel-border flex items-center justify-center text-pastel-text-main hover:bg-pastel-subtle transition-all active:scale-95 shadow-sm" aria-label="Back to Home Dashboard">
+          <span class="material-symbols-outlined text-title-md">arrow_back</span>
+        </a>
+        <div>
+          <h1 class="font-headline text-headline-sm text-pastel-text-main font-bold tracking-tight">Disaster Monitor</h1>
+          <p class="font-label text-label-xs text-pastel-text-sub">Seismic &amp; Tectonic Array (USGS/JMA)</p>
+        </div>
+      </div>
+
+      <!-- Emergency SOS Action Button -->
+      <button id="triggerSOSModalBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-danger text-white font-headline text-label-xs font-bold tracking-wide shadow-sm hover:bg-danger/90 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-label-md">emergency</span>
+        SOS Help
+      </button>
+    </header>
+
+    <!-- MAIN SCROLLABLE CONTENT BODY -->
+    <main class="relative z-20 flex-1 px-5 pt-3 space-y-4 pointer-events-auto pb-28">
+
+      <!-- ACTIVE SEISMIC SENSORY WARNING CARD (Soft Glassmorphic Tint Card with 1.4 Contrast) -->
+      <section class="ios-light-glass rounded-2xl p-5 border border-pastel-danger-border space-y-3">
+        <div class="flex items-start justify-between">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-pastel-danger-bg border border-pastel-danger-border flex items-center justify-center text-pastel-danger-text flex-shrink-0 mt-0.5">
+              <span class="material-symbols-outlined text-headline-sm">sensors</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-label text-label-xs font-bold text-pastel-danger-text uppercase tracking-wider">Early Warning Active</span>
+                <span class="font-label text-label-xs bg-pastel-danger-bg text-pastel-danger-text px-1.5 py-0.5 rounded-lg border border-pastel-danger-border font-bold">Level 4 Shindo</span>
+              </div>
+              <h2 class="font-display text-display-md text-pastel-text-main font-bold tracking-tight mt-1">M 5.8 Trench Tremor</h2>
+              <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5">
+                Offshore Chiba subduction fault · Transit running with speed cautions
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-pastel-border text-center">
+          <div class="p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Depth</span>
+            <span class="font-display text-label-md font-bold text-pastel-text-main tracking-tight mt-0.5 block">14.2 km</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Peak PGA</span>
+            <span class="font-display text-label-md font-bold text-pastel-danger-text tracking-tight mt-0.5 block">184 gal</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-pastel-subtle border border-pastel-border">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Tsunami</span>
+            <span class="font-display text-label-md font-bold text-pastel-sunset tracking-tight mt-0.5 block">Advisory</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 CONSOLIDATED HAZARD METRICS (Clean Glassmorphic Cards with 1.4 Type Scale Contrast) -->
+      <section class="grid grid-cols-2 gap-3">
+        
+        <!-- P-Wave Arrival Time -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">P-Wave Lead</span>
+            <span class="material-symbols-outlined text-danger text-title-md">timer</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">04.2</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">sec</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Primary wave elapsed</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Status</span>
+            <span class="font-label text-label-xs text-secondary-container font-semibold">Decaying</span>
+          </div>
+        </div>
+
+        <!-- S-Wave Intensity -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">S-Wave Shock</span>
+            <span class="material-symbols-outlined text-warning text-title-md">vibration</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">4.2</span>
+              <span class="font-label text-label-sm text-pastel-sunset font-semibold">JMA</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Felt strong indoors</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Structural</span>
+            <span class="font-label text-label-xs text-secondary-container font-semibold">Safe</span>
+          </div>
+        </div>
+
+        <!-- Tsunami Marine Vector -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Tsunami Buoy</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">waves</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">0.3</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">m surge</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Coastal marine advisory</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Bayside</span>
+            <span class="font-label text-label-xs text-pastel-sunset font-semibold">Restricted</span>
+          </div>
+        </div>
+
+        <!-- Volcanic / Magma Pressure -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Volcanic Array</span>
+            <span class="material-symbols-outlined text-pastel-accent text-title-md">volcano</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">L-1</span>
+              <span class="font-label text-label-sm text-secondary-container font-semibold">Normal</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Izu-Oshima seismic calm</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Tiltmeter</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">0.02 µrad</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RECENT REGIONAL EVENTS LIST (Clean Segmented Rows) -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-2">
+        <div class="flex items-center justify-between pb-2 border-b border-pastel-border">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-danger text-title-md">history</span>
+            <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Recent Seismic Activity</h2>
+          </div>
+          <span class="font-label text-label-xs text-pastel-text-sub font-medium">Past 48 Hours</span>
+        </div>
+
+        <div class="divide-y divide-pastel-border pt-1">
+          <!-- Event 1 -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-danger"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Offshore Chiba</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Depth 14km · 18 min ago</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-pastel-danger-text block">M 5.8</span>
+              <span class="font-label text-label-xs text-pastel-danger-text font-semibold">Shindo 4</span>
+            </div>
+          </div>
+
+          <!-- Event 2 -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-warning"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Ibaraki Southern</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Depth 48km · 6 hours ago</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-pastel-sunset block">M 4.2</span>
+              <span class="font-label text-label-xs text-pastel-sunset font-semibold">Shindo 2</span>
+            </div>
+          </div>
+
+          <!-- Event 3 -->
+          <div class="flex items-center justify-between py-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-pastel-accent"></span>
+              <div>
+                <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Fukushima Coastal</span>
+                <span class="font-body text-label-xs text-pastel-text-sub">Depth 32km · Yesterday</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="font-display text-label-md font-bold text-secondary-container block">M 3.6</span>
+              <span class="font-label text-label-xs text-secondary-container font-semibold">Shindo 1</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock-light rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (AQI) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts (Active) -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-danger transition-all group" aria-current="page">
+          <div class="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center mb-0.5 shadow-sm">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+          </div>
+          <span class="font-label text-label-sm font-bold tracking-tight">Alerts</span>
+        </a>
+
+        <!-- Tab 5: Settings -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    (function initTectonicCamera() {
+      try {
+        const stage = document.getElementById('tectonicPOV');
+        const mesh = document.getElementById('tectonicMesh');
+        let currentPitch = 32;
+        let currentYaw = -8;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        function updateTransform() {
+          if (!mesh) return;
+          mesh.style.transform = `rotateX(${currentPitch}deg) rotateY(${currentYaw}deg) translateY(-20px)`;
+        }
+
+        if (stage) {
+          stage.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+          });
+          window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            currentYaw = Math.max(-25, Math.min(25, currentYaw + deltaX * 0.15));
+            currentPitch = Math.max(15, Math.min(55, currentPitch - deltaY * 0.15));
+            updateTransform();
+          });
+          window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+      } catch (e) {
+        console.error("Disaster monitor POV notice:", e);
+      }
+    })();
+  </script>
+
+
+</body></html>
+
+<!-- Weather Radar & Satellite View -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Weather Radar &amp; Satellite View</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Light Translucent Glass Surfaces */
+    .ios-light-glass {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(229, 233, 238, 0.85);
+      box-shadow: 0 2px 10px -2px rgba(28, 29, 31, 0.04), 0 1px 3px rgba(28, 29, 31, 0.02);
+    }
+    .ios-light-glass:hover {
+      border-color: rgba(44, 110, 203, 0.25);
+    }
+    .ios-dock-light {
+      background-color: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(229, 233, 238, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+    
+    .spatial-stage {
+      perspective: 1000px;
+      transform-style: preserve-3d;
+    }
+    .radar-globe-mesh {
+      transform-origin: center center;
+      transition: transform 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+    
+    @keyframes radarSweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .animate-radar-sweep {
+      transform-origin: 200px 360px;
+      transform-box: fill-box;
+      animation: radarSweep 4.5s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none overflow-x-hidden" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- FULL-SCREEN INTERACTIVE 3D RADAR CAMERA VIEWPORT (Light Minimalist Stage) -->
+    <div id="radarPOV" class="absolute inset-0 w-full h-[540px] pointer-events-auto cursor-grab active:cursor-grabbing overflow-hidden spatial-stage z-0">
+      
+      <!-- Solid Light Floor -->
+      <div class="absolute inset-0 bg-[#E8F3FA]"></div>
+
+      <div id="globeMesh" class="radar-globe-mesh absolute inset-0 w-full h-full pointer-events-none" style="transform: rotateX(24deg) rotateY(-10deg) scale(1.05);">
+        
+        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 400 750" fill="none">
+          <!-- Range Rings -->
+          <circle cx="200" cy="360" r="75" stroke="rgba(44, 110, 203, 0.15)" stroke-width="1" stroke-dasharray="3 3"></circle>
+          <circle cx="200" cy="360" r="140" stroke="rgba(44, 110, 203, 0.12)" stroke-width="1" stroke-dasharray="4 4"></circle>
+          <circle cx="200" cy="360" r="210" stroke="rgba(44, 110, 203, 0.1)" stroke-width="1"></circle>
+          <line x1="200" y1="120" x2="200" y2="600" stroke="rgba(44, 110, 203, 0.1)" stroke-width="1"></line>
+          <line x1="10" y1="360" x2="390" y2="360" stroke="rgba(44, 110, 203, 0.1)" stroke-width="1"></line>
+
+          <!-- Coastlines -->
+          <path d="M 120 450 Q 160 390 200 350 Q 250 290 280 210 Q 300 160 320 110" stroke="#88A8C2" stroke-width="2" fill="none"></path>
+          <path d="M 190 360 Q 230 330 250 300" stroke="#88A8C2" stroke-width="1.8" fill="none"></path>
+
+          <!-- Satellite Thermal Sea & Surface Temperature Heatmap Overlay -->
+          <g id="satelliteThermalOverlay" opacity="0.4">
+            <ellipse cx="160" cy="400" rx="90" ry="50" fill="url(#thermalWarm)"></ellipse>
+            <ellipse cx="280" cy="320" rx="100" ry="60" fill="url(#thermalCool)"></ellipse>
+            <ellipse cx="210" cy="240" rx="80" ry="45" fill="url(#thermalMid)"></ellipse>
+          </g>
+
+          <!-- Real-Time Spot Temperature Readouts Derived from Satellite -->
+          <g id="tempSpotLabels" font-family="Space Grotesk">
+            <!-- Tokyo Urban -->
+            <rect x="175" y="325" width="34" height="18" rx="6" fill="#FFFFFF" fill-opacity="0.85" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="192" y="338" fill="#1C1D1F" font-size="10" font-weight="700" text-anchor="middle">21°C</text>
+            
+            <!-- Chiba Coastal -->
+            <rect x="255" y="350" width="34" height="18" rx="6" fill="#FFFFFF" fill-opacity="0.85" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="272" y="363" fill="#1C1D1F" font-size="10" font-weight="700" text-anchor="middle">19°C</text>
+
+            <!-- Northern Basin -->
+            <rect x="135" y="235" width="34" height="18" rx="6" fill="#FFFFFF" fill-opacity="0.85" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="152" y="248" fill="#1C1D1F" font-size="10" font-weight="700" text-anchor="middle">17°C</text>
+
+            <!-- Offshore SST -->
+            <rect x="295" y="440" width="38" height="18" rx="6" fill="#FFFFFF" fill-opacity="0.85" stroke="#E5E9EE" stroke-width="0.8"></rect>
+            <text x="314" y="453" fill="#2C6ECB" font-size="9" font-weight="700" text-anchor="middle">22.4°</text>
+          </g>
+
+          <!-- Rain Doppler Cells -->
+          <g id="radarCellsLayer">
+            <path d="M 170 330 Q 220 310 260 340 Q 250 380 190 370 Z" fill="#2C6ECB" opacity="0.4"></path>
+            <path d="M 200 335 Q 230 325 245 345 Q 235 365 210 360 Z" fill="#FFB020" opacity="0.6"></path>
+            <circle cx="225" cy="345" r="7" fill="#FF3366" opacity="0.8"></circle>
+            <path d="M 230 260 Q 270 230 290 260 Q 270 290 240 280 Z" fill="#2C6ECB" opacity="0.35"></path>
+          </g>
+
+          <!-- Rotating Radar Sweep Line -->
+          <g class="animate-radar-sweep" style="transform-origin: 200px 360px; transform-box: fill-box;">
+            <path d="M 200 360 L 390 260 A 210 210 0 0 0 200 150 Z" fill="url(#sweepGradient)"></path>
+            <line x1="200" y1="360" x2="390" y2="260" stroke="#2C6ECB" stroke-width="1.8"></line>
+          </g>
+
+          <!-- Typhoon Track -->
+          <circle cx="250" cy="300" r="10" stroke="#FF3366" stroke-width="1.8" fill="none"></circle>
+          <circle cx="250" cy="300" r="3" fill="#FF3366"></circle>
+          <text x="265" y="295" fill="#A82020" font-family="Space Grotesk" font-size="10" font-weight="700">Typhoon Band</text>
+          <text x="265" y="310" fill="#4B515D" font-family="Space Grotesk" font-size="8" font-weight="600">165 km/h · WNW</text>
+
+          <defs>
+            <linearGradient id="sweepGradient" x1="200" y1="360" x2="350" y2="180" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2C6ECB" stop-opacity="0.25"></stop>
+              <stop offset="1" stop-color="#2C6ECB" stop-opacity="0"></stop>
+            </linearGradient>
+            <radialGradient id="thermalWarm" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(160 400) rotate(90) scale(50 90)">
+              <stop stop-color="#FFB020" stop-opacity="0.45"></stop>
+              <stop offset="1" stop-color="#FFB020" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="thermalCool" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(280 320) rotate(90) scale(60 100)">
+              <stop stop-color="#2C6ECB" stop-opacity="0.4"></stop>
+              <stop offset="1" stop-color="#2C6ECB" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="thermalMid" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(210 240) rotate(90) scale(45 80)">
+              <stop stop-color="#34C759" stop-opacity="0.35"></stop>
+              <stop offset="1" stop-color="#34C759" stop-opacity="0"></stop>
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <!-- Subtle solid boundary line -->
+      <div class="absolute inset-x-0 bottom-0 h-px bg-pastel-border pointer-events-none"></div>
+    </div>
+
+    <!-- FOREGROUND APP BAR (Clean Minimalist iOS Header) -->
+    <header class="relative z-20 pt-12 px-5 flex items-center justify-between pointer-events-auto">
+      <div class="flex items-center gap-3">
+        <a href="../home-dashboard/HomeDashboard.html" class="w-9 h-9 rounded-xl bg-white border border-pastel-border flex items-center justify-center text-pastel-text-main hover:bg-pastel-subtle transition-all active:scale-95 shadow-sm" aria-label="Back to Home Dashboard">
+          <span class="material-symbols-outlined text-title-md">arrow_back</span>
+        </a>
+        <div>
+          <h1 class="font-headline text-headline-sm text-pastel-text-main font-bold tracking-tight">Weather Radar</h1>
+          <p class="font-label text-label-xs text-pastel-text-sub">Doppler Precipitation &amp; Satellite Array</p>
+        </div>
+      </div>
+
+      <!-- Live Sweep Status Badge -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-pastel-border text-pastel-text-main shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-pastel-primary animate-pulse"></span>
+        <span class="font-label text-label-xs font-semibold tracking-wide">Live Sweep</span>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE CONTENT BODY -->
+    <main class="relative z-20 flex-1 px-5 pt-3 space-y-4 pointer-events-auto pb-28">
+
+      <!-- RADAR FILTER & LAYER TOGGLE TABS (Clean Segmented Bar) -->
+      <section class="p-1 rounded-2xl bg-white border border-pastel-border flex items-center gap-1 shadow-sm">
+        <button id="btnRadarRain" type="button" class="flex-1 py-1.5 rounded-xl bg-pastel-primary text-white font-label text-label-sm font-semibold tracking-wide transition-all shadow-sm">
+          Rain Doppler
+        </button>
+        <button id="btnRadarWind" type="button" class="flex-1 py-1.5 rounded-xl text-pastel-text-sub hover:text-pastel-text-main font-label text-label-sm font-medium tracking-wide transition-all">
+          Wind Stream
+        </button>
+        <button id="btnRadarSatellite" type="button" class="flex-1 py-1.5 rounded-xl text-pastel-text-sub hover:text-pastel-text-main font-label text-label-sm font-medium tracking-wide transition-all">
+          Satellite
+        </button>
+      </section>
+
+      <!-- ACTIVE RADAR CELL SUMMARY CARD (Clean Glassmorphic Card with 1.4 Type Scale Contrast) -->
+      <section class="ios-light-glass rounded-2xl p-5 space-y-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Active Precipitation Cell</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="font-display text-display-xl text-pastel-text-main font-bold tracking-tight">32</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">dBZ Rain Core</span>
+            </div>
+            <p class="font-body text-body-sm text-pastel-text-sub font-medium mt-1">
+              Band moving eastward across Tokyo Bay at 28 km/h. Peak intensity expected in 35 min.
+            </p>
+          </div>
+
+          <div class="w-12 h-12 rounded-xl bg-pastel-primary/10 border border-pastel-primary/20 flex flex-col items-center justify-center text-pastel-primary shadow-sm flex-shrink-0">
+            <span class="material-symbols-outlined text-title-md">rainy</span>
+            <span class="font-label text-label-xs font-bold mt-0.5">Heavy</span>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between border-t border-pastel-border text-center">
+          <div class="flex-1">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Cell Speed</span>
+            <span class="font-display text-label-md font-bold text-pastel-text-main tracking-tight mt-0.5 block">28 km/h</span>
+          </div>
+          <div class="w-px h-6 bg-pastel-border"></div>
+          <div class="flex-1">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Echo Top</span>
+            <span class="font-display text-label-md font-bold text-pastel-text-main tracking-tight mt-0.5 block">7,400 m</span>
+          </div>
+          <div class="w-px h-6 bg-pastel-border"></div>
+          <div class="flex-1">
+            <span class="font-label text-label-xs text-pastel-text-sub block font-medium">Accumulation</span>
+            <span class="font-display text-label-md font-bold text-pastel-primary tracking-tight mt-0.5 block">14 mm/h</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 CONSOLIDATED RADAR METRIC CARDS (Soft-Cornered Glass Cards with 1.4 Contrast) -->
+      <section class="grid grid-cols-2 gap-3">
+        
+        <!-- Surface Rain Rate -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Surface Rain</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">water_drop</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">14.2</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">mm/h</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Moderate steady rain</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Next 60m</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">8.5 mm</span>
+          </div>
+        </div>
+
+        <!-- Storm Motion Vector -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Cell Vector</span>
+            <span class="material-symbols-outlined text-pastel-accent text-title-md">near_me</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">E 085°</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Track to Chiba Basin</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Velocity</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">28 km/h</span>
+          </div>
+        </div>
+
+        <!-- Cloud Reflectivity -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Reflectivity</span>
+            <span class="material-symbols-outlined text-warning text-title-md">radar</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">32</span>
+              <span class="font-label text-label-sm text-pastel-sunset font-semibold">dBZ</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Doppler band echo</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Hail Risk</span>
+            <span class="font-label text-label-xs text-secondary-container font-semibold">&lt; 5%</span>
+          </div>
+        </div>
+
+        <!-- Satellite IR Temp -->
+        <div class="ios-light-glass rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">IR Cloud Top</span>
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">satellite_alt</span>
+          </div>
+          <div class="my-2.5">
+            <div class="flex items-baseline gap-1">
+              <span class="font-display text-display-md text-pastel-text-main font-bold tracking-tight">-48°</span>
+              <span class="font-label text-label-sm text-pastel-text-sub font-semibold">C</span>
+            </div>
+            <span class="font-body text-body-sm text-pastel-text-sub font-medium mt-0.5 block">Deep convective deck</span>
+          </div>
+          <div class="pt-2 border-t border-pastel-border flex items-center justify-between">
+            <span class="font-label text-label-xs text-pastel-text-sub">Satellite</span>
+            <span class="font-label text-label-xs text-pastel-text-main font-semibold">Himawari-9</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TIMELINE SCRUBBER CONTROLLER (Clean iOS Track Player) -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-pastel-primary text-title-md">schedule</span>
+            <span class="font-label text-label-xs font-bold uppercase tracking-wider text-pastel-text-sub">Radar Playback Track</span>
+          </div>
+          <span class="font-label text-label-xs text-pastel-primary font-semibold">Live (Now)</span>
+        </div>
+
+        <div class="space-y-2">
+          <div class="w-full bg-pastel-border rounded-full h-1.5 relative overflow-hidden">
+            <div class="bg-pastel-primary h-full rounded-full" style="width: 80%;"></div>
+          </div>
+          <div class="flex justify-between font-label text-label-xs text-pastel-text-sub font-mono">
+            <span>-60 min</span>
+            <span>-30 min</span>
+            <span class="text-pastel-text-main font-bold">Now</span>
+            <span>+30 min</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock-light rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (AQI) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-danger transition-all relative group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Alerts</span>
+          <span class="absolute top-1 right-3 w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+        </a>
+
+        <!-- Tab 5: Settings -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <script>
+    (function initRadarCamera() {
+      try {
+        const stage = document.getElementById('radarPOV');
+        const mesh = document.getElementById('globeMesh');
+        let currentPitch = 24;
+        let currentYaw = -10;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        function updateTransform() {
+          if (!mesh) return;
+          mesh.style.transform = `rotateX(${currentPitch}deg) rotateY(${currentYaw}deg) scale(1.05)`;
+        }
+
+        if (stage) {
+          stage.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+          });
+          window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            currentYaw = Math.max(-25, Math.min(25, currentYaw + deltaX * 0.15));
+            currentPitch = Math.max(10, Math.min(50, currentPitch - deltaY * 0.15));
+            updateTransform();
+          });
+          window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+      } catch (e) {
+        console.error("Radar POV notice:", e);
+      }
+    })();
+  </script>
+
+
+</body></html>
+
+<!-- Settings & System Preferences -->
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veridia — Settings &amp; System Preferences</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">/** @type {import('tailwindcss').Config} */
+globalThis.tailwind = globalThis.tailwind || {};
+globalThis.tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        'primary': '#00F0FF',
+        'on-primary': '#02131D',
+        'primary-container': '#063A48',
+        'on-primary-container': '#B9F6FF',
+        'secondary': '#38EF7D',
+        'on-secondary': '#022410',
+        'secondary-container': '#0A4822',
+        'on-secondary-container': '#B8FCD3',
+        'tertiary': '#7B61FF',
+        'on-tertiary': '#14043A',
+        'tertiary-container': '#37248C',
+        'on-tertiary-container': '#E3DBFF',
+        'warning': '#FFB020',
+        'on-warning': '#2A1800',
+        'warning-container': '#523300',
+        'on-warning-container': '#FFE2B0',
+        'danger': '#FF3366',
+        'on-danger': '#3B0010',
+        'danger-container': '#660B24',
+        'on-danger-container': '#FFD1DC',
+        'neon-purple': '#C04BF8',
+        'neon-blue': '#2979FF',
+        'obsidian-base': '#060A14',
+        'drawer-base': '#0A1122',
+        'modal-danger': '#1A050E',
+        'pastel-sky': '#E8F3FA',
+        'pastel-mint': '#E9F5EF',
+        'pastel-surface': '#FFFFFF',
+        'pastel-subtle': '#F4F7F9',
+        'pastel-card': '#FFFFFF',
+        'pastel-primary': '#2C6ECB',
+        'on-pastel-primary': '#FFFFFF',
+        'pastel-accent': '#34C759',
+        'on-pastel-accent': '#424242',
+        'pastel-text-main': '#1C1D1F',
+        'pastel-text-sub': '#4B515D',
+        'pastel-border': '#E5E9EE',
+        'pastel-danger-bg': '#FFF5F6',
+        'pastel-danger-border': '#FCD4DA',
+        'pastel-danger-text': '#A82020',
+        'pastel-sunset': '#7C5200',
+        'light-surface': '#0F172A',
+        'light-on-surface': '#F1F5F9',
+        'light-surface-variant': '#1E293B',
+        'light-on-surface-variant': '#94A3B8',
+        'light-outline': '#334155',
+        'light-outline-variant': '#1E293B',
+        'dark-surface': '#070B14',
+        'dark-on-surface': '#F8FAFC',
+        'dark-surface-variant': '#0F1726',
+        'dark-on-surface-variant': '#94A3B8',
+        'dark-outline': '#1E293B',
+        'dark-outline-variant': '#111827',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'DEFAULT': '10px',
+        'md': '14px',
+        'lg': '18px',
+        'xl': '24px',
+        'full': '9999px',
+      },
+      spacing: {
+        'gutter-xs': '4px',
+        'gutter-sm': '8px',
+        'gutter-md': '12px',
+        'gutter-lg': '16px',
+        'gutter-xl': '24px',
+        'section': '32px',
+        'page-margin': '16px',
+      },
+      fontFamily: {
+        'display': ['"Space Grotesk"', 'sans-serif'],
+        'headline': ['"Space Grotesk"', 'sans-serif'],
+        'title': ['"Space Grotesk"', 'sans-serif'],
+        'body': ['"Ubuntu"', 'sans-serif'],
+        'label': ['"Space Grotesk"', 'sans-serif'],
+      },
+      fontSize: {
+        'display-xl': ['56px', { lineHeight: '64px', letterSpacing: '-1px', fontWeight: '700' }],
+        'display-xl-mobile': ['32px', { lineHeight: '40px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg': ['44px', { lineHeight: '52px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md': ['36px', { lineHeight: '44px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-md-mobile': ['26px', { lineHeight: '34px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', letterSpacing: '-0.25px', fontWeight: '700' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', letterSpacing: '0px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '24px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '20px', letterSpacing: '0.2px', fontWeight: '400' }],
+        'body-sm': ['12px', { lineHeight: '18px', letterSpacing: '0.25px', fontWeight: '400' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.5px', fontWeight: '600' }],
+        'label-sm': ['10px', { lineHeight: '14px', letterSpacing: '0.8px', fontWeight: '700' }],
+      },
+      transitionDuration: {
+        'state-change': '120ms',
+        'surface-enter': '280ms',
+        'surface-exit': '180ms',
+        'camera-pan': '350ms',
+      },
+      transitionDelay: {
+        'state-change': '0ms',
+        'surface-enter': '0ms',
+        'surface-exit': '0ms',
+        'camera-pan': '0ms',
+      },
+      transitionTimingFunction: {
+        'state-change': 'ease-out',
+        'surface-enter': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'surface-exit': 'cubic-bezier(0.7, 0, 0.84, 0)',
+        'camera-pan': 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+    },
+  },
+};
+if (typeof module !== 'undefined') module.exports = globalThis.tailwind.config;
+</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Ubuntu:wght@400;500;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet">
+  <style>
+    .material-symbols-outlined { display: inline-block; width: 1em; height: 1em; line-height: 1 !important; box-sizing: content-box; overflow: hidden; white-space: nowrap; direction: ltr; vertical-align: middle; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Clean iOS-Style Light Translucent Glass Surfaces */
+    .ios-light-glass {
+      background-color: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(229, 233, 238, 0.95);
+      box-shadow: 0 2px 10px -2px rgba(28, 29, 31, 0.04), 0 1px 3px rgba(28, 29, 31, 0.02);
+    }
+    .ios-light-glass:hover {
+      border-color: rgba(44, 110, 203, 0.3);
+    }
+    .ios-dock-light {
+      background-color: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(229, 233, 238, 0.95);
+      box-shadow: 0 10px 25px -5px rgba(20, 35, 60, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-pastel-sky text-pastel-text-main min-h-[884px] antialiased selection:bg-pastel-primary selection:text-white" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+  <!-- Root App Shell (390px Mobile Viewport) -->
+  <div class="relative w-full max-w-[390px] mx-auto min-h-[884px] bg-pastel-sky flex flex-col select-none overflow-x-hidden" data-stitch-vh="min-h-[884px]===min-h-screen">
+
+    <!-- ULTRA-MINIMALIST iOS HEADER (No version, no status chip) -->
+    <header class="relative z-20 pt-14 px-6 flex items-center justify-between pointer-events-auto">
+      <div class="flex items-center gap-3">
+        <a href="../home-dashboard/HomeDashboard.html" class="w-9 h-9 rounded-xl bg-white border border-pastel-border flex items-center justify-center text-pastel-text-main hover:bg-pastel-subtle transition-all active:scale-95 shadow-sm" aria-label="Back to Home Dashboard">
+          <span class="material-symbols-outlined text-title-md">arrow_back</span>
+        </a>
+        <h1 class="font-headline text-headline-sm text-pastel-text-main font-bold tracking-tight">Settings</h1>
+      </div>
+    </header>
+
+    <!-- MAIN SCROLLABLE SETTINGS BODY (Organized Soft-Cornered Glass Cards Only) -->
+    <main class="relative z-20 flex-1 px-5 pt-4 space-y-4 pointer-events-auto pb-28">
+
+      <!-- SECTION 1: EMERGENCY ALERTS & NOTIFICATIONS -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-2 pb-2 border-b border-pastel-border">
+          <span class="material-symbols-outlined text-danger text-title-md">notifications_active</span>
+          <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Emergency Alerts</h2>
+        </div>
+
+        <div class="space-y-3 pt-1">
+          <!-- Toggle 1: P-Wave -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Seismic P-Wave Alert</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Bypass silent mode for M 4.5+ shocks</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-pastel-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&#39;&#39;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-danger shadow-sm"></div>
+            </label>
+          </div>
+
+          <!-- Toggle 2: Weather -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Typhoon Flash Watch</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Barometer drops and storm surge alerts</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-pastel-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&#39;&#39;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pastel-primary shadow-sm"></div>
+            </label>
+          </div>
+
+          <!-- Toggle 3: AQI -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">AQI Smog Inversion</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Notify when PM2.5 exceeds 100 µg/m³</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-pastel-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&#39;&#39;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-warning shadow-sm"></div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: MEASUREMENT UNITS & TELEMETRY STANDARDS -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-2 pb-2 border-b border-pastel-border">
+          <span class="material-symbols-outlined text-pastel-primary text-title-md">straighten</span>
+          <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Units &amp; Telemetry Standards</h2>
+        </div>
+
+        <div class="space-y-3 pt-1">
+          <!-- Temperature Unit -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Temperature Unit</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Current scale: Celsius</span>
+            </div>
+            <div class="flex p-1 rounded-xl bg-pastel-subtle border border-pastel-border">
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-white text-pastel-primary font-label text-label-xs font-bold shadow-sm">°C Metric</button>
+              <button type="button" class="px-2.5 py-1 rounded-lg text-pastel-text-sub hover:text-pastel-text-main font-label text-label-xs font-medium">°F Imperial</button>
+            </div>
+          </div>
+
+          <!-- Wind Velocity -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Wind Velocity</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Current scale: km/h</span>
+            </div>
+            <div class="flex p-1 rounded-xl bg-pastel-subtle border border-pastel-border">
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-white text-pastel-primary font-label text-label-xs font-bold shadow-sm">km/h</button>
+              <button type="button" class="px-2.5 py-1 rounded-lg text-pastel-text-sub hover:text-pastel-text-main font-label text-label-xs font-medium">mph</button>
+              <button type="button" class="px-2.5 py-1 rounded-lg text-pastel-text-sub hover:text-pastel-text-main font-label text-label-xs font-medium">knots</button>
+            </div>
+          </div>
+
+          <!-- Barometer Pressure -->
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Barometric Scale</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Current scale: hPa</span>
+            </div>
+            <div class="flex p-1 rounded-xl bg-pastel-subtle border border-pastel-border">
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-white text-pastel-primary font-label text-label-xs font-bold shadow-sm">hPa</button>
+              <button type="button" class="px-2.5 py-1 rounded-lg text-pastel-text-sub hover:text-pastel-text-main font-label text-label-xs font-medium">inHg</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: VISUAL ATMOSPHERE & DISPLAY PREFERENCES -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center gap-2 pb-2 border-b border-pastel-border">
+          <span class="material-symbols-outlined text-pastel-accent text-title-md">tune</span>
+          <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Display &amp; Parallax</h2>
+        </div>
+
+        <div class="space-y-3 pt-1">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Gyroscope Camera Parallax</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Tilt device to orbit 3D viewpoints</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-pastel-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&#39;&#39;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pastel-accent shadow-sm"></div>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-headline text-label-md text-pastel-text-main font-semibold block">Glass Refraction Depth</span>
+              <span class="font-body text-label-xs text-pastel-text-sub">Hardware accelerated blur</span>
+            </div>
+            <span class="font-label text-label-xs text-pastel-text-main font-bold px-2.5 py-1 rounded-lg bg-pastel-subtle border border-pastel-border">20px Clean</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: OFFLINE CACHE & STORAGE -->
+      <section class="ios-light-glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-pastel-border">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-pastel-accent text-title-md">cloud_sync</span>
+            <h2 class="font-headline text-headline-sm text-pastel-text-main font-semibold tracking-tight">Offline Disaster Cache</h2>
+          </div>
+          <span class="font-label text-label-xs text-pastel-accent font-bold">128 MB Active</span>
+        </div>
+
+        <div class="space-y-2 pt-1 font-body text-body-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-pastel-text-main">Fault line &amp; topographic vectors</span>
+            <span class="font-label text-label-xs text-pastel-accent font-semibold">Cached · Oct 2026</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-pastel-text-main">Emergency shelter GPS markers</span>
+            <span class="font-label text-label-xs text-pastel-accent font-semibold">Offline Ready</span>
+          </div>
+        </div>
+
+        <button type="button" class="w-full py-2.5 rounded-xl bg-pastel-subtle border border-pastel-border text-pastel-text-main font-headline text-label-xs font-semibold tracking-wide hover:bg-white transition-all shadow-sm">
+          Refresh Regional Offline Cache
+        </button>
+      </section>
+
+    </main>
+
+    <!-- PERSISTENT STRUCTURED MINIMALIST iOS BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-0 right-0 max-w-[360px] mx-auto z-40 px-3 pointer-events-auto" aria-label="Main Navigation">
+      <div class="ios-dock-light rounded-full px-2 py-1.5 grid grid-cols-5 items-center">
+        
+        <!-- Tab 1: Home -->
+        <a href="../home-dashboard/HomeDashboard.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+            <span class="material-symbols-outlined text-title-md">home</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Home</span>
+        </a>
+
+        <!-- Tab 2: Weather -->
+        <a href="../detailed-weather/DetailedWeather.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">cloud</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Weather</span>
+        </a>
+
+        <!-- Tab 3: Air Quality (AQI) -->
+        <a href="../aqi-pollution/AirQualityMap.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-pastel-text-main transition-all group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">air</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Air</span>
+        </a>
+
+        <!-- Tab 4: Disaster Alerts -->
+        <a href="../disaster-monitor/DisasterMonitor.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-text-sub hover:text-danger transition-all relative group">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center mb-0.5 group-hover:bg-pastel-sky/50 transition-colors">
+            <span class="material-symbols-outlined text-title-md">crisis_alert</span>
+          </div>
+          <span class="font-label text-label-sm font-medium tracking-tight">Alerts</span>
+          <span class="absolute top-1 right-3 w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+        </a>
+
+        <!-- Tab 5: Settings (Active) -->
+        <a href="../settings-customization/SettingsCustomization.html" class="flex flex-col items-center justify-center py-1 rounded-2xl text-pastel-primary transition-all group" aria-current="page">
+          <div class="w-8 h-8 rounded-full bg-pastel-primary/10 flex items-center justify-center mb-0.5 shadow-sm">
+            <span class="material-symbols-outlined text-title-md">settings</span>
+          </div>
+          <span class="font-label text-label-sm font-bold tracking-tight">Settings</span>
+        </a>
+
+      </div>
+    </nav>
+
+  </div>
+
+
+
+</body></html>

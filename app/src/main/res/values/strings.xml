@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Veridia</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_weather">Weather</string>
+    <string name="nav_air">Air</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_settings">Settings</string>
+    <string name="cd_back">Back to Home Dashboard</string>
+    <string name="cd_search_locations">Search Locations</string>
+    <string name="cd_select_city">Select City or Region</string>
+    <string name="cd_open_radar">Open Weather Radar</string>
+    <string name="cd_refresh_gps">Refresh Privacy-Protected Zone</string>
+    <string name="gps_prompt_title">Protected Zone Weather</string>
+    <string name="gps_prompt_body">Allow approximate location access (masked to a ~9 km zone) to fetch live BMKG conditions without exposing exact GPS.</string>
+    <string name="gps_enable_cta">Allow Approximate Zone</string>
+    <string name="gps_denied_body">Location permission denied. Enable it in Settings or pick a city manually.</string>
+    <string name="gps_open_settings">Settings</string>
+</resources>

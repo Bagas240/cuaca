@@ -1,0 +1,778 @@
+package com.example.ui.components
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Point
+import android.graphics.RadialGradient
+import android.graphics.RectF
+import android.graphics.Shader
+import android.graphics.Typeface
+import android.view.MotionEvent
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.data.location.LocationMaskingUtility
+import com.example.data.model.TemperatureUnit
+import com.example.data.model.WeatherMapLayer
+import com.example.data.model.WeatherMapStation
+import com.example.ui.theme.PastelBorder
+import com.example.ui.theme.PastelPrimary
+import com.example.ui.theme.PastelSurface
+import com.example.ui.theme.PastelTextMain
+import com.example.ui.theme.PastelTextSub
+import com.example.ui.theme.SpaceMonoFamily
+import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
+import org.osmdroid.tileprovider.MapTileProviderBasic
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.util.MapTileIndex
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Overlay
+import org.osmdroid.views.overlay.TilesOverlay
+import java.io.File
+import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+private object OsmdroidRuntimeConfig {
+    @Volatile
+    private var configured = false
+
+    fun ensureConfigured(context: Context) {
+        if (configured) return
+        synchronized(this) {
+            if (configured) return
+            val appCtx = context.applicationContext
+            val config = Configuration.getInstance()
+            config.userAgentValue = appCtx.packageName.ifBlank { "com.aistudio.veridia.wxqmpk" }
+            val baseDir = File(appCtx.cacheDir, "osmdroid").apply { mkdirs() }
+            val tileDir = File(baseDir, "tiles").apply { mkdirs() }
+            config.osmdroidBasePath = baseDir
+            config.osmdroidTileCache = tileDir
+            configured = true
+        }
+    }
+}
+
+private class RainViewerRadarTileSource(private val prefix: String) : OnlineTileSourceBase(
+    "RainViewer_${prefix.hashCode()}",
+    0,
+    14,
+    256,
+    ".png",
+    arrayOf(prefix),
+) {
+    override fun getTileURLString(pMapTileIndex: Long): String {
+        val zoom = MapTileIndex.getZoom(pMapTileIndex)
+        val x = MapTileIndex.getX(pMapTileIndex)
+        val y = MapTileIndex.getY(pMapTileIndex)
+        return "$prefix/256/$zoom/$x/$y/2/1_1.png"
+    }
+}
+
+private class BmkgPrecipitationOverlay(
+    private val density: Float,
+    private val onSelectStation: (String) -> Unit,
+) : Overlay() {
+
+    var stations: List<WeatherMapStation> = emptyList()
+    var activeLayer: WeatherMapLayer = WeatherMapLayer.RAIN_RADAR
+    var selectedStationId: String = ""
+    var tempUnit: TemperatureUnit = TemperatureUnit.CELSIUS
+
+    private val screenPoint = Point()
+    private val hitBoxes = mutableListOf<Pair<RectF, String>>()
+
+    private val plumePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+    }
+    private val vectorPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.rgb(37, 99, 235)
+        strokeWidth = 2.6f * density
+        strokeCap = Paint.Cap.ROUND
+    }
+    private val pillBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pillBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+    }
+    private val pillDotPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val pillTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 10.5f * density
+        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+    }
+
+    override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
+        if (shadow) return
+        val projection = mapView.projection ?: return
+        val zoom = mapView.zoomLevelDouble
+        val zoomScale = (zoom / 6.0).toFloat().coerceIn(0.65f, 1.9f)
+
+        hitBoxes.clear()
+
+        // Pass 1: Draw BMKG real-time precipitation plumes / cloud halos / wind vectors
+        stations.forEach { st ->
+            projection.toPixels(GeoPoint(st.latitude, st.longitude), screenPoint)
+            val sx = screenPoint.x.toFloat()
+            val sy = screenPoint.y.toFloat()
+            if (sx < -220f || sx > mapView.width + 220f || sy < -220f || sy > mapView.height + 220f) {
+                return@forEach
+            }
+
+            when (activeLayer) {
+                WeatherMapLayer.RAIN_RADAR -> {
+                    val hasPrecip = st.precipMm > 0.1 || st.precipChancePercent >= 40
+                    if (hasPrecip) {
+                        val colorRgb = precipColorArgb(st.precipMm, st.precipChancePercent)
+                        val intensityFactor = ((st.precipMm / 12.0).toFloat() + (st.precipChancePercent / 100f) * 0.6f)
+                            .coerceIn(0.35f, 1.45f)
+                        val radiusPx = (34f + intensityFactor * 28f) * density * zoomScale
+
+                        plumePaint.shader = RadialGradient(
+                            sx,
+                            sy,
+                            radiusPx,
+                            intArrayOf(
+                                withAlpha(colorRgb, 138),
+                                withAlpha(colorRgb, 58),
+                                android.graphics.Color.TRANSPARENT,
+                            ),
+                            floatArrayOf(0f, 0.55f, 1f),
+                            Shader.TileMode.CLAMP,
+                        )
+                        canvas.drawCircle(sx, sy, radiusPx, plumePaint)
+                        plumePaint.shader = null
+
+                        if (st.precipMm >= 2.0 || st.precipChancePercent >= 65) {
+                            ringPaint.color = withAlpha(colorRgb, 140)
+                            canvas.drawCircle(sx, sy, radiusPx * 0.55f, ringPaint)
+                        }
+                    }
+                }
+                WeatherMapLayer.CLOUDS_TEMP -> {
+                    val radiusPx = (28f + st.cloudCoverPercent * 0.25f) * density * zoomScale
+                    val cloudColor = android.graphics.Color.rgb(71, 85, 105)
+                    plumePaint.shader = RadialGradient(
+                        sx,
+                        sy,
+                        radiusPx,
+                        intArrayOf(
+                            withAlpha(cloudColor, (st.cloudCoverPercent * 1.1f).toInt().coerceIn(30, 130)),
+                            withAlpha(cloudColor, 32),
+                            android.graphics.Color.TRANSPARENT,
+                        ),
+                        floatArrayOf(0f, 0.6f, 1f),
+                        Shader.TileMode.CLAMP,
+                    )
+                    canvas.drawCircle(sx, sy, radiusPx, plumePaint)
+                    plumePaint.shader = null
+                }
+                WeatherMapLayer.WIND_VECTOR -> {
+                    val rad = Math.toRadians(st.windBearingDeg.toDouble())
+                    val lenPx = ((18f + st.windSpeedKmh * 0.75f) * density * zoomScale.coerceAtMost(1.3f))
+                    val tipX = sx + (sin(rad) * lenPx).toFloat()
+                    val tipY = sy - (cos(rad) * lenPx).toFloat()
+                    canvas.drawLine(sx, sy, tipX, tipY, vectorPaint)
+                    canvas.drawCircle(tipX, tipY, 3.5f * density, vectorPaint)
+                }
+            }
+        }
+
+        // Pass 2: Draw interactive BMKG station badges on top of plumes
+        stations.forEach { st ->
+            projection.toPixels(GeoPoint(st.latitude, st.longitude), screenPoint)
+            val sx = screenPoint.x.toFloat()
+            val sy = screenPoint.y.toFloat()
+            if (sx < -80f || sx > mapView.width + 80f || sy < -40f || sy > mapView.height + 40f) {
+                return@forEach
+            }
+
+            val isSelected = st.id == selectedStationId
+            val accentColor = precipColorArgb(st.precipMm, st.precipChancePercent)
+            val code = st.name.take(3).uppercase(Locale.US)
+            val label = when (activeLayer) {
+                WeatherMapLayer.RAIN_RADAR -> {
+                    if (st.precipMm >= 0.1) {
+                        "$code ${String.format(Locale.US, "%.1f", st.precipMm)}mm"
+                    } else {
+                        "$code ${st.precipChancePercent}%"
+                    }
+                }
+                WeatherMapLayer.CLOUDS_TEMP -> "$code ${formatTempString(st.tempC, tempUnit)}"
+                WeatherMapLayer.WIND_VECTOR -> "$code ${st.windSpeedKmh}km/h"
+            }
+
+            val textW = pillTextPaint.measureText(label)
+            val padH = 8f * density
+            val dotRadius = 3.5f * density
+            val gap = 5f * density
+            val pillW = padH * 2 + dotRadius * 2 + gap + textW
+            val pillH = 22f * density
+
+            val rect = RectF(
+                sx - pillW / 2f,
+                sy - pillH / 2f,
+                sx + pillW / 2f,
+                sy + pillH / 2f,
+            )
+
+            pillBgPaint.color = if (isSelected) {
+                android.graphics.Color.rgb(15, 23, 42)
+            } else {
+                android.graphics.Color.argb(244, 255, 255, 255)
+            }
+            pillBorderPaint.color = accentColor
+            pillBorderPaint.strokeWidth = (if (isSelected) 2f else 1.4f) * density
+
+            val corner = 9f * density
+            canvas.drawRoundRect(rect, corner, corner, pillBgPaint)
+            canvas.drawRoundRect(rect, corner, corner, pillBorderPaint)
+
+            pillDotPaint.color = accentColor
+            val dotCx = rect.left + padH + dotRadius
+            val dotCy = rect.centerY()
+            canvas.drawCircle(dotCx, dotCy, dotRadius, pillDotPaint)
+
+            pillTextPaint.color = if (isSelected) {
+                android.graphics.Color.WHITE
+            } else {
+                android.graphics.Color.rgb(15, 23, 42)
+            }
+            val fm = pillTextPaint.fontMetrics
+            val textY = rect.centerY() - (fm.ascent + fm.descent) / 2f
+            canvas.drawText(label, dotCx + dotRadius + gap, textY, pillTextPaint)
+
+            // Expand hit target to at least 44dp for easy tapping
+            val minHitHalf = 22f * density
+            val hitRect = RectF(
+                minOf(rect.left, sx - minHitHalf),
+                minOf(rect.top, sy - minHitHalf),
+                maxOf(rect.right, sx + minHitHalf),
+                maxOf(rect.bottom, sy + minHitHalf),
+            )
+            hitBoxes.add(hitRect to st.id)
+        }
+    }
+
+    override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
+        val x = e.x
+        val y = e.y
+        for (i in hitBoxes.indices.reversed()) {
+            val (rect, stationId) = hitBoxes[i]
+            if (rect.contains(x, y)) {
+                onSelectStation(stationId)
+                mapView.invalidate()
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun precipColorArgb(precipMm: Double, precipChance: Int): Int = when {
+        precipMm >= 7.0 -> android.graphics.Color.rgb(220, 38, 38)   // Heavy storm crimson
+        precipMm >= 2.5 -> android.graphics.Color.rgb(245, 158, 11)  // Moderate/strong amber
+        precipMm >= 0.4 || precipChance >= 55 -> android.graphics.Color.rgb(2, 132, 199) // Rain cobalt
+        else -> android.graphics.Color.rgb(56, 189, 248)             // Light mist sky
+    }
+
+    private fun withAlpha(rgbColor: Int, alpha: Int): Int {
+        return android.graphics.Color.argb(
+            alpha.coerceIn(0, 255),
+            android.graphics.Color.red(rgbColor),
+            android.graphics.Color.green(rgbColor),
+            android.graphics.Color.blue(rgbColor),
+        )
+    }
+}
+
+/**
+ * Dedicated scrollable, pinch-zoomable interactive weather map built with the open-source
+ * osmdroid (OpenStreetMap) library, overlaying real-time BMKG precipitation intensity plumes,
+ * station readouts, and optional RainViewer Doppler radar tiles.
+ */
+@SuppressLint("ClickableViewAccessibility")
+@Composable
+fun BmkgInteractiveWeatherMap(
+    centerLat: Double,
+    centerLon: Double,
+    stations: List<WeatherMapStation>,
+    rainViewerTilePrefix: String?,
+    activeLayer: WeatherMapLayer,
+    tempUnit: TemperatureUnit,
+    lastUpdatedLabel: String,
+    isSyncing: Boolean,
+    onSelectLayer: (WeatherMapLayer) -> Unit,
+    onRefreshNow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val density = context.resources.displayMetrics.density
+
+    OsmdroidRuntimeConfig.ensureConfigured(context)
+
+    var selectedStationId by remember {
+        mutableStateOf(stations.firstOrNull()?.id ?: "")
+    }
+    LaunchedEffect(stations) {
+        if (stations.isNotEmpty() && stations.none { it.id == selectedStationId }) {
+            selectedStationId = stations.first().id
+        }
+    }
+    var currentZoom by remember { mutableDoubleStateOf(5.8) }
+
+    val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
+
+    val precipitationOverlay = remember(density) {
+        BmkgPrecipitationOverlay(density = density) { clickedId ->
+            selectedStationId = clickedId
+        }
+    }
+
+    var activeRadarTilesOverlay by remember { mutableStateOf<TilesOverlay?>(null) }
+    var activeRadarPrefix by remember { mutableStateOf<String?>(null) }
+
+    val maskedCenter = remember(centerLat, centerLon) {
+        LocationMaskingUtility.maskCoordinates(centerLat, centerLon, enabled = true)
+    }
+    val mapCenterLat = maskedCenter.latitude
+    val mapCenterLon = maskedCenter.longitude
+
+    val mapView = remember {
+        MapView(context).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+            isHorizontalMapRepetitionEnabled = true
+            isVerticalMapRepetitionEnabled = false
+            minZoomLevel = 3.5
+            maxZoomLevel = 15.0
+            controller.setZoom(5.8)
+            controller.setCenter(GeoPoint(mapCenterLat, mapCenterLon))
+
+            // Disallow parent LazyColumn scroll interception while panning or zooming the map
+            setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN,
+                    MotionEvent.ACTION_POINTER_DOWN,
+                    MotionEvent.ACTION_MOVE,
+                    -> v.parent?.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP,
+                    MotionEvent.ACTION_CANCEL,
+                    -> v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
+
+            addMapListener(object : MapListener {
+                override fun onScroll(event: ScrollEvent?): Boolean = false
+                override fun onZoom(event: ZoomEvent?): Boolean {
+                    event?.zoomLevel?.let { currentZoom = it }
+                    return false
+                }
+            })
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            mapView.onDetach()
+        }
+    }
+
+    // Recenter when user selects a different city (using privacy-masked coordinates)
+    LaunchedEffect(mapCenterLat, mapCenterLon) {
+        mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 6.2, 420L)
+        currentZoom = 6.2
+    }
+
+    // Keep BMKG precipitation overlay & optional RainViewer tile layer synchronized
+    LaunchedEffect(stations, activeLayer, selectedStationId, tempUnit, rainViewerTilePrefix) {
+        precipitationOverlay.stations = stations
+        precipitationOverlay.activeLayer = activeLayer
+        precipitationOverlay.selectedStationId = selectedStationId
+        precipitationOverlay.tempUnit = tempUnit
+
+        val showRadarTiles = activeLayer == WeatherMapLayer.RAIN_RADAR && !rainViewerTilePrefix.isNullOrBlank()
+        if (showRadarTiles && rainViewerTilePrefix != activeRadarPrefix) {
+            activeRadarTilesOverlay?.let { mapView.overlays.remove(it) }
+            val provider = MapTileProviderBasic(context, RainViewerRadarTileSource(rainViewerTilePrefix!!))
+            val radarOverlay = TilesOverlay(provider, context).apply {
+                loadingBackgroundColor = android.graphics.Color.TRANSPARENT
+                loadingLineColor = android.graphics.Color.TRANSPARENT
+            }
+            activeRadarTilesOverlay = radarOverlay
+            activeRadarPrefix = rainViewerTilePrefix
+            mapView.overlays.add(0, radarOverlay)
+        } else if (!showRadarTiles && activeRadarTilesOverlay != null) {
+            mapView.overlays.remove(activeRadarTilesOverlay)
+            activeRadarTilesOverlay = null
+            activeRadarPrefix = null
+        }
+
+        if (!mapView.overlays.contains(precipitationOverlay)) {
+            mapView.overlays.add(precipitationOverlay)
+        }
+        mapView.invalidate()
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // Layer Tabs + Manual Live Refresh
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    WeatherMapLayer.RAIN_RADAR to "BMKG Precip",
+                    WeatherMapLayer.CLOUDS_TEMP to "Clouds & Temp",
+                    WeatherMapLayer.WIND_VECTOR to "Wind Vector",
+                ).forEach { (layer, label) ->
+                    val selected = activeLayer == layer
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelectLayer(layer) }
+                            .testTag("weather_map_layer_${layer.name.lowercase()}"),
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (selected) PastelPrimary else PastelSurface,
+                        border = BorderStroke(1.dp, if (selected) PastelPrimary else PastelBorder),
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (selected) Color.White else PastelTextMain,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(
+                onClick = onRefreshNow,
+                enabled = !isSyncing,
+                modifier = Modifier
+                    .size(48.dp)
+                    .testTag("weather_map_refresh"),
+            ) {
+                Surface(
+                    modifier = Modifier.size(34.dp),
+                    shape = CircleShape,
+                    color = PastelSurface,
+                    border = BorderStroke(1.dp, PastelBorder),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        if (isSyncing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = PastelPrimary,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Rounded.Refresh,
+                                contentDescription = "Refresh BMKG Precipitation Map",
+                                tint = PastelPrimary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Interactive OpenStreetMap (osmdroid) Viewport + BMKG Precipitation Overlay
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(340.dp)
+                .testTag("bmkg_osmdroid_weather_map"),
+            shape = RoundedCornerShape(22.dp),
+            color = Color(0xFFCBE2F6),
+            border = BorderStroke(1.dp, PastelBorder),
+            shadowElevation = 2.dp,
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AndroidView(
+                    factory = { mapView },
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                // Top-left Live BMKG Header + Zoom Indicator
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(10.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = PastelSurface.copy(alpha = 0.94f),
+                    border = BorderStroke(1.dp, PastelBorder),
+                    shadowElevation = 2.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.Map, contentDescription = null, tint = PastelPrimary, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "BMKG Precip · Z${currentZoom.roundToInt()} · $lastUpdatedLabel",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                            color = PastelTextMain,
+                        )
+                    }
+                }
+
+                // Top-right Zoom & Recenter Controls
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    IconButton(
+                        onClick = {
+                            mapView.controller.zoomIn()
+                            currentZoom = mapView.zoomLevelDouble
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("osmdroid_zoom_in"),
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(34.dp),
+                            shape = CircleShape,
+                            color = PastelSurface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, PastelBorder),
+                            shadowElevation = 2.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.Add, contentDescription = "Zoom In Map", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            mapView.controller.zoomOut()
+                            currentZoom = mapView.zoomLevelDouble
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("osmdroid_zoom_out"),
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(34.dp),
+                            shape = CircleShape,
+                            color = PastelSurface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, PastelBorder),
+                            shadowElevation = 2.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out Map", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 5.8, 360L)
+                            currentZoom = 5.8
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("osmdroid_recenter"),
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(34.dp),
+                            shape = CircleShape,
+                            color = PastelSurface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, PastelBorder),
+                            shadowElevation = 2.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+
+                // Bottom Overlay: Precipitation Scale Legend + Selected BMKG Station Card
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (activeLayer == WeatherMapLayer.RAIN_RADAR) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = PastelSurface.copy(alpha = 0.92f),
+                            border = BorderStroke(1.dp, PastelBorder),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LegendDotLabel(color = Color(0xFF38BDF8), text = "Light")
+                                LegendDotLabel(color = Color(0xFF0284C7), text = "0.5+ mm")
+                                LegendDotLabel(color = Color(0xFFF59E0B), text = "2.5+ mm")
+                                LegendDotLabel(color = Color(0xFFDC2626), text = "7.0+ mm/h")
+                            }
+                        }
+                    }
+
+                    if (selectedStation != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("bmkg_station_inspector"),
+                            shape = RoundedCornerShape(14.dp),
+                            color = PastelSurface.copy(alpha = 0.96f),
+                            border = BorderStroke(1.dp, PastelPrimary.copy(alpha = 0.38f)),
+                            shadowElevation = 3.dp,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.WaterDrop,
+                                        contentDescription = null,
+                                        tint = PastelPrimary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = "${selectedStation.name} · ${selectedStation.conditionLabel}",
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = PastelTextMain,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            text = "Precip ${String.format(Locale.US, "%.1f", selectedStation.precipMm)} mm/h (${selectedStation.precipChancePercent}%) · Wind ${selectedStation.windSpeedKmh} km/h · BMKG & OSM",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                            color = PastelTextSub,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = formatTempString(selectedStation.tempC, tempUnit),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = SpaceMonoFamily,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                    color = PastelPrimary,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendDotLabel(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(color),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Medium),
+            color = PastelTextMain,
+        )
+    }
+}

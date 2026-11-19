@@ -1,0 +1,6 @@
+{
+  "name": "Veridia",
+  "description": "Atmospheric weather dashboard, 3D air quality map, Doppler radar, and seismic disaster monitor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
