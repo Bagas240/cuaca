@@ -10,12 +10,17 @@ import android.os.PowerManager
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.workDataOf
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -46,7 +51,10 @@ object WeatherSyncScheduler {
 
     const val UNIQUE_WORK_WIFI = "veridia_weather_sync_wifi"
     const val UNIQUE_WORK_CHARGING = "veridia_weather_sync_charging"
+    const val UNIQUE_WORK_ALERTS = "veridia_weather_alerts_periodic"
+    const val UNIQUE_WORK_ALERTS_IMMEDIATE = "veridia_weather_alerts_now"
     const val WORK_TAG = "veridia_weather_periodic_sync"
+    const val ALERT_WORK_TAG = "veridia_weather_alert_monitor"
 
     const val SYNC_INTERVAL_MINUTES = 15L
     const val FLEX_INTERVAL_MINUTES = 5L
@@ -219,9 +227,71 @@ object WeatherSyncScheduler {
             .build()
 
     /**
+     * Constraints for urgent weather and disaster alert polling: runs on any active
+     * network (Wi-Fi or cellular) while respecting battery-not-low health.
+     */
+    fun buildAlertConstraints(): Constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .setRequiresBatteryNotLow(true)
+        .build()
+
+    fun buildAlertPeriodicWorkRequest(
+        batteryProfile: SyncBatteryProfile = SyncBatteryProfile(),
+    ): PeriodicWorkRequest {
+        val intervalMinutes = when (batteryProfile.tier) {
+            SyncBatteryTier.CRITICAL_BATTERY -> SYNC_INTERVAL_CRITICAL_BATTERY_MINUTES
+            SyncBatteryTier.LOW_BATTERY -> SYNC_INTERVAL_LOW_BATTERY_MINUTES
+            SyncBatteryTier.CHARGING,
+            SyncBatteryTier.NORMAL -> SYNC_INTERVAL_MINUTES
+        }
+        val flexMinutes = when (batteryProfile.tier) {
+            SyncBatteryTier.CRITICAL_BATTERY -> FLEX_INTERVAL_CRITICAL_BATTERY_MINUTES
+            SyncBatteryTier.LOW_BATTERY -> FLEX_INTERVAL_LOW_BATTERY_MINUTES
+            SyncBatteryTier.CHARGING,
+            SyncBatteryTier.NORMAL -> FLEX_INTERVAL_MINUTES
+        }
+        return PeriodicWorkRequestBuilder<WeatherAlertWorker>(
+            repeatInterval = intervalMinutes,
+            repeatIntervalTimeUnit = TimeUnit.MINUTES,
+            flexTimeInterval = flexMinutes,
+            flexTimeIntervalUnit = TimeUnit.MINUTES,
+        )
+            .setConstraints(buildAlertConstraints())
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS,
+            )
+            .setInputData(
+                workDataOf(
+                    WeatherAlertWorker.KEY_TRIGGER_CHANNEL to "periodic_alerts",
+                )
+            )
+            .addTag(WORK_TAG)
+            .addTag(ALERT_WORK_TAG)
+            .build()
+    }
+
+    fun buildImmediateAlertCheckRequest(forceNotify: Boolean = false): OneTimeWorkRequest =
+        OneTimeWorkRequestBuilder<WeatherAlertWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setInputData(
+                workDataOf(
+                    WeatherAlertWorker.KEY_TRIGGER_CHANNEL to "manual_immediate",
+                    WeatherAlertWorker.KEY_FORCE_NOTIFY to forceNotify,
+                )
+            )
+            .addTag(ALERT_WORK_TAG)
+            .build()
+
+    /**
      * Enqueues both complementary unique periodic work requests so updates fire
-     * periodically whenever charging OR on Wi-Fi, automatically scaling the Wi-Fi
-     * update interval down when [BatteryManager] reports low or critical battery.
+     * periodically whenever charging OR on Wi-Fi, plus the connected weather alert monitor.
      */
     fun schedulePeriodicWeatherSync(context: Context): SyncBatteryProfile {
         val profile = readBatteryPowerProfile(context)
@@ -236,7 +306,36 @@ object WeatherSyncScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             buildChargingPeriodicWorkRequest(),
         )
+        workManager.enqueueUniquePeriodicWork(
+            UNIQUE_WORK_ALERTS,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            buildAlertPeriodicWorkRequest(profile),
+        )
         return profile
+    }
+
+    fun schedulePeriodicWeatherAlerts(context: Context): SyncBatteryProfile {
+        val profile = readBatteryPowerProfile(context)
+        val workManager = WorkManager.getInstance(context.applicationContext)
+        workManager.enqueueUniquePeriodicWork(
+            UNIQUE_WORK_ALERTS,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            buildAlertPeriodicWorkRequest(profile),
+        )
+        return profile
+    }
+
+    fun triggerImmediateAlertCheck(
+        context: Context,
+        forceNotify: Boolean = false,
+    ): UUID {
+        val request = buildImmediateAlertCheckRequest(forceNotify = forceNotify)
+        WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+            UNIQUE_WORK_ALERTS_IMMEDIATE,
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
+        return request.id
     }
 
     /**
@@ -253,6 +352,11 @@ object WeatherSyncScheduler {
             ExistingPeriodicWorkPolicy.UPDATE,
             buildWifiPeriodicWorkRequest(profile),
         )
+        workManager.enqueueUniquePeriodicWork(
+            UNIQUE_WORK_ALERTS,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            buildAlertPeriodicWorkRequest(profile),
+        )
         return profile
     }
 
@@ -260,6 +364,11 @@ object WeatherSyncScheduler {
         val workManager = WorkManager.getInstance(context.applicationContext)
         workManager.cancelUniqueWork(UNIQUE_WORK_WIFI)
         workManager.cancelUniqueWork(UNIQUE_WORK_CHARGING)
+        workManager.cancelUniqueWork(UNIQUE_WORK_ALERTS)
+    }
+
+    fun cancelPeriodicWeatherAlerts(context: Context) {
+        WorkManager.getInstance(context.applicationContext).cancelUniqueWork(UNIQUE_WORK_ALERTS)
     }
 
     fun isDeviceChargingOrOnWifi(context: Context): Boolean {

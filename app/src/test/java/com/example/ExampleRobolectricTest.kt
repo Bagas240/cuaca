@@ -850,6 +850,101 @@ class ExampleRobolectricTest {
         assertEquals(SyncBatteryTier.CHARGING, chargingProfile.tier)
         assertEquals(WeatherSyncScheduler.SYNC_INTERVAL_MINUTES, chargingProfile.repeatIntervalMinutes)
     }
+
+    @Test
+    fun `workmanager schedules periodic and immediate weather alert checks`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        val workManager = WorkManager.getInstance(context)
+
+        val alertConstraints = WeatherSyncScheduler.buildAlertConstraints()
+        assertEquals(NetworkType.CONNECTED, alertConstraints.requiredNetworkType)
+        assertTrue(alertConstraints.requiresBatteryNotLow())
+
+        WeatherSyncScheduler.schedulePeriodicWeatherAlerts(context)
+        val periodicAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS).get()
+        assertEquals(1, periodicAlerts.size)
+        assertEquals(WorkInfo.State.ENQUEUED, periodicAlerts.first().state)
+        assertEquals(NetworkType.CONNECTED, periodicAlerts.first().constraints.requiredNetworkType)
+
+        WeatherSyncScheduler.triggerImmediateAlertCheck(context)
+        val immediateAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS_IMMEDIATE).get()
+        assertEquals(1, immediateAlerts.size)
+
+        WeatherSyncScheduler.cancelPeriodicWeatherAlerts(context)
+        val cancelledAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS).get()
+        assertEquals(WorkInfo.State.CANCELLED, cancelledAlerts.first().state)
+    }
+
+    @Test
+    fun `disaster notification manager persists deduplication across instances and detects gale gusts`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val shadowApp = Shadows.shadowOf(app)
+        shadowApp.grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
+        val managerA = DisasterNotificationManager(app)
+        managerA.clearDedupHistory()
+
+        val repo = VeridiaRepository()
+        val jakarta = repo.presetCities.first()
+        val gustyWeather = repo.defaultWeatherFor(jakarta).copy(
+            conditionKind = WeatherConditionKind.RAIN,
+            conditionLabel = "Severe Tropical Squall",
+            windSpeedKmh = 38,
+            windGustKmh = 72,
+            precipChancePercent = 90,
+        )
+        val safeAqi = repo.defaultAirQuality(jakarta)
+        val safeSeismic = repo.defaultSeismicTelemetry().copy(
+            tsunamiStatus = "Tidak Berpotensi",
+            recentEvents = emptyList(),
+        )
+
+        val alert = managerA.evaluateTelemetryForDisaster(
+            city = jakarta,
+            weather = gustyWeather,
+            airQuality = safeAqi,
+            seismic = safeSeismic,
+            settings = UserSettings(typhoonFlashWatch = true, seismicPWaveAlert = true),
+        )
+        assertNotNull(alert)
+        assertEquals(DisasterKind.SEVERE_STORM, alert?.kind)
+
+        val now = 1_700_000_000_000L
+        assertTrue(managerA.notifyIfNew(alert!!, nowMillis = now))
+
+        // A brand-new DisasterNotificationManager instance (simulating next WorkManager wake-up)
+        // must suppress duplicate notification within cooldown window
+        val managerB = DisasterNotificationManager(app)
+        assertFalse(managerB.notifyIfNew(alert, nowMillis = now + 15 * 60_000L))
+
+        // After cooldown window expires, re-notification is allowed
+        assertTrue(
+            managerB.notifyIfNew(
+                alert,
+                nowMillis = now + DisasterNotificationManager.DEFAULT_DEDUP_COOLDOWN_MS + 1_000L,
+            )
+        )
+        managerB.clearDedupHistory()
+    }
+
+    @Test
+    fun `weather alert worker skips cleanly when all emergency alert toggles are disabled`() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val store = SettingsDataStore(context)
+        store.setSeismicPWaveAlert(false)
+        store.setTyphoonFlashWatch(false)
+        store.setAqiSmogInversion(false)
+
+        val worker = TestListenableWorkerBuilder<com.example.work.WeatherAlertWorker>(context)
+            .setInputData(workDataOf(com.example.work.WeatherAlertWorker.KEY_TRIGGER_CHANNEL to "periodic_alerts"))
+            .build()
+        val result = worker.doWork()
+        assertTrue(result is ListenableWorker.Result.Success)
+        assertEquals("alerts_disabled", result.outputData.getString(com.example.work.WeatherAlertWorker.KEY_STATUS))
+        assertFalse(result.outputData.getBoolean(com.example.work.WeatherAlertWorker.KEY_ALERT_DISPATCHED, true))
+    }
 }
+
 
 

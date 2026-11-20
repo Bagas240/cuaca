@@ -97,6 +97,7 @@ data class VeridiaUiState(
     val seismicPatternDetectedCount: Int = 0,
     val securityPosture: SecurityPosture = SecurityGuard.currentPosture(),
     val syncBatteryProfile: SyncBatteryProfile = SyncBatteryProfile(),
+    val backgroundAlertCheckStatus: String = "Periodic WorkManager Armed (15m)",
 )
 
 typealias WeatherViewModel = VeridiaViewModel
@@ -181,6 +182,11 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         if (settingsStore.currentSettings.backgroundSyncEnabled) {
             runCatching {
                 val profile = WeatherSyncScheduler.schedulePeriodicWeatherSync(application.applicationContext)
+                _uiState.update { it.copy(syncBatteryProfile = profile) }
+            }
+        } else if (anyEmergencyAlertEnabled(settingsStore.currentSettings)) {
+            runCatching {
+                val profile = WeatherSyncScheduler.schedulePeriodicWeatherAlerts(application.applicationContext)
                 _uiState.update { it.copy(syncBatteryProfile = profile) }
             }
         }
@@ -625,16 +631,61 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { it.copy(selectedAqiSectorId = sectorId) }
     }
 
+    private fun anyEmergencyAlertEnabled(settings: UserSettings): Boolean {
+        return settings.seismicPWaveAlert || settings.typhoonFlashWatch || settings.aqiSmogInversion
+    }
+
+    private fun syncAlertMonitorSchedule() {
+        val appContext = getApplication<Application>().applicationContext
+        val settings = settingsStore.currentSettings
+        runCatching {
+            if (anyEmergencyAlertEnabled(settings) || settings.backgroundSyncEnabled) {
+                val profile = WeatherSyncScheduler.schedulePeriodicWeatherAlerts(appContext)
+                _uiState.update {
+                    it.copy(
+                        syncBatteryProfile = profile,
+                        backgroundAlertCheckStatus = "Periodic WorkManager Armed (${profile.repeatIntervalMinutes}m)",
+                    )
+                }
+            } else {
+                WeatherSyncScheduler.cancelPeriodicWeatherAlerts(appContext)
+                _uiState.update {
+                    it.copy(backgroundAlertCheckStatus = "Alert Monitor Paused")
+                }
+            }
+        }
+    }
+
+    fun triggerBackgroundAlertCheckNow() {
+        val appContext = getApplication<Application>().applicationContext
+        runCatching {
+            WeatherSyncScheduler.triggerImmediateAlertCheck(appContext)
+        }
+        _uiState.update {
+            it.copy(backgroundAlertCheckStatus = "WorkManager Alert Check Queued · ${repository.formatLiveClockTimestamp()}")
+        }
+        refreshLiveTelemetryNow()
+    }
+
     fun setSeismicPWaveAlert(enabled: Boolean) {
-        viewModelScope.launch { settingsStore.setSeismicPWaveAlert(enabled) }
+        viewModelScope.launch {
+            settingsStore.setSeismicPWaveAlert(enabled)
+            syncAlertMonitorSchedule()
+        }
     }
 
     fun setTyphoonFlashWatch(enabled: Boolean) {
-        viewModelScope.launch { settingsStore.setTyphoonFlashWatch(enabled) }
+        viewModelScope.launch {
+            settingsStore.setTyphoonFlashWatch(enabled)
+            syncAlertMonitorSchedule()
+        }
     }
 
     fun setAqiSmogInversion(enabled: Boolean) {
-        viewModelScope.launch { settingsStore.setAqiSmogInversion(enabled) }
+        viewModelScope.launch {
+            settingsStore.setAqiSmogInversion(enabled)
+            syncAlertMonitorSchedule()
+        }
     }
 
     fun setTemperatureUnit(unit: TemperatureUnit) {

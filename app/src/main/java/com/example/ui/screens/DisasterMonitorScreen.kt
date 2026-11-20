@@ -104,6 +104,7 @@ fun DisasterMonitorScreen(
     onTriggerSampleAlert: (DisasterKind) -> Unit = {},
     onStopSiren: () -> Unit = {},
     onToggleSeismicSensor: (Boolean) -> Unit = {},
+    onCheckBackgroundAlertsNow: () -> Unit = {},
 ) {
     val seismic = state.seismic
     val isAnimating = rememberIsDestinationAnimating()
@@ -388,6 +389,46 @@ fun DisasterMonitorScreen(
                             onClick = { onTriggerSampleAlert(DisasterKind.HAZARDOUS_AIR) },
                             modifier = Modifier.weight(1f).testTag("test_siren_air"),
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = PastelBorder)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text(
+                                text = "BACKGROUND ALERT SERVICE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PastelTextSub,
+                            )
+                            Text(
+                                text = state.backgroundAlertCheckStatus,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PastelTextMain,
+                                modifier = Modifier.testTag("workmanager_alert_status"),
+                            )
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable(onClick = onCheckBackgroundAlertsNow)
+                                .testTag("check_alerts_now_button"),
+                            shape = RoundedCornerShape(10.dp),
+                            color = PastelSubtle,
+                            border = BorderStroke(1.dp, PastelBorder),
+                        ) {
+                            Text(
+                                text = "Scan Now",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = PastelPrimary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            )
+                        }
                     }
 
                     if (state.isSirenPlaying) {

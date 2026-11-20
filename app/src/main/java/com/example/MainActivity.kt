@@ -58,21 +58,38 @@ import com.example.ui.screens.WeatherRadarScreen
 import com.example.ui.theme.VeridiaTheme
 import com.example.ui.viewmodel.VeridiaViewModel
 
+import android.content.Intent
+import com.example.alerts.DisasterNotificationManager
+
 class MainActivity : ComponentActivity() {
+    private var pendingDeepLinkRoute by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDeepLinkRoute = intent?.getStringExtra(DisasterNotificationManager.EXTRA_NAV_DESTINATION)
         enableEdgeToEdge()
         setContent {
             VeridiaTheme {
-                VeridiaApp()
+                VeridiaApp(
+                    initialDeepLinkRoute = pendingDeepLinkRoute,
+                    onConsumeDeepLink = { pendingDeepLinkRoute = null },
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingDeepLinkRoute = intent.getStringExtra(DisasterNotificationManager.EXTRA_NAV_DESTINATION)
     }
 }
 
 @Composable
 fun VeridiaApp(
     viewModel: VeridiaViewModel = viewModel(),
+    initialDeepLinkRoute: String? = null,
+    onConsumeDeepLink: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -126,6 +143,13 @@ fun VeridiaApp(
             }
             launchSingleTop = true
             restoreState = true
+        }
+    }
+
+    LaunchedEffect(initialDeepLinkRoute) {
+        if (initialDeepLinkRoute == DisasterNotificationManager.DESTINATION_ALERTS) {
+            navigateTopLevel(VeridiaRoute.ALERTS)
+            onConsumeDeepLink()
         }
     }
 
@@ -249,6 +273,7 @@ fun VeridiaApp(
                             onTriggerSampleAlert = viewModel::triggerSampleDisasterAlert,
                             onStopSiren = viewModel::stopDisasterSiren,
                             onToggleSeismicSensor = viewModel::setSeismicSensorMonitoring,
+                            onCheckBackgroundAlertsNow = viewModel::triggerBackgroundAlertCheckNow,
                         )
                     }
                 }

@@ -119,35 +119,42 @@ class WeatherSyncWorker(
         val liveAqi = aqiDeferred.await().getOrNull()
         val seismicOutcome = seismicDeferred.await().getOrNull()
 
-        if (weatherOutcome != null && !weatherOutcome.fromCache) {
-            repository.saveWeatherBundleToCache(
-                cityId = targetCity.id,
-                weather = weatherOutcome.data,
-                airQuality = liveAqi,
-                stations = null,
-                fetchedAtMillis = weatherOutcome.fetchedAtMillis,
-            )
-            if (seismicOutcome != null && !seismicOutcome.fromCache) {
+        val hasLiveWeather = weatherOutcome != null && !weatherOutcome.fromCache
+        val hasLiveSeismic = seismicOutcome != null && !seismicOutcome.fromCache
+
+        if (hasLiveWeather || hasLiveSeismic || liveAqi != null) {
+            val weatherForEval = weatherOutcome?.data ?: repository.defaultWeatherFor(targetCity)
+            val aqiForEval = liveAqi ?: repository.defaultAirQuality(targetCity)
+            val seismicForEval = seismicOutcome?.data ?: repository.defaultSeismicTelemetry()
+
+            if (hasLiveWeather) {
+                repository.saveWeatherBundleToCache(
+                    cityId = targetCity.id,
+                    weather = weatherOutcome!!.data,
+                    airQuality = liveAqi,
+                    stations = null,
+                    fetchedAtMillis = weatherOutcome.fetchedAtMillis,
+                )
+                settingsStore.setOfflineCacheLabel(repository.formatCurrentTimestamp())
+            }
+            if (hasLiveSeismic) {
                 repository.saveSeismicToCache(
-                    seismic = seismicOutcome.data,
+                    seismic = seismicOutcome!!.data,
                     fetchedAtMillis = seismicOutcome.fetchedAtMillis,
                 )
             }
-            settingsStore.setOfflineCacheLabel(repository.formatCurrentTimestamp())
             settingsStore.setLastBackgroundSyncMillis(nowMillis)
 
             val disasterManager = DisasterNotificationManager(applicationContext)
-            val aqiForEval = liveAqi ?: repository.defaultAirQuality(targetCity)
-            val seismicForEval = seismicOutcome?.data ?: repository.defaultSeismicTelemetry()
             val alert = disasterManager.evaluateTelemetryForDisaster(
-                city = weatherOutcome.data.city,
-                weather = weatherOutcome.data,
+                city = weatherForEval.city,
+                weather = weatherForEval,
                 airQuality = aqiForEval,
                 seismic = seismicForEval,
                 settings = settings,
             )
             if (alert != null) {
-                disasterManager.notifyIfNew(alert)
+                disasterManager.notifyIfNew(alert, nowMillis = nowMillis)
             }
 
             return@coroutineScope Result.success(

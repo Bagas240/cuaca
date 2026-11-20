@@ -46,7 +46,18 @@ class DisasterNotificationManager(private val context: Context) {
     companion object {
         const val CHANNEL_ID = "veridia_disaster_ews_v1"
         private const val CHANNEL_NAME = "Natural Disaster & BMKG Alerts"
-        private const val NOTIFICATION_ID = 7001
+        private const val NOTIFICATION_ID_BASE = 7001
+        private const val PREFS_NAME = "veridia_alert_dedup_prefs"
+        private const val KEY_LAST_SIGNATURE = "last_notified_signature"
+        private const val KEY_LAST_NOTIFIED_AT = "last_notified_at_millis"
+        const val DEFAULT_DEDUP_COOLDOWN_MS = 6 * 60 * 60_000L
+        const val EXTRA_NAV_DESTINATION = "extra_nav_destination"
+        const val EXTRA_ALERT_KIND = "extra_alert_kind"
+        const val DESTINATION_ALERTS = "disaster_monitor"
+    }
+
+    private val dedupPrefs by lazy {
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     private var lastNotifiedSignature: String? = null
@@ -99,10 +110,11 @@ class DisasterNotificationManager(private val context: Context) {
         ).roundToInt()
 
         // 1. Tsunami Warning (highest priority)
-        if (settings.seismicPWaveAlert &&
+        val hasTsunamiPotential = !seismic.tsunamiStatus.contains("Tidak", ignoreCase = true) &&
+            !seismic.tsunamiStatus.contains("No Tsunami", ignoreCase = true) &&
             (seismic.tsunamiStatus.contains("Waspada", ignoreCase = true) ||
                 seismic.tsunamiStatus.contains("Berpotensi", ignoreCase = true))
-        ) {
+        if (settings.seismicPWaveAlert && hasTsunamiPotential) {
             return DisasterAlertEvent(
                 signature = "tsunami_${seismic.bannerMagnitude}_${topEvent?.timeAgoLabel ?: seismic.activeEventTitle}",
                 kind = DisasterKind.TSUNAMI,
@@ -128,15 +140,38 @@ class DisasterNotificationManager(private val context: Context) {
             )
         }
 
-        // 3. Severe Storm / Gale Wind Warning
-        if (settings.typhoonFlashWatch &&
-            (weather.conditionKind == WeatherConditionKind.THUNDERSTORM || weather.windSpeedKmh >= 48)
-        ) {
+        // 3. Severe Storm / Gale Wind / Imminent Downpour Warning
+        val imminentSevereSlot = weather.hourlyForecast.drop(1).take(3).firstOrNull { slot ->
+            slot.condition == WeatherConditionKind.THUNDERSTORM || slot.precipMm >= 12.0
+        }
+        val isHeavyTroughRain = weather.conditionKind == WeatherConditionKind.RAIN &&
+            weather.precipChancePercent >= 85 &&
+            weather.pressureHpa <= 1004
+        val isSevereWeather = weather.conditionKind == WeatherConditionKind.THUNDERSTORM ||
+            weather.windSpeedKmh >= 48 ||
+            weather.windGustKmh >= 65 ||
+            isHeavyTroughRain ||
+            imminentSevereSlot != null
+
+        if (settings.typhoonFlashWatch && isSevereWeather) {
+            val triggerTag = when {
+                weather.conditionKind == WeatherConditionKind.THUNDERSTORM -> "thunderstorm"
+                weather.windGustKmh >= 65 || weather.windSpeedKmh >= 48 -> "gale_${weather.windGustKmh / 10}"
+                isHeavyTroughRain -> "trough_rain_${weather.pressureHpa / 5}"
+                else -> "imminent_${imminentSevereSlot?.timeLabel ?: "soon"}"
+            }
+            val headlineDetail = when {
+                weather.conditionKind == WeatherConditionKind.THUNDERSTORM -> weather.conditionLabel
+                weather.windGustKmh >= 65 -> "Damaging Wind Gusts ${weather.windGustKmh} km/h"
+                weather.windSpeedKmh >= 48 -> "Gale Winds ${weather.windSpeedKmh} km/h"
+                isHeavyTroughRain -> "Heavy Monsoon Downpour (${weather.pressureHpa} hPa)"
+                else -> "Incoming Storm Cell at ${imminentSevereSlot?.timeLabel}"
+            }
             return DisasterAlertEvent(
-                signature = "storm_${city.id}_${weather.conditionKind.name}_${weather.windSpeedKmh / 10}",
+                signature = "storm_${city.id}_$triggerTag",
                 kind = DisasterKind.SEVERE_STORM,
-                title = "Severe Storm & Wind Alert · ${city.name}",
-                message = "${weather.conditionLabel} · Wind ${weather.windSpeedKmh} km/h ${weather.windDirectionLabel} · ${weather.precipChancePercent}% precip",
+                title = "Urgent Weather Alert · ${city.name}",
+                message = "$headlineDetail · Wind ${weather.windSpeedKmh} km/h ${weather.windDirectionLabel} · ${weather.precipChancePercent}% precip",
                 guidance = "Seek shelter indoors and avoid open water, trees, and power lines.",
                 distanceKm = 0,
             )
@@ -157,11 +192,32 @@ class DisasterNotificationManager(private val context: Context) {
         return null
     }
 
-    fun notifyIfNew(event: DisasterAlertEvent, force: Boolean = false): Boolean {
-        if (!force && event.signature == lastNotifiedSignature) return false
+    fun notifyIfNew(
+        event: DisasterAlertEvent,
+        force: Boolean = false,
+        cooldownMillis: Long = DEFAULT_DEDUP_COOLDOWN_MS,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Boolean {
+        val persistedSignature = dedupPrefs.getString(KEY_LAST_SIGNATURE, null)
+        val persistedAt = dedupPrefs.getLong(KEY_LAST_NOTIFIED_AT, 0L)
+        val withinCooldown = (nowMillis - persistedAt) in 0 until cooldownMillis
+        val matchesRecent = event.signature == lastNotifiedSignature ||
+            (event.signature == persistedSignature && withinCooldown)
+
+        if (!force && matchesRecent) return false
+
         lastNotifiedSignature = event.signature
+        dedupPrefs.edit()
+            .putString(KEY_LAST_SIGNATURE, event.signature)
+            .putLong(KEY_LAST_NOTIFIED_AT, nowMillis)
+            .apply()
         postSystemNotification(event)
         return true
+    }
+
+    fun clearDedupHistory() {
+        lastNotifiedSignature = null
+        dedupPrefs.edit().clear().apply()
     }
 
     fun postSystemNotification(event: DisasterAlertEvent) {
@@ -170,10 +226,12 @@ class DisasterNotificationManager(private val context: Context) {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_NAV_DESTINATION, DESTINATION_ALERTS)
+            putExtra(EXTRA_ALERT_KIND, event.kind.name)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            event.kind.ordinal,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -193,7 +251,10 @@ class DisasterNotificationManager(private val context: Context) {
             .build()
 
         runCatching {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(context).notify(
+                NOTIFICATION_ID_BASE + event.kind.ordinal,
+                notification,
+            )
         }
     }
 
