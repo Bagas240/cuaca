@@ -3,6 +3,7 @@ package com.example.data.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.data.location.LocationMaskingUtility
+import com.example.data.model.AppThemeMode
 import com.example.data.model.PressureUnit
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.UserSettings
@@ -47,6 +48,7 @@ class SettingsDataStore(context: Context) {
         const val GPS_COUNTRY = "gps_country"
         const val GPS_ZONE_LABEL = "gps_zone_label"
         const val GPS_UPDATED_AT = "gps_updated_at"
+        const val THEME_MODE = "theme_mode"
     }
 
     private val encryptedPrefs: SharedPreferences =
@@ -81,6 +83,8 @@ class SettingsDataStore(context: Context) {
         val windName = encryptedPrefs.getString(Keys.WIND_UNIT, null)
         val pressureName = encryptedPrefs.getString(Keys.PRESSURE_UNIT, null)
 
+        val themeName = encryptedPrefs.getString(Keys.THEME_MODE, null)
+
         return UserSettings(
             selectedCityId = encryptedPrefs.getString(Keys.SELECTED_CITY_ID, null) ?: "jakarta",
             seismicPWaveAlert = encryptedPrefs.getBoolean(Keys.SEISMIC_ALERT, true),
@@ -100,6 +104,9 @@ class SettingsDataStore(context: Context) {
             offlineCacheLabel = encryptedPrefs.getString(Keys.OFFLINE_CACHE_LABEL, null) ?: "Cached · Nov 2026",
             backgroundSyncEnabled = encryptedPrefs.getBoolean(Keys.BACKGROUND_SYNC_ENABLED, true),
             lastBackgroundSyncMillis = encryptedPrefs.getLong(Keys.LAST_BACKGROUND_SYNC_MILLIS, 0L),
+            themeMode = themeName?.let {
+                runCatching { AppThemeMode.valueOf(it) }.getOrNull()
+            } ?: AppThemeMode.AUTO_SOLAR,
         )
     }
 
@@ -216,6 +223,11 @@ class SettingsDataStore(context: Context) {
 
     suspend fun setLastBackgroundSyncMillis(millis: Long) {
         encryptedPrefs.edit().putLong(Keys.LAST_BACKGROUND_SYNC_MILLIS, millis).apply()
+        _settingsFlow.value = readUserSettings()
+    }
+
+    suspend fun setThemeMode(mode: AppThemeMode) {
+        encryptedPrefs.edit().putString(Keys.THEME_MODE, mode.name).apply()
         _settingsFlow.value = readUserSettings()
     }
 }

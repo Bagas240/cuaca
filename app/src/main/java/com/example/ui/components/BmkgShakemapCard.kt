@@ -73,16 +73,8 @@ import com.example.data.model.SeismicEventItem
 import com.example.data.model.SeismicSeverity
 import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelDangerText
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.SpaceMonoFamily
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -101,6 +93,7 @@ fun BmkgShakemapCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val colors = veridiaColors
     val imageLoader = rememberMapImageLoader()
     var showInteractive2DMap by remember(shakemapUrl) {
         mutableStateOf(shakemapUrl.isNullOrBlank())
@@ -139,8 +132,8 @@ fun BmkgShakemapCard(
                     .clickable(enabled = !activeShakemapUrl.isNullOrBlank()) { showInteractive2DMap = false }
                     .testTag("bmkg_shakemap_tab"),
                 shape = RoundedCornerShape(12.dp),
-                color = if (shakemapSelected) DangerCrimson else PastelSurface,
-                border = BorderStroke(1.dp, if (shakemapSelected) DangerCrimson else PastelBorder),
+                color = if (shakemapSelected) DangerCrimson else colors.surface,
+                border = BorderStroke(1.dp, if (shakemapSelected) DangerCrimson else colors.border),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
@@ -150,14 +143,14 @@ fun BmkgShakemapCard(
                     Icon(
                         imageVector = Icons.Rounded.Public,
                         contentDescription = null,
-                        tint = if (shakemapSelected) Color.White else PastelTextSub,
+                        tint = if (shakemapSelected) Color.White else colors.textSub,
                         modifier = Modifier.size(15.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "BMKG Shakemap",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = if (shakemapSelected) Color.White else PastelTextSub,
+                        color = if (shakemapSelected) Color.White else colors.textSub,
                     )
                 }
             }
@@ -169,8 +162,8 @@ fun BmkgShakemapCard(
                     .clickable { showInteractive2DMap = true }
                     .testTag("bmkg_2d_map_tab"),
                 shape = RoundedCornerShape(12.dp),
-                color = if (showInteractive2DMap) PastelPrimary else PastelSurface,
-                border = BorderStroke(1.dp, if (showInteractive2DMap) PastelPrimary else PastelBorder),
+                color = if (showInteractive2DMap) colors.primary else colors.surface,
+                border = BorderStroke(1.dp, if (showInteractive2DMap) colors.primary else colors.border),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
@@ -180,14 +173,14 @@ fun BmkgShakemapCard(
                     Icon(
                         imageVector = Icons.Rounded.Map,
                         contentDescription = null,
-                        tint = if (showInteractive2DMap) Color.White else PastelTextMain,
+                        tint = if (showInteractive2DMap) colors.onPrimary else colors.textMain,
                         modifier = Modifier.size(15.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "2D Radar Map",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = if (showInteractive2DMap) Color.White else PastelTextMain,
+                        color = if (showInteractive2DMap) colors.onPrimary else colors.textMain,
                     )
                 }
             }
@@ -203,21 +196,21 @@ fun BmkgShakemapCard(
                     }
                     .testTag("bmkg_refresh_button"),
                 shape = CircleShape,
-                color = PastelSurface,
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.border),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (isSyncing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(15.dp),
                             strokeWidth = 2.dp,
-                            color = PastelPrimary,
+                            color = colors.primary,
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
                             contentDescription = "Refresh BMKG Seismic Feed",
-                            tint = PastelPrimary,
+                            tint = colors.primary,
                             modifier = Modifier.size(17.dp),
                         )
                     }
@@ -232,8 +225,8 @@ fun BmkgShakemapCard(
                 .height(320.dp)
                 .testTag("bmkg_earthquake_map_container"),
             shape = RoundedCornerShape(22.dp),
-            color = PastelSurface,
-            border = BorderStroke(1.dp, PastelBorder),
+            color = colors.surface,
+            border = BorderStroke(1.dp, colors.border),
             shadowElevation = 2.dp,
         ) {
             if (!showInteractive2DMap && !activeShakemapUrl.isNullOrBlank()) {
@@ -253,10 +246,10 @@ fun BmkgShakemapCard(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color(0xFFF8FAFC)),
+                            .background(colors.subtle),
                         loading = {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = PastelPrimary)
+                                CircularProgressIndicator(color = colors.primary)
                             }
                         },
                         error = {
@@ -296,8 +289,8 @@ fun BmkgShakemapCard(
                             .align(Alignment.TopStart)
                             .padding(10.dp),
                         shape = RoundedCornerShape(10.dp),
-                        color = PastelSurface.copy(alpha = 0.94f),
-                        border = BorderStroke(1.dp, PastelBorder),
+                        color = colors.surface.copy(alpha = 0.94f),
+                        border = BorderStroke(1.dp, colors.border),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
@@ -307,13 +300,13 @@ fun BmkgShakemapCard(
                                 modifier = Modifier
                                     .size(7.dp)
                                     .clip(CircleShape)
-                                    .background(PastelAccent),
+                                    .background(colors.accent),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Auto-Updating · $lastUpdatedLabel",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                         }
                     }
@@ -323,13 +316,13 @@ fun BmkgShakemapCard(
                             .align(Alignment.BottomStart)
                             .padding(10.dp),
                         shape = RoundedCornerShape(10.dp),
-                        color = PastelSurface.copy(alpha = 0.94f),
-                        border = BorderStroke(1.dp, PastelBorder),
+                        color = colors.surface.copy(alpha = 0.94f),
+                        border = BorderStroke(1.dp, colors.border),
                     ) {
                         Text(
                             text = "Source: $dataSourceLabel",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = PastelDangerText,
+                            color = colors.dangerText,
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                         )
                     }
@@ -386,6 +379,7 @@ private fun Epicenter2DRadarMap(
     onZoomOut: () -> Unit,
     onReset: () -> Unit,
 ) {
+    val colors = veridiaColors
     val isAnimating = rememberIsDestinationAnimating()
     val pWavePhase: Float
     val sWavePhase: Float
@@ -471,12 +465,12 @@ private fun Epicenter2DRadarMap(
 
             // Static MMI felt boundary ring
             drawCircle(
-                color = WarningAmber.copy(alpha = 0.12f),
+                color = colors.warning.copy(alpha = 0.12f),
                 radius = radarRadius,
                 center = epi,
             )
             drawCircle(
-                color = WarningAmber.copy(alpha = 0.65f),
+                color = colors.warning.copy(alpha = 0.65f),
                 radius = radarRadius,
                 center = epi,
                 style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)),
@@ -484,7 +478,7 @@ private fun Epicenter2DRadarMap(
 
             // Expanding S-Wave & P-Wave pulses
             drawCircle(
-                color = WarningAmber.copy(alpha = (1f - sWavePhase) * 0.85f),
+                color = colors.warning.copy(alpha = (1f - sWavePhase) * 0.85f),
                 radius = 14f + sWavePhase * radarRadius,
                 center = epi,
                 style = Stroke(width = 3f),
@@ -506,9 +500,10 @@ private fun Epicenter2DRadarMap(
                 val isSelected = idx == selectedEventIndex
                 val pillColor = when (ev.severity) {
                     SeismicSeverity.HIGH -> DangerCrimson
-                    SeismicSeverity.MODERATE -> WarningAmber
-                    SeismicSeverity.LOW -> PastelPrimary
+                    SeismicSeverity.MODERATE -> colors.warning
+                    SeismicSeverity.LOW -> colors.primary
                 }
+                val selectedTextColor = if (ev.severity == SeismicSeverity.LOW) colors.onPrimary else Color.White
                 Surface(
                     modifier = Modifier
                         .offset { IntOffset(sx - 30, sy - 14) }
@@ -516,7 +511,7 @@ private fun Epicenter2DRadarMap(
                         .clickable { onSelectEvent(idx) }
                         .testTag("eq_map_pin_$idx"),
                     shape = RoundedCornerShape(10.dp),
-                    color = if (isSelected) pillColor else PastelSurface.copy(alpha = 0.95f),
+                    color = if (isSelected) pillColor else colors.surface.copy(alpha = 0.95f),
                     border = BorderStroke(if (isSelected) 2.dp else 1.5.dp, pillColor),
                     shadowElevation = if (isSelected) 6.dp else 2.dp,
                 ) {
@@ -528,7 +523,7 @@ private fun Epicenter2DRadarMap(
                             modifier = Modifier
                                 .size(7.dp)
                                 .clip(CircleShape)
-                                .background(if (isSelected) Color.White else pillColor),
+                                .background(if (isSelected) selectedTextColor else pillColor),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -538,7 +533,7 @@ private fun Epicenter2DRadarMap(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp,
                             ),
-                            color = if (isSelected) Color.White else PastelTextMain,
+                            color = if (isSelected) selectedTextColor else colors.textMain,
                         )
                     }
                 }
@@ -551,13 +546,13 @@ private fun Epicenter2DRadarMap(
                 .align(Alignment.TopStart)
                 .padding(10.dp),
             shape = RoundedCornerShape(10.dp),
-            color = PastelSurface.copy(alpha = 0.93f),
-            border = BorderStroke(1.dp, PastelBorder),
+            color = colors.surface.copy(alpha = 0.93f),
+            border = BorderStroke(1.dp, colors.border),
         ) {
             Text(
                 text = "Drag islands · Tap M pin",
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
-                color = PastelTextMain,
+                color = colors.textMain,
                 modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
             )
         }
@@ -576,12 +571,12 @@ private fun Epicenter2DRadarMap(
                     .clip(CircleShape)
                     .clickable(onClick = onZoomIn),
                 shape = CircleShape,
-                color = PastelSurface.copy(alpha = 0.94f),
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface.copy(alpha = 0.94f),
+                border = BorderStroke(1.dp, colors.border),
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = PastelTextMain, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = colors.textMain, modifier = Modifier.size(15.dp))
                 }
             }
             Surface(
@@ -591,12 +586,12 @@ private fun Epicenter2DRadarMap(
                     .clip(CircleShape)
                     .clickable(onClick = onZoomOut),
                 shape = CircleShape,
-                color = PastelSurface.copy(alpha = 0.94f),
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface.copy(alpha = 0.94f),
+                border = BorderStroke(1.dp, colors.border),
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = PastelTextMain, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = colors.textMain, modifier = Modifier.size(15.dp))
                 }
             }
             Surface(
@@ -606,12 +601,12 @@ private fun Epicenter2DRadarMap(
                     .clip(CircleShape)
                     .clickable(onClick = onReset),
                 shape = CircleShape,
-                color = PastelSurface.copy(alpha = 0.94f),
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface.copy(alpha = 0.94f),
+                border = BorderStroke(1.dp, colors.border),
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Epicenter", tint = PastelPrimary, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Epicenter", tint = colors.primary, modifier = Modifier.size(15.dp))
                 }
             }
         }
@@ -623,7 +618,7 @@ private fun Epicenter2DRadarMap(
                 .fillMaxWidth()
                 .padding(10.dp),
             shape = RoundedCornerShape(14.dp),
-            color = PastelSurface.copy(alpha = 0.95f),
+            color = colors.surface.copy(alpha = 0.95f),
             border = BorderStroke(1.dp, DangerCrimson.copy(alpha = 0.4f)),
             shadowElevation = 3.dp,
         ) {
@@ -636,14 +631,14 @@ private fun Epicenter2DRadarMap(
                     Text(
                         text = "$activeMagLabel · $activeLocation",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = PastelDangerText,
+                        color = colors.dangerText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = "Depth $activeDepthLabel · $activeMmiLabel · ${LocationTracker.formatCoordLabel(centerLat, centerLon)} · Source: BMKG",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = PastelTextSub,
+                        color = colors.textSub,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

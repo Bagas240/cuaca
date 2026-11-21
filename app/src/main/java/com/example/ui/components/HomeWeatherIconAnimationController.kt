@@ -283,7 +283,7 @@ fun AnimatedHomeWeatherAvdIcon(
     controller: HomeWeatherIconAnimationController?,
     modifier: Modifier = Modifier,
     size: Dp = 20.dp,
-    tint: Color = PastelPrimary,
+    tint: Color = com.example.ui.theme.veridiaColors.primary,
 ) {
     val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_weather_sun_cloud)
     val atEnd = controller?.weatherAvdAtEnd ?: false
@@ -314,7 +314,7 @@ fun AnimatedWindSwayAvdIcon(
     controller: HomeWeatherIconAnimationController?,
     modifier: Modifier = Modifier,
     size: Dp = 18.dp,
-    tint: Color = PastelPrimary,
+    tint: Color = com.example.ui.theme.veridiaColors.primary,
 ) {
     val activeController = controller ?: LocalHomeWeatherIconController.current
     val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_wind_sway)

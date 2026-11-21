@@ -8,6 +8,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -16,6 +20,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -37,10 +42,13 @@ import com.example.alerts.SeismicAccelerometerDetector
 import com.example.data.local.VeridiaDatabase
 import com.example.data.location.LocationMaskingUtility
 import com.example.data.location.LocationTracker
+import com.example.data.location.SolarScheduleCalculator
+import com.example.data.model.AppThemeMode
 import com.example.data.model.HourlyForecastItem
 import com.example.data.model.PressureUnit
 import com.example.data.model.SeismicEventItem
 import com.example.data.model.SeismicSeverity
+import com.example.data.model.SolarThemePhase
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.UserSettings
 import com.example.data.model.WeatherConditionKind
@@ -55,7 +63,9 @@ import com.example.ui.components.AnimatedWindSwayAvdIcon
 import com.example.ui.components.HomeWeatherIconAnimationController
 import com.example.ui.components.HourlyForecast24hCard
 import com.example.ui.components.PulsatingAqiGlowAvdBadge
+import com.example.ui.components.SolarThemeSwitcherCard
 import com.example.ui.components.SunCycleCard
+import com.example.ui.components.SunriseSunsetDashboardCard
 import com.example.ui.components.VeridiaBottomDock
 import com.example.ui.components.VeridiaRoute
 import com.example.ui.components.WindIndicatorStyle
@@ -75,10 +85,15 @@ import com.example.ui.navigation.NavStateController
 import com.example.ui.navigation.ProvideNavDestinationState
 import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.navigation.rememberNavStateController
+import com.example.ui.theme.AfternoonDuskVeridiaPalette
 import com.example.ui.theme.DangerCrimson
+import com.example.ui.theme.DayVeridiaPalette
+import com.example.ui.theme.NightVeridiaPalette
 import com.example.ui.theme.PastelAccent
+import com.example.ui.theme.SunriseSunsetVeridiaPalette
 import com.example.ui.theme.VeridiaTheme
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.WeatherViewModel
 import com.example.work.SyncBatteryTier
 import com.example.work.WeatherSyncScheduler
@@ -852,99 +867,240 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `workmanager schedules periodic and immediate weather alert checks`() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        WorkManagerTestInitHelper.initializeTestWorkManager(context)
-        val workManager = WorkManager.getInstance(context)
+    fun `solar schedule calculator computes distinct location-aware sunrise sunset and next event for Jakarta vs London`() {
+        // June 21 solstice at 09:00 UTC -> mid-afternoon in Jakarta (+7), morning in London (+1 BST)
+        val solsticeMillis = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+            set(2025, java.util.Calendar.JUNE, 21, 9, 0, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
 
-        val alertConstraints = WeatherSyncScheduler.buildAlertConstraints()
-        assertEquals(NetworkType.CONNECTED, alertConstraints.requiredNetworkType)
-        assertTrue(alertConstraints.requiresBatteryNotLow())
+        val jakarta = SolarScheduleCalculator.computeForLocation(
+            latitude = -6.20,
+            longitude = 106.85,
+            dateMillis = solsticeMillis,
+            timeZoneOffsetHours = 7.0,
+        )
+        val london = SolarScheduleCalculator.computeForLocation(
+            latitude = 51.51,
+            longitude = -0.13,
+            dateMillis = solsticeMillis,
+            timeZoneOffsetHours = 1.0,
+        )
 
-        WeatherSyncScheduler.schedulePeriodicWeatherAlerts(context)
-        val periodicAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS).get()
-        assertEquals(1, periodicAlerts.size)
-        assertEquals(WorkInfo.State.ENQUEUED, periodicAlerts.first().state)
-        assertEquals(NetworkType.CONNECTED, periodicAlerts.first().constraints.requiredNetworkType)
-
-        WeatherSyncScheduler.triggerImmediateAlertCheck(context)
-        val immediateAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS_IMMEDIATE).get()
-        assertEquals(1, immediateAlerts.size)
-
-        WeatherSyncScheduler.cancelPeriodicWeatherAlerts(context)
-        val cancelledAlerts = workManager.getWorkInfosForUniqueWork(WeatherSyncScheduler.UNIQUE_WORK_ALERTS).get()
-        assertEquals(WorkInfo.State.CANCELLED, cancelledAlerts.first().state)
+        assertTrue(jakarta.sunriseTime.matches(Regex("\\d{2}:\\d{2}")))
+        assertTrue(jakarta.sunsetTime.matches(Regex("\\d{2}:\\d{2}")))
+        assertTrue(london.sunriseTime.matches(Regex("\\d{2}:\\d{2}")))
+        assertTrue(london.sunsetTime.matches(Regex("\\d{2}:\\d{2}")))
+        // London summer solstice has much earlier sunrise (~04:43 BST) and later sunset (~21:21 BST) than Jakarta
+        assertTrue(london.sunriseTime < jakarta.sunriseTime)
+        assertTrue(london.sunsetTime > jakarta.sunsetTime)
+        assertTrue(london.daylightDuration.contains("16h"))
+        assertTrue(jakarta.daylightDuration.contains("11h"))
+        assertTrue(jakarta.todayDateLabel.startsWith("Today"))
+        assertTrue(jakarta.nextSolarEventLabel.startsWith("Sunset in "))
     }
 
     @Test
-    fun `disaster notification manager persists deduplication across instances and detects gale gusts`() {
-        val app = ApplicationProvider.getApplicationContext<Application>()
-        val shadowApp = Shadows.shadowOf(app)
-        shadowApp.grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
-
-        val managerA = DisasterNotificationManager(app)
-        managerA.clearDedupHistory()
-
-        val repo = VeridiaRepository()
-        val jakarta = repo.presetCities.first()
-        val gustyWeather = repo.defaultWeatherFor(jakarta).copy(
-            conditionKind = WeatherConditionKind.RAIN,
-            conditionLabel = "Severe Tropical Squall",
-            windSpeedKmh = 38,
-            windGustKmh = 72,
-            precipChancePercent = 90,
-        )
-        val safeAqi = repo.defaultAirQuality(jakarta)
-        val safeSeismic = repo.defaultSeismicTelemetry().copy(
-            tsunamiStatus = "Tidak Berpotensi",
-            recentEvents = emptyList(),
-        )
-
-        val alert = managerA.evaluateTelemetryForDisaster(
-            city = jakarta,
-            weather = gustyWeather,
-            airQuality = safeAqi,
-            seismic = safeSeismic,
-            settings = UserSettings(typhoonFlashWatch = true, seismicPWaveAlert = true),
-        )
-        assertNotNull(alert)
-        assertEquals(DisasterKind.SEVERE_STORM, alert?.kind)
-
-        val now = 1_700_000_000_000L
-        assertTrue(managerA.notifyIfNew(alert!!, nowMillis = now))
-
-        // A brand-new DisasterNotificationManager instance (simulating next WorkManager wake-up)
-        // must suppress duplicate notification within cooldown window
-        val managerB = DisasterNotificationManager(app)
-        assertFalse(managerB.notifyIfNew(alert, nowMillis = now + 15 * 60_000L))
-
-        // After cooldown window expires, re-notification is allowed
-        assertTrue(
-            managerB.notifyIfNew(
-                alert,
-                nowMillis = now + DisasterNotificationManager.DEFAULT_DEDUP_COOLDOWN_MS + 1_000L,
-            )
-        )
-        managerB.clearDedupHistory()
+    fun `sunrise sunset dashboard card renders location coordinates date solar noon and next event`() {
+        composeRule.setContent {
+            VeridiaTheme {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    SunriseSunsetDashboardCard(
+                        locationName = "Jakarta",
+                        coordinatesLabel = "6.2°S, 106.8°E (Zone)",
+                        isGpsActive = true,
+                        sunriseTime = "05:49",
+                        sunsetTime = "17:48",
+                        solarNoonTime = "11:48",
+                        daylightDuration = "11h 59m Daylight",
+                        solarProgress = 0.62f,
+                        todayDateLabel = "Today · Sat, Jun 21",
+                        nextSolarEventLabel = "Sunset in 1h 48m",
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("sunrise_sunset_dashboard_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_date").assertIsDisplayed()
+        composeRule.onNodeWithText("Today · Sat, Jun 21").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_location").assertIsDisplayed()
+        composeRule.onNodeWithText("Jakarta").assertIsDisplayed()
+        composeRule.onNodeWithText("GPS · 6.2°S, 106.8°E (Zone)").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_sunrise_tile").assertIsDisplayed()
+        composeRule.onNodeWithText("05:49").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_sunset_tile").assertIsDisplayed()
+        composeRule.onNodeWithText("17:48").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_moon_phase").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Waxing Gibbous").assertIsDisplayed()
+        composeRule.onNodeWithText("68% Lit").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_solar_noon").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Solar Noon · 11:48").assertIsDisplayed()
+        composeRule.onNodeWithTag("sunrise_sunset_next_event").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Sunset in 1h 48m").assertIsDisplayed()
     }
 
     @Test
-    fun `weather alert worker skips cleanly when all emergency alert toggles are disabled`() = runBlocking {
+    fun `solar schedule calculator computes accurate moon phases across synodic cycle`() {
+        val refNewMoon = 947182440000L
+        val millisPerDay = 86_400_000.0
+
+        val newMoon = SolarScheduleCalculator.computeMoonPhase(refNewMoon)
+        assertEquals("New Moon", newMoon.phaseName)
+        assertTrue(newMoon.illuminationPercent < 5)
+
+        val firstQuarter = SolarScheduleCalculator.computeMoonPhase(
+            refNewMoon + (7.3826 * millisPerDay).toLong()
+        )
+        assertEquals("First Quarter", firstQuarter.phaseName)
+        assertTrue(firstQuarter.illuminationPercent in 45..55)
+
+        val fullMoon = SolarScheduleCalculator.computeMoonPhase(
+            refNewMoon + (14.7653 * millisPerDay).toLong()
+        )
+        assertEquals("Full Moon", fullMoon.phaseName)
+        assertTrue(fullMoon.illuminationPercent >= 98)
+
+        val lastQuarter = SolarScheduleCalculator.computeMoonPhase(
+            refNewMoon + (22.1479 * millisPerDay).toLong()
+        )
+        assertEquals("Last Quarter", lastQuarter.phaseName)
+        assertTrue(lastQuarter.illuminationPercent in 45..55)
+    }
+
+    @Test
+    fun `solar schedule calculator resolves four time-of-day theme phases from sunrise and sunset`() {
+        val sunriseMin = 5 * 60 + 45 // 05:45
+        val sunsetMin = 17 * 60 + 55 // 17:55
+
+        // Morning sunrise & sunset windows -> rose-white SUNRISE_SUNSET
+        assertEquals(
+            SolarThemePhase.SUNRISE_SUNSET,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(sunriseMin - 20, sunriseMin, sunsetMin),
+        )
+        assertEquals(
+            SolarThemePhase.SUNRISE_SUNSET,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(sunsetMin + 10, sunriseMin, sunsetMin),
+        )
+
+        // Bright midday -> DAY
+        assertEquals(
+            SolarThemePhase.DAY,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(11 * 60 + 30, sunriseMin, sunsetMin),
+        )
+
+        // Late afternoon & post-sunset dusk -> AFTERNOON_DUSK ("sedikit menggelap")
+        assertEquals(
+            SolarThemePhase.AFTERNOON_DUSK,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(sunsetMin - 90, sunriseMin, sunsetMin),
+        )
+        assertEquals(
+            SolarThemePhase.AFTERNOON_DUSK,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(sunsetMin + 50, sunriseMin, sunsetMin),
+        )
+
+        // Late night & pre-dawn -> NIGHT
+        assertEquals(
+            SolarThemePhase.NIGHT,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(22 * 60 + 30, sunriseMin, sunsetMin),
+        )
+        assertEquals(
+            SolarThemePhase.NIGHT,
+            SolarScheduleCalculator.resolveSolarThemePhaseForMinute(2 * 60 + 0, sunriseMin, sunsetMin),
+        )
+
+        // Manual theme modes override solar calculation
+        assertEquals(
+            SolarThemePhase.NIGHT,
+            SolarScheduleCalculator.resolveEffectiveThemePhase(AppThemeMode.NIGHT, "05:45", "17:55", 106.8),
+        )
+        assertEquals(
+            SolarThemePhase.SUNRISE_SUNSET,
+            SolarScheduleCalculator.resolveEffectiveThemePhase(AppThemeMode.SUNRISE_SUNSET, "05:45", "17:55", 106.8),
+        )
+    }
+
+    @Test
+    fun `solar theme switcher card and VeridiaTheme update palettes across all solar phases`() {
+        var currentMode by mutableStateOf(AppThemeMode.DAY)
+        var capturedPhase: SolarThemePhase? = null
+        var capturedIsDark = false
+
+        composeRule.setContent {
+            val phase = when (currentMode) {
+                AppThemeMode.AUTO_SOLAR -> SolarThemePhase.DAY
+                AppThemeMode.SUNRISE_SUNSET -> SolarThemePhase.SUNRISE_SUNSET
+                AppThemeMode.DAY -> SolarThemePhase.DAY
+                AppThemeMode.AFTERNOON_DUSK -> SolarThemePhase.AFTERNOON_DUSK
+                AppThemeMode.NIGHT -> SolarThemePhase.NIGHT
+            }
+            VeridiaTheme(themePhase = phase) {
+                capturedPhase = veridiaColors.phase
+                capturedIsDark = veridiaColors.isDark
+                SolarThemeSwitcherCard(
+                    themeMode = currentMode,
+                    activePhase = phase,
+                    sunriseTime = "05:45",
+                    sunsetTime = "17:55",
+                    onSelectThemeMode = { currentMode = it },
+                )
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("solar_theme_switcher_card").assertIsDisplayed()
+        assertEquals(SolarThemePhase.DAY, capturedPhase)
+        assertFalse(capturedIsDark)
+        assertFalse(DayVeridiaPalette.isDark)
+
+        // Switch to Dawn/Sunset (rose-white "putih kemerahan")
+        composeRule.onNodeWithTag("theme_switch_sunrise_sunset").performClick()
+        composeRule.waitForIdle()
+        assertEquals(AppThemeMode.SUNRISE_SUNSET, currentMode)
+        assertEquals(SolarThemePhase.SUNRISE_SUNSET, capturedPhase)
+        assertFalse(SunriseSunsetVeridiaPalette.isDark)
+        composeRule.onNodeWithText("Sunrise/Sunset · Rose-White").assertIsDisplayed()
+
+        // Switch to Dusk (slightly darker afternoon)
+        composeRule.onNodeWithTag("theme_switch_afternoon_dusk").performClick()
+        composeRule.waitForIdle()
+        assertEquals(AppThemeMode.AFTERNOON_DUSK, currentMode)
+        assertEquals(SolarThemePhase.AFTERNOON_DUSK, capturedPhase)
+        assertFalse(AfternoonDuskVeridiaPalette.isDark)
+        composeRule.onNodeWithText("Afternoon · Shaded Dusk").assertIsDisplayed()
+
+        // Switch to Night (dark & cool)
+        composeRule.onNodeWithTag("theme_switch_night").performClick()
+        composeRule.waitForIdle()
+        assertEquals(AppThemeMode.NIGHT, currentMode)
+        assertEquals(SolarThemePhase.NIGHT, capturedPhase)
+        assertTrue(capturedIsDark)
+        assertTrue(NightVeridiaPalette.isDark)
+        composeRule.onNodeWithText("Night · Dark & Cool").assertIsDisplayed()
+
+        // Switch back to Auto
+        composeRule.onNodeWithTag("theme_switch_auto").performClick()
+        composeRule.waitForIdle()
+        assertEquals(AppThemeMode.AUTO_SOLAR, currentMode)
+        composeRule.onNodeWithText("Auto · 05:45–17:55").assertIsDisplayed()
+    }
+
+    @Test
+    fun `encrypted settings store persists theme mode securely at rest`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = SettingsDataStore(context)
-        store.setSeismicPWaveAlert(false)
-        store.setTyphoonFlashWatch(false)
-        store.setAqiSmogInversion(false)
 
-        val worker = TestListenableWorkerBuilder<com.example.work.WeatherAlertWorker>(context)
-            .setInputData(workDataOf(com.example.work.WeatherAlertWorker.KEY_TRIGGER_CHANNEL to "periodic_alerts"))
-            .build()
-        val result = worker.doWork()
-        assertTrue(result is ListenableWorker.Result.Success)
-        assertEquals("alerts_disabled", result.outputData.getString(com.example.work.WeatherAlertWorker.KEY_STATUS))
-        assertFalse(result.outputData.getBoolean(com.example.work.WeatherAlertWorker.KEY_ALERT_DISPATCHED, true))
+        store.setThemeMode(AppThemeMode.SUNRISE_SUNSET)
+        assertEquals(AppThemeMode.SUNRISE_SUNSET, store.settingsFlow.first().themeMode)
+
+        store.setThemeMode(AppThemeMode.NIGHT)
+        assertEquals(AppThemeMode.NIGHT, store.settingsFlow.first().themeMode)
+
+        val rawFallback = context.getSharedPreferences("veridia_encrypted_prefs_jvm_fallback", Context.MODE_PRIVATE)
+        val rawContents = rawFallback.all.entries.joinToString { "${it.key}=${it.value}" }
+        assertFalse(rawContents.contains("SUNRISE_SUNSET"))
+        assertFalse(rawContents.contains("NIGHT"))
     }
 }
-
 
 

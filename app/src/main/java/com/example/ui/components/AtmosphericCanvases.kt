@@ -51,14 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.navigation.rememberIsDestinationAnimating
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 
 const val HOME_SKY_IMAGE_URL =
     "https://lh3.googleusercontent.com/aida/ALJJyrBflIwXeKtgNlLCoxiar9VKrIzwk4NjTyfrY-IK3ea1NuAKt1NKY0JYm8MctLP9KyOJOmbOvg7CL3gi6EhZyGriELfsnEN8QsSoO1b01NkGDaIQwOSsHvfH9Zwza5I75RstpC9CP1J-jxfTyvjndlcTmewIKFBdsp4UoV_zZecGIsjZlqHOQnKrP3dPJe37teFyuH23IoRkqjX5a9H9yGjErBcBUUvvNaegkkzjOaPBPFNMcbHejyyWQg"
@@ -72,6 +67,7 @@ fun SunCycleCard(
     solarProgress: Float,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     VeridiaCard(
         modifier = modifier
             .fillMaxWidth()
@@ -86,7 +82,7 @@ fun SunCycleCard(
                 Icon(
                     imageVector = Icons.Rounded.WbTwilight,
                     contentDescription = null,
-                    tint = WarningAmber,
+                    tint = colors.warning,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -94,24 +90,24 @@ fun SunCycleCard(
                     Text(
                         text = "SUN CYCLE",
                         style = MaterialTheme.typography.labelSmall,
-                        color = PastelTextSub,
+                        color = colors.textSub,
                     )
                     Text(
                         text = locationName,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = PastelTextMain,
+                        color = colors.textMain,
                     )
                 }
             }
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = PastelSubtle,
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.subtle,
+                border = BorderStroke(1.dp, colors.border),
             ) {
                 Text(
                     text = daylightDuration,
                     style = MaterialTheme.typography.labelSmall,
-                    color = PastelSunset,
+                    color = colors.sunset,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
@@ -138,8 +134,8 @@ fun SunCycleCard(
                     .weight(1f)
                     .testTag("sun_cycle_sunrise"),
                 shape = RoundedCornerShape(14.dp),
-                color = WarningAmber.copy(alpha = 0.10f),
-                border = BorderStroke(1.dp, WarningAmber.copy(alpha = 0.28f)),
+                color = colors.warning.copy(alpha = 0.10f),
+                border = BorderStroke(1.dp, colors.warning.copy(alpha = 0.28f)),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -149,19 +145,19 @@ fun SunCycleCard(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(WarningAmber.copy(alpha = 0.18f)),
+                            .background(colors.warning.copy(alpha = 0.18f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.WbSunny,
                             contentDescription = "Sunrise",
-                            tint = WarningAmber,
+                            tint = colors.warning,
                             modifier = Modifier.size(16.dp),
                         )
                         Icon(
                             imageVector = Icons.Rounded.ArrowUpward,
                             contentDescription = null,
-                            tint = PastelSunset,
+                            tint = colors.sunset,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .size(11.dp)
@@ -173,7 +169,7 @@ fun SunCycleCard(
                         Text(
                             text = "Sunrise",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                         Text(
                             text = sunriseTime,
@@ -182,7 +178,7 @@ fun SunCycleCard(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                             ),
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
                     }
                 }
@@ -194,8 +190,8 @@ fun SunCycleCard(
                     .weight(1f)
                     .testTag("sun_cycle_sunset"),
                 shape = RoundedCornerShape(14.dp),
-                color = PastelPrimary.copy(alpha = 0.08f),
-                border = BorderStroke(1.dp, PastelPrimary.copy(alpha = 0.24f)),
+                color = colors.primary.copy(alpha = 0.08f),
+                border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.24f)),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -205,19 +201,19 @@ fun SunCycleCard(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(PastelPrimary.copy(alpha = 0.14f)),
+                            .background(colors.primary.copy(alpha = 0.14f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.NightsStay,
                             contentDescription = "Sunset",
-                            tint = PastelPrimary,
+                            tint = colors.primary,
                             modifier = Modifier.size(16.dp),
                         )
                         Icon(
                             imageVector = Icons.Rounded.ArrowDownward,
                             contentDescription = null,
-                            tint = PastelSunset,
+                            tint = colors.sunset,
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .size(11.dp)
@@ -229,7 +225,7 @@ fun SunCycleCard(
                         Text(
                             text = "Sunset",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                         Text(
                             text = sunsetTime,
@@ -238,7 +234,7 @@ fun SunCycleCard(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                             ),
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
                     }
                 }
@@ -255,6 +251,7 @@ fun SolarArcCanvas(
     modifier: Modifier = Modifier,
     showInlineLabels: Boolean = true,
 ) {
+    val colors = veridiaColors
     val animatedProgress by animateFloatAsState(
         targetValue = solarProgress.coerceIn(0.04f, 0.96f),
         animationSpec = spring(
@@ -296,7 +293,7 @@ fun SolarArcCanvas(
 
             // Dashed horizon line
             drawLine(
-                color = PastelBorder,
+                color = colors.border,
                 start = Offset(w * 0.05f, horizonY),
                 end = Offset(w * 0.95f, horizonY),
                 strokeWidth = 2.5f,
@@ -310,13 +307,13 @@ fun SolarArcCanvas(
             }
             drawPath(
                 path = arcPath,
-                color = WarningAmber.copy(alpha = 0.45f),
+                color = colors.warning.copy(alpha = 0.45f),
                 style = Stroke(width = 4.5f, cap = StrokeCap.Round),
             )
 
             // Sunrise & sunset anchor dots on horizon
-            drawCircle(color = WarningAmber.copy(alpha = 0.65f), radius = 4.5f, center = Offset(leftX, horizonY))
-            drawCircle(color = PastelPrimary.copy(alpha = 0.65f), radius = 4.5f, center = Offset(rightX, horizonY))
+            drawCircle(color = colors.warning.copy(alpha = 0.65f), radius = 4.5f, center = Offset(leftX, horizonY))
+            drawCircle(color = colors.primary.copy(alpha = 0.65f), radius = 4.5f, center = Offset(rightX, horizonY))
 
             // Current sun position along quadratic Bezier
             val t = animatedProgress
@@ -326,12 +323,12 @@ fun SolarArcCanvas(
             val sunY = (oneMinusT * oneMinusT * horizonY) + (2f * oneMinusT * t * peakY) + (t * t * horizonY)
 
             drawCircle(
-                color = WarningAmber.copy(alpha = 0.24f),
+                color = colors.warning.copy(alpha = 0.24f),
                 radius = 18f * orbScale,
                 center = Offset(sunX, sunY),
             )
             drawCircle(
-                color = WarningAmber,
+                color = colors.warning,
                 radius = 9f,
                 center = Offset(sunX, sunY),
             )
@@ -346,12 +343,12 @@ fun SolarArcCanvas(
                 Text(
                     text = "Sunrise",
                     style = MaterialTheme.typography.labelSmall,
-                    color = PastelTextSub,
+                    color = colors.textSub,
                 )
                 Text(
                     text = sunriseTime,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = PastelTextMain,
+                    color = colors.textMain,
                 )
             }
 
@@ -364,12 +361,12 @@ fun SolarArcCanvas(
                 Text(
                     text = "Sunset",
                     style = MaterialTheme.typography.labelSmall,
-                    color = PastelTextSub,
+                    color = colors.textSub,
                 )
                 Text(
                     text = sunsetTime,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = PastelTextMain,
+                    color = colors.textMain,
                 )
             }
         }

@@ -62,13 +62,9 @@ import com.example.data.model.RegionalAqiSector
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -117,6 +113,7 @@ fun RegionalAqi2DMap(
     onRefreshNow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     var zoomLevel by remember { mutableIntStateOf(10) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -157,14 +154,14 @@ fun RegionalAqi2DMap(
                             .clickable { onSelectLayer(layer) }
                             .testTag("aqi_layer_${layer.name.lowercase()}"),
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) PastelPrimary else PastelSurface,
-                        border = BorderStroke(1.dp, if (isSelected) PastelPrimary else PastelBorder),
+                        color = if (isSelected) colors.primary else colors.surface,
+                        border = BorderStroke(1.dp, if (isSelected) colors.primary else colors.border),
                         shadowElevation = if (isSelected) 3.dp else 1.dp,
                     ) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (isSelected) Color.White else PastelTextMain,
+                            color = if (isSelected) colors.onPrimary else colors.textMain,
                             modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
                         )
                     }
@@ -179,18 +176,18 @@ fun RegionalAqi2DMap(
                     .clickable(enabled = !isSyncing, onClick = onRefreshNow)
                     .testTag("aqi_refresh_button"),
                 shape = CircleShape,
-                color = PastelSurface,
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.border),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     if (isSyncing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(14.dp),
                             strokeWidth = 2.dp,
-                            color = PastelPrimary,
+                            color = colors.primary,
                         )
                     } else {
-                        Icon(Icons.Rounded.Refresh, contentDescription = "Refresh AQI Map", tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Refresh, contentDescription = "Refresh AQI Map", tint = colors.primary, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -202,7 +199,7 @@ fun RegionalAqi2DMap(
                 .fillMaxWidth()
                 .height(330.dp)
                 .clip(RoundedCornerShape(22.dp))
-                .background(Color(0xFFCBE2F6))
+                .background(if (colors.isDark) Color(0xFF0F1E33) else Color(0xFFCBE2F6))
                 .pointerInput(zoomLevel) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
@@ -284,7 +281,7 @@ fun RegionalAqi2DMap(
                             .clickable { onSelectSector(sector.id) }
                             .testTag("aqi_map_pin_${sector.id}"),
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isSelected) PastelTextMain else PastelSurface.copy(alpha = 0.95f),
+                        color = if (isSelected) colors.primary else colors.surface.copy(alpha = 0.95f),
                         border = BorderStroke(if (isSelected) 2.dp else 1.5.dp, badgeColor),
                         shadowElevation = if (isSelected) 6.dp else 3.dp,
                     ) {
@@ -306,7 +303,7 @@ fun RegionalAqi2DMap(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 10.sp,
                                 ),
-                                color = if (isSelected) Color.White else PastelTextMain,
+                                color = if (isSelected) colors.onPrimary else colors.textMain,
                             )
                         }
                     }
@@ -319,8 +316,8 @@ fun RegionalAqi2DMap(
                     .align(Alignment.TopStart)
                     .padding(10.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = PastelSurface.copy(alpha = 0.94f),
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface.copy(alpha = 0.94f),
+                border = BorderStroke(1.dp, colors.border),
                 shadowElevation = 2.dp,
             ) {
                 Row(
@@ -330,14 +327,14 @@ fun RegionalAqi2DMap(
                     Icon(
                         imageVector = Icons.Rounded.Map,
                         contentDescription = null,
-                        tint = PastelPrimary,
+                        tint = colors.primary,
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "$cityName AQI · $lastUpdatedLabel",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                        color = PastelTextMain,
+                        color = colors.textMain,
                     )
                 }
             }
@@ -357,12 +354,12 @@ fun RegionalAqi2DMap(
                         .clickable { zoomLevel = (zoomLevel + 1).coerceAtMost(13) }
                         .testTag("aqi_map_zoom_in"),
                     shape = CircleShape,
-                    color = PastelSurface.copy(alpha = 0.94f),
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface.copy(alpha = 0.94f),
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = colors.textMain, modifier = Modifier.size(16.dp))
                     }
                 }
                 Surface(
@@ -373,12 +370,12 @@ fun RegionalAqi2DMap(
                         .clickable { zoomLevel = (zoomLevel - 1).coerceAtLeast(5) }
                         .testTag("aqi_map_zoom_out"),
                     shape = CircleShape,
-                    color = PastelSurface.copy(alpha = 0.94f),
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface.copy(alpha = 0.94f),
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = colors.textMain, modifier = Modifier.size(16.dp))
                     }
                 }
                 Surface(
@@ -393,12 +390,12 @@ fun RegionalAqi2DMap(
                         }
                         .testTag("aqi_map_reset_view"),
                     shape = CircleShape,
-                    color = PastelSurface.copy(alpha = 0.94f),
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface.copy(alpha = 0.94f),
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = colors.primary, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -420,7 +417,7 @@ fun RegionalAqi2DMap(
                         .padding(10.dp)
                         .testTag("aqi_sector_inspector"),
                     shape = RoundedCornerShape(14.dp),
-                    color = PastelSurface.copy(alpha = 0.95f),
+                    color = colors.surface.copy(alpha = 0.95f),
                     border = BorderStroke(1.dp, accentColor.copy(alpha = 0.45f)),
                     shadowElevation = 3.dp,
                 ) {
@@ -444,14 +441,14 @@ fun RegionalAqi2DMap(
                                 Text(
                                     text = selectedSector.name,
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = "${LocationTracker.formatCoordLabel(selectedSector.latitude, selectedSector.longitude)} · ${selectedSector.statusLabel}",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -469,7 +466,7 @@ fun RegionalAqi2DMap(
                                     fontFamily = SpaceMonoFamily,
                                     fontWeight = FontWeight.Bold,
                                 ),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                                 modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                             )
                         }
@@ -500,8 +497,8 @@ fun RegionalAqi2DMap(
                         .clickable { onSelectSector(sector.id) }
                         .testTag("aqi_sector_chip_${sector.id}"),
                     shape = RoundedCornerShape(10.dp),
-                    color = if (isSelected) chipColor.copy(alpha = 0.16f) else PastelSurface,
-                    border = BorderStroke(1.dp, if (isSelected) chipColor else PastelBorder),
+                    color = if (isSelected) chipColor.copy(alpha = 0.16f) else colors.surface,
+                    border = BorderStroke(1.dp, if (isSelected) chipColor else colors.border),
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -519,7 +516,7 @@ fun RegionalAqi2DMap(
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             ),
-                            color = if (isSelected) PastelTextMain else PastelTextSub,
+                            color = if (isSelected) colors.textMain else colors.textSub,
                         )
                     }
                 }

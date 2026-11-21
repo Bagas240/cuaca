@@ -18,6 +18,21 @@ enum class WeatherConditionKind {
     FOG,
 }
 
+enum class AppThemeMode {
+    AUTO_SOLAR,
+    DAY,
+    NIGHT,
+    SUNRISE_SUNSET,
+    AFTERNOON_DUSK,
+}
+
+enum class SolarThemePhase {
+    SUNRISE_SUNSET,
+    DAY,
+    AFTERNOON_DUSK,
+    NIGHT,
+}
+
 data class CityLocation(
     val id: String,
     val name: String,
@@ -76,6 +91,13 @@ data class WeatherTelemetry(
     val next24hForecast: List<HourlyForecastItem> = emptyList(),
     val isLiveSynced: Boolean = false,
     val dataSourceLabel: String = "BMKG (api.bmkg.go.id)",
+    val solarNoonTime: String = "11:45",
+    val solarDateLabel: String = "Today",
+    val nextSolarEventLabel: String = "",
+    val moonPhaseName: String = "Waxing Gibbous",
+    val moonIlluminationPercent: Int = 68,
+    val moonPhaseFraction: Float = 0.35f,
+    val moonAgeDays: Double = 10.3,
 )
 
 data class DistrictAqiItem(
@@ -213,5 +235,6 @@ data class UserSettings(
     val offlineCacheLabel: String = "Cached · Nov 2026",
     val backgroundSyncEnabled: Boolean = true,
     val lastBackgroundSyncMillis: Long = 0L,
+    val themeMode: AppThemeMode = AppThemeMode.AUTO_SOLAR,
 )
 

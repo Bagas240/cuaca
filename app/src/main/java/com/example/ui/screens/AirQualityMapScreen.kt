@@ -54,17 +54,7 @@ import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.NeonPurple
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.SecondaryGreenDark
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
 import java.util.Locale
 
@@ -77,12 +67,13 @@ fun AirQualityMapScreen(
     onRefreshNow: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val colors = veridiaColors
     val aqi = state.airQuality
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
@@ -100,8 +91,8 @@ fun AirQualityMapScreen(
                     trailingContent = {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Row(
@@ -112,13 +103,13 @@ fun AirQualityMapScreen(
                                     modifier = Modifier
                                         .size(7.dp)
                                         .clip(CircleShape)
-                                        .background(PastelAccent),
+                                        .background(colors.accent),
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "${aqi.activeSensorsCount} Sensors Live",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -160,52 +151,52 @@ fun AirQualityMapScreen(
                             Text(
                                 text = "REGIONAL AIR QUALITY INDEX",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
                                     text = aqi.regionalAqi.toString(),
                                     style = MaterialTheme.typography.displayLarge,
-                                    color = PastelSunset,
+                                    color = colors.sunset,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = aqi.regionalCategory,
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = PastelSunset,
+                                    color = colors.sunset,
                                     modifier = Modifier.padding(bottom = 10.dp),
                                 )
                             }
                             Text(
                                 text = aqi.summaryDescription,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.Public, null, tint = PastelPrimary, modifier = Modifier.size(13.dp))
+                                Icon(Icons.Rounded.Public, null, tint = colors.primary, modifier = Modifier.size(13.dp))
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "Source: ${aqi.dataSourceLabel} · Esri / OSM Map",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    color = PastelPrimary,
+                                    color = colors.primary,
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = WarningAmber.copy(alpha = 0.14f),
-                            border = BorderStroke(1.dp, WarningAmber.copy(alpha = 0.35f)),
+                            color = colors.warning.copy(alpha = 0.14f),
+                            border = BorderStroke(1.dp, colors.warning.copy(alpha = 0.35f)),
                         ) {
                             Column(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Icon(Icons.Rounded.Masks, null, tint = PastelSunset, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Rounded.Masks, null, tint = colors.sunset, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text("PM2.5", style = MaterialTheme.typography.labelSmall, color = PastelSunset)
+                                Text("PM2.5", style = MaterialTheme.typography.labelSmall, color = colors.sunset)
                             }
                         }
                     }
@@ -219,8 +210,8 @@ fun AirQualityMapScreen(
                             .height(6.dp)
                             .clip(CircleShape),
                     ) {
-                        Box(modifier = Modifier.weight(1f).height(6.dp).background(PastelAccent))
-                        Box(modifier = Modifier.weight(1f).height(6.dp).background(WarningAmber))
+                        Box(modifier = Modifier.weight(1f).height(6.dp).background(colors.accent))
+                        Box(modifier = Modifier.weight(1f).height(6.dp).background(colors.warning))
                         Box(modifier = Modifier.weight(1f).height(6.dp).background(DangerCrimson))
                         Box(modifier = Modifier.weight(1f).height(6.dp).background(NeonPurple))
                     }
@@ -229,8 +220,8 @@ fun AirQualityMapScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("0 Good", style = MaterialTheme.typography.labelSmall, color = SecondaryGreenDark)
-                        Text("50 Moderate", style = MaterialTheme.typography.labelSmall, color = PastelSunset)
+                        Text("0 Good", style = MaterialTheme.typography.labelSmall, color = colors.greenText)
+                        Text("50 Moderate", style = MaterialTheme.typography.labelSmall, color = colors.sunset)
                         Text("150 Poor", style = MaterialTheme.typography.labelSmall, color = DangerCrimson)
                         Text("300+ Alert", style = MaterialTheme.typography.labelSmall, color = NeonPurple)
                     }
@@ -254,9 +245,9 @@ fun AirQualityMapScreen(
                             value = String.format(Locale.US, "%.1f", aqi.pm25),
                             unit = "µg/m³",
                             subtitle = "2.4x WHO Threshold",
-                            subtitleColor = PastelSunset,
+                            subtitleColor = colors.sunset,
                             icon = Icons.Rounded.Grain,
-                            iconTint = WarningAmber,
+                            iconTint = colors.warning,
                             progress = (aqi.pm25.toFloat() / 60f).coerceIn(0.1f, 1f),
                             modifier = Modifier.weight(1f),
                         )
@@ -265,9 +256,9 @@ fun AirQualityMapScreen(
                             value = String.format(Locale.US, "%.1f", aqi.pm10),
                             unit = "µg/m³",
                             subtitle = "Within Safety Band",
-                            subtitleColor = SecondaryGreenDark,
+                            subtitleColor = colors.greenText,
                             icon = Icons.Rounded.BlurOn,
-                            iconTint = PastelAccent,
+                            iconTint = colors.accent,
                             progress = (aqi.pm10.toFloat() / 110f).coerceIn(0.1f, 1f),
                             modifier = Modifier.weight(1f),
                         )
@@ -281,9 +272,9 @@ fun AirQualityMapScreen(
                             value = aqi.coPpb.toString(),
                             unit = "ppb",
                             subtitle = "Normal Urban Base",
-                            subtitleColor = PastelTextSub,
+                            subtitleColor = colors.textSub,
                             icon = Icons.Rounded.Co2,
-                            iconTint = PastelPrimary,
+                            iconTint = colors.primary,
                             progress = (aqi.coPpb.toFloat() / 1200f).coerceIn(0.1f, 1f),
                             modifier = Modifier.weight(1f),
                         )
@@ -310,12 +301,12 @@ fun AirQualityMapScreen(
                         .padding(horizontal = 20.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.MedicalServices, null, tint = WarningAmber, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.MedicalServices, null, tint = colors.warning, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Health & Activity Protocols",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -325,7 +316,7 @@ fun AirQualityMapScreen(
                     ) {
                         HealthProtocolTile(
                             icon = Icons.Rounded.Masks,
-                            iconTint = WarningAmber,
+                            iconTint = colors.warning,
                             title = "Wear Mask",
                             subtitle = "N95 for sensitive lungs",
                             modifier = Modifier.weight(1f),
@@ -339,7 +330,7 @@ fun AirQualityMapScreen(
                         )
                         HealthProtocolTile(
                             icon = Icons.Rounded.SensorWindow,
-                            iconTint = PastelPrimary,
+                            iconTint = colors.primary,
                             title = "Close Vents",
                             subtitle = "Engage HEPA purifiers",
                             modifier = Modifier.weight(1f),
@@ -361,27 +352,27 @@ fun AirQualityMapScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Domain, null, tint = PastelPrimary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Domain, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "District Comparison",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                         }
                         Text(
                             text = "${aqi.districts.size} Key Sectors",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
 
                     aqi.districts.forEachIndexed { idx, district ->
                         val (dotColor, valueColor) = when (district.severity) {
-                            AqiSeverity.EXCELLENT, AqiSeverity.GOOD -> PastelAccent to SecondaryGreenDark
-                            AqiSeverity.MODERATE -> WarningAmber to PastelSunset
+                            AqiSeverity.EXCELLENT, AqiSeverity.GOOD -> colors.accent to colors.greenText
+                            AqiSeverity.MODERATE -> colors.warning to colors.sunset
                             AqiSeverity.UNHEALTHY -> DangerCrimson to DangerCrimson
                         }
                         Row(
@@ -406,12 +397,12 @@ fun AirQualityMapScreen(
                                     Text(
                                         text = district.name,
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                     Text(
                                         text = district.description,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = PastelTextSub,
+                                        color = colors.textSub,
                                     )
                                 }
                             }
@@ -429,7 +420,7 @@ fun AirQualityMapScreen(
                             }
                         }
                         if (idx < aqi.districts.lastIndex) {
-                            HorizontalDivider(color = PastelBorder.copy(alpha = 0.6f))
+                            HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -450,22 +441,23 @@ private fun PollutantMetricCard(
     progress: Float,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     VeridiaCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(title, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = PastelTextSub)
+            Text(title, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = colors.textSub)
             Icon(icon, null, tint = iconTint, modifier = Modifier.size(16.dp))
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = MaterialTheme.typography.displayMedium, color = PastelTextMain)
+            Text(value, style = MaterialTheme.typography.displayMedium, color = colors.textMain)
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = unit,
                 style = MaterialTheme.typography.labelSmall,
-                color = PastelTextSub,
+                color = colors.textSub,
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
@@ -478,7 +470,7 @@ private fun PollutantMetricCard(
                 .height(4.dp)
                 .clip(CircleShape),
             color = iconTint,
-            trackColor = PastelBorder,
+            trackColor = colors.border,
             strokeCap = StrokeCap.Round,
         )
     }
@@ -492,11 +484,12 @@ private fun HealthProtocolTile(
     subtitle: String,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(14.dp),
-        color = PastelSubtle,
-        border = BorderStroke(1.dp, PastelBorder),
+        color = colors.subtle,
+        border = BorderStroke(1.dp, colors.border),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
@@ -507,13 +500,13 @@ private fun HealthProtocolTile(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = PastelTextMain,
+                color = colors.textMain,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
-                color = PastelTextSub,
+                color = colors.textSub,
                 textAlign = TextAlign.Center,
             )
         }

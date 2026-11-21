@@ -73,15 +73,7 @@ import com.example.ui.components.conditionTint
 import com.example.ui.components.formatPressureValue
 import com.example.ui.components.formatTempString
 import com.example.ui.components.formatWindValue
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
 
 @Composable
@@ -93,6 +85,7 @@ fun DetailedWeatherScreen(
     onRefreshNow: () -> Unit,
     onOpenRadar: () -> Unit,
 ) {
+    val colors = veridiaColors
     val weather = state.weather
     val tempUnit = state.settings.temperatureUnit
     val (_, windUnitLabel) = formatWindValue(weather.windSpeedKmh, state.settings.windUnit)
@@ -113,7 +106,7 @@ fun DetailedWeatherScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
@@ -135,8 +128,8 @@ fun DetailedWeatherScreen(
                                 .clickable(onClick = onOpenRadar)
                                 .testTag("detailed_weather_radar_button"),
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Row(
@@ -146,14 +139,14 @@ fun DetailedWeatherScreen(
                                 Icon(
                                     imageVector = Icons.Rounded.Radar,
                                     contentDescription = "Open Radar",
-                                    tint = PastelPrimary,
+                                    tint = colors.primary,
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "Radar",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -164,11 +157,11 @@ fun DetailedWeatherScreen(
             // Live Animated Atmospheric Header Card
             item {
                 val skyColors = when (weather.conditionKind) {
-                    WeatherConditionKind.SUNNY -> listOf(Color(0xFF1E88E5), Color(0xFF64B5F6))
+                    WeatherConditionKind.SUNNY -> listOf(colors.backdropTop, colors.backdropMid)
                     WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF141E30), Color(0xFF2B3E5A))
                     WeatherConditionKind.RAIN -> listOf(Color(0xFF223349), Color(0xFF45607D))
                     WeatherConditionKind.SUNSET -> listOf(Color(0xFF3E356B), Color(0xFFD97757))
-                    else -> listOf(Color(0xFF2C537A), Color(0xFF6C9BC5))
+                    else -> listOf(colors.backdropTop, colors.backdropMid)
                 }
                 Surface(
                     modifier = Modifier
@@ -178,7 +171,7 @@ fun DetailedWeatherScreen(
                         .clip(RoundedCornerShape(20.dp))
                         .testTag("weather_live_sky_header"),
                     shape = RoundedCornerShape(20.dp),
-                    border = BorderStroke(1.dp, PastelBorder),
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 4.dp,
                 ) {
                     Box(
@@ -254,8 +247,8 @@ fun DetailedWeatherScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = PastelSurface,
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface,
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Row(
@@ -301,19 +294,19 @@ fun DetailedWeatherScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             AnimatedAirQualityWindIcon(
                                 size = 18.dp,
-                                tint = PastelPrimary,
+                                tint = colors.primary,
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "ATMOSPHERE STRATUM",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                         }
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = PastelSubtle,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.subtle,
+                            border = BorderStroke(1.dp, colors.border),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -322,14 +315,14 @@ fun DetailedWeatherScreen(
                                 Icon(
                                     imageVector = Icons.Rounded.Layers,
                                     contentDescription = null,
-                                    tint = PastelPrimary,
+                                    tint = colors.primary,
                                     modifier = Modifier.size(12.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = altitudeBadge,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -344,7 +337,7 @@ fun DetailedWeatherScreen(
                         Text(
                             text = rangeLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
@@ -353,19 +346,19 @@ fun DetailedWeatherScreen(
                         StratumLayerRow(
                             title = "Upper Stratosphere",
                             meta = "12,000m · ${formatTempString(-52, tempUnit, true)}",
-                            dotColor = PastelPrimary,
+                            dotColor = colors.primary,
                             isActive = state.selectedStratum == AtmosphereStratum.UPPER_STRATUM,
                         )
                         StratumLayerRow(
                             title = "Mid-Troposphere Rain Clouds",
                             meta = "4,200m · ${formatTempString(-8, tempUnit, true)}",
-                            dotColor = PastelAccent,
+                            dotColor = colors.accent,
                             isActive = state.selectedStratum == AtmosphereStratum.MID_CLOUD,
                         )
                         StratumLayerRow(
                             title = "Ground Boundary & Precipitation",
                             meta = "42m · ${formatTempString(weather.currentTempC, tempUnit, true)}",
-                            dotColor = PastelPrimary,
+                            dotColor = colors.primary,
                             isActive = state.selectedStratum == AtmosphereStratum.SURFACE,
                         )
                     }
@@ -390,8 +383,8 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("WIND", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                Icon(Icons.Rounded.NearMe, null, tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                                Text("WIND", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Icon(Icons.Rounded.NearMe, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             WindSpeedDirectionIndicator(
@@ -404,17 +397,17 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider(color = PastelBorder)
+                            HorizontalDivider(color = colors.border)
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("Gusts", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+                                Text("Gusts", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 Text(
                                     "$gustVal $windUnitLabel",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -425,28 +418,28 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("UV INDEX", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                Icon(Icons.Rounded.WbSunny, null, tint = WarningAmber, modifier = Modifier.size(16.dp))
+                                Text("UV INDEX", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Icon(Icons.Rounded.WbSunny, null, tint = colors.warning, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
                                     text = String.format("%.1f", weather.uvIndex),
                                     style = MaterialTheme.typography.displayMedium,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = weather.uvLevelLabel.uppercase(),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = WarningAmber,
+                                    color = colors.warning,
                                     modifier = Modifier.padding(bottom = 6.dp),
                                 )
                             }
                             Text(
                                 text = weather.uvPeakWindow,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             val animatedUvProgress by animateFloatAsState(
@@ -460,8 +453,8 @@ fun DetailedWeatherScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = WarningAmber,
-                                trackColor = PastelBorder,
+                                color = colors.warning,
+                                trackColor = colors.border,
                                 strokeCap = StrokeCap.Round,
                             )
                         }
@@ -477,19 +470,19 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("HUMIDITY", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                AnimatedHumidityDropletIcon(size = 18.dp, tint = PastelPrimary)
+                                Text("HUMIDITY", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                AnimatedHumidityDropletIcon(size = 18.dp, tint = colors.primary)
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = "${weather.humidityPercent}%",
                                 style = MaterialTheme.typography.displayMedium,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                             Text(
                                 text = "Dew point is ${String.format("%.1f", weather.dewPointC)}°C right now",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             val animatedHumidityDetail by animateFloatAsState(
@@ -503,8 +496,8 @@ fun DetailedWeatherScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = PastelPrimary,
-                                trackColor = PastelBorder,
+                                color = colors.primary,
+                                trackColor = colors.border,
                                 strokeCap = StrokeCap.Round,
                             )
                         }
@@ -515,17 +508,17 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("PRESSURE", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                Icon(Icons.Rounded.Compress, null, tint = PastelAccent, modifier = Modifier.size(16.dp))
+                                Text("PRESSURE", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Icon(Icons.Rounded.Compress, null, tint = colors.accent, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Row(verticalAlignment = Alignment.Bottom) {
-                                Text(pressureVal, style = MaterialTheme.typography.displayMedium, color = PastelTextMain)
+                                Text(pressureVal, style = MaterialTheme.typography.displayMedium, color = colors.textMain)
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = pressureUnitLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     modifier = Modifier.padding(bottom = 6.dp),
                                 )
                             }
@@ -533,25 +526,25 @@ fun DetailedWeatherScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
                                     contentDescription = null,
-                                    tint = PastelAccent,
+                                    tint = colors.accent,
                                     modifier = Modifier.size(14.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = weather.pressureTrendLabel,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelAccent,
+                                    color = colors.accent,
                                 )
                             }
                             Spacer(modifier = Modifier.height(10.dp))
-                            HorizontalDivider(color = PastelBorder)
+                            HorizontalDivider(color = colors.border)
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("Reference", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                                Text("1,013.25 Std", style = MaterialTheme.typography.labelSmall, color = PastelTextMain)
+                                Text("Reference", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text("1,013.25 Std", style = MaterialTheme.typography.labelSmall, color = colors.textMain)
                             }
                         }
                     }
@@ -592,29 +585,29 @@ fun DetailedWeatherScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.CalendarToday, null, tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Rounded.CalendarToday, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "7-Day Forecast",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                         }
                         Text(
                             text = "Next 168 Hours",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
 
                     weather.dailyForecast.forEachIndexed { idx, day ->
                         val barColor = when (day.condition) {
-                            WeatherConditionKind.SUNNY -> if (day.dayLabel == "Sun") PastelAccent else WarningAmber
-                            WeatherConditionKind.THUNDERSTORM -> WarningAmber
-                            WeatherConditionKind.RAIN -> PastelPrimary
-                            else -> PastelBorder
+                            WeatherConditionKind.SUNNY -> if (day.dayLabel == "Sun") colors.accent else colors.warning
+                            WeatherConditionKind.THUNDERSTORM -> colors.warning
+                            WeatherConditionKind.RAIN -> colors.primary
+                            else -> colors.border
                         }
                         Row(
                             modifier = Modifier
@@ -627,7 +620,7 @@ fun DetailedWeatherScreen(
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = if (idx == 0) FontWeight.Bold else FontWeight.Medium,
                                 ),
-                                color = if (idx == 0) PastelTextMain else PastelTextSub,
+                                color = if (idx == 0) colors.textMain else colors.textSub,
                                 modifier = Modifier.width(58.dp),
                             )
                             Row(
@@ -652,7 +645,7 @@ fun DetailedWeatherScreen(
                                 Text(
                                     text = formatTempString(day.minTempC, tempUnit),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     modifier = Modifier.width(30.dp),
                                 )
                                 Box(
@@ -660,7 +653,7 @@ fun DetailedWeatherScreen(
                                         .weight(1f)
                                         .height(6.dp)
                                         .clip(CircleShape)
-                                        .background(PastelSubtle),
+                                        .background(colors.subtle),
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -675,12 +668,12 @@ fun DetailedWeatherScreen(
                                 Text(
                                     text = formatTempString(day.maxTempC, tempUnit),
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
                         if (idx < weather.dailyForecast.lastIndex) {
-                            HorizontalDivider(color = PastelBorder.copy(alpha = 0.6f))
+                            HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -696,8 +689,9 @@ private fun StratumSegmentButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     val pillColor by animateColorAsState(
-        targetValue = if (selected) PastelPrimary else Color.Transparent,
+        targetValue = if (selected) colors.primary else Color.Transparent,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "stratum_pill_color",
     )
@@ -718,7 +712,7 @@ private fun StratumSegmentButton(
                     fontSize = 11.sp,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 ),
-                color = if (selected) Color.White else PastelTextSub,
+                color = if (selected) colors.onPrimary else colors.textSub,
             )
         }
     }
@@ -731,12 +725,13 @@ private fun StratumLayerRow(
     dotColor: Color,
     isActive: Boolean,
 ) {
+    val colors = veridiaColors
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (isActive) PastelSky.copy(alpha = 0.65f) else PastelSubtle,
+        color = if (isActive) colors.sky.copy(alpha = 0.65f) else colors.subtle,
         border = BorderStroke(
             1.dp,
-            if (isActive) PastelPrimary.copy(alpha = 0.35f) else PastelBorder,
+            if (isActive) colors.primary.copy(alpha = 0.35f) else colors.border,
         ),
     ) {
         Row(
@@ -759,13 +754,13 @@ private fun StratumLayerRow(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                     ),
-                    color = PastelTextMain,
+                    color = colors.textMain,
                 )
             }
             Text(
                 text = meta,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isActive) PastelPrimary else PastelTextSub,
+                color = if (isActive) colors.primary else colors.textSub,
             )
         }
     }

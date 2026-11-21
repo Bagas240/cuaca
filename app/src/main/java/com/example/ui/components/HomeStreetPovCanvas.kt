@@ -35,9 +35,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.data.model.SolarThemePhase
 import com.example.data.model.WeatherConditionKind
 import com.example.ui.navigation.rememberIsDestinationAnimating
-import com.example.ui.theme.PastelSky
+import com.example.ui.theme.veridiaColors
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -52,15 +53,27 @@ fun HomeWeatherBackdrop(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val colors = veridiaColors
 
-    val skyPalette = when (conditionKind) {
-        WeatherConditionKind.SUNNY -> listOf(Color(0xFF1565C0), Color(0xFF4BA3F2), Color(0xFFBBE1FA))
-        WeatherConditionKind.PARTLY_CLOUDY -> listOf(Color(0xFF215B9E), Color(0xFF639AD1), Color(0xFFC2DCF2))
-        WeatherConditionKind.CLOUDY -> listOf(Color(0xFF2B3B4E), Color(0xFF53677E), Color(0xFF98AABF))
-        WeatherConditionKind.FOG -> listOf(Color(0xFF586A7D), Color(0xFF8C9EAE), Color(0xFFD5DFE8))
-        WeatherConditionKind.RAIN -> listOf(Color(0xFF19273A), Color(0xFF334963), Color(0xFF6B819A))
-        WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF0C1424), Color(0xFF1D2C42), Color(0xFF42546C))
-        WeatherConditionKind.SUNSET -> listOf(Color(0xFF2B2D5F), Color(0xFF9C4E73), Color(0xFFF39C6B))
+    val skyPalette = when (colors.phase) {
+        SolarThemePhase.SUNRISE_SUNSET -> when (conditionKind) {
+            WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF281932), Color(0xFF6B3A52), Color(0xFFC47A7A))
+            else -> listOf(colors.backdropTop, colors.backdropMid, colors.backdropBottom)
+        }
+        SolarThemePhase.AFTERNOON_DUSK -> when (conditionKind) {
+            WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF141D2D), Color(0xFF2F3F57), Color(0xFF5D7088))
+            else -> listOf(colors.backdropTop, colors.backdropMid, colors.backdropBottom)
+        }
+        SolarThemePhase.NIGHT -> listOf(colors.backdropTop, colors.backdropMid, colors.backdropBottom)
+        SolarThemePhase.DAY -> when (conditionKind) {
+            WeatherConditionKind.SUNNY -> listOf(Color(0xFF1565C0), Color(0xFF4BA3F2), Color(0xFFBBE1FA))
+            WeatherConditionKind.PARTLY_CLOUDY -> listOf(Color(0xFF215B9E), Color(0xFF639AD1), Color(0xFFC2DCF2))
+            WeatherConditionKind.CLOUDY -> listOf(Color(0xFF2B3B4E), Color(0xFF53677E), Color(0xFF98AABF))
+            WeatherConditionKind.FOG -> listOf(Color(0xFF586A7D), Color(0xFF8C9EAE), Color(0xFFD5DFE8))
+            WeatherConditionKind.RAIN -> listOf(Color(0xFF19273A), Color(0xFF334963), Color(0xFF6B819A))
+            WeatherConditionKind.THUNDERSTORM -> listOf(Color(0xFF0C1424), Color(0xFF1D2C42), Color(0xFF42546C))
+            WeatherConditionKind.SUNSET -> listOf(Color(0xFF2B2D5F), Color(0xFF9C4E73), Color(0xFFF39C6B))
+        }
     }
 
     val photoAlpha = when (conditionKind) {
@@ -89,7 +102,7 @@ fun HomeWeatherBackdrop(
         modifier = modifier
             .fillMaxWidth()
             .height(stageHeight)
-            .background(PastelSky)
+            .background(colors.sky)
             .testTag("weather_backdrop_stage"),
     ) {
         // 1. Atmospheric Sky Gradient Base
@@ -101,7 +114,7 @@ fun HomeWeatherBackdrop(
                         0.0f to skyPalette[0],
                         0.48f to skyPalette[1],
                         0.82f to skyPalette[2],
-                        1.0f to PastelSky,
+                        1.0f to colors.sky,
                     ),
                 ),
         )
@@ -177,7 +190,7 @@ fun HomeWeatherBackdrop(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // 5. Smooth bottom transition into PastelSky for card legibility
+        // 5. Smooth bottom transition into active theme sky background for card legibility
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -185,8 +198,8 @@ fun HomeWeatherBackdrop(
                     Brush.verticalGradient(
                         0.0f to Color.Transparent,
                         0.68f to Color.Transparent,
-                        0.89f to PastelSky.copy(alpha = 0.86f),
-                        1.0f to PastelSky,
+                        0.89f to colors.sky.copy(alpha = 0.88f),
+                        1.0f to colors.sky,
                     ),
                 ),
         )

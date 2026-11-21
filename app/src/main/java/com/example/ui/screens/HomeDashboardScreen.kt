@@ -95,6 +95,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.R
+import com.example.data.location.LocationTracker
+import com.example.data.model.AppThemeMode
 import com.example.data.model.CityLocation
 import com.example.data.model.TemperatureUnit
 import com.example.ui.components.AnimatedAirQualityWindIcon
@@ -108,7 +110,8 @@ import com.example.ui.components.HourlyForecast24hCard
 import com.example.ui.components.LiveTelemetryPulseDot
 import com.example.ui.components.LocalHomeWeatherIconController
 import com.example.ui.components.PulsatingAqiGlowAvdBadge
-import com.example.ui.components.SunCycleCard
+import com.example.ui.components.SolarThemeSwitcherCard
+import com.example.ui.components.SunriseSunsetDashboardCard
 import com.example.ui.components.VeridiaCard
 import com.example.ui.components.WindIndicatorStyle
 import com.example.ui.components.WindSpeedDirectionIndicator
@@ -124,23 +127,8 @@ import com.example.ui.components.formatWindValue
 import java.util.Locale
 import kotlin.math.roundToInt
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelDangerBg
-import com.example.ui.theme.PastelDangerBorder
-import com.example.ui.theme.PastelDangerText
-import com.example.ui.theme.PastelMint
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.SecondaryGreenBright
-import com.example.ui.theme.SecondaryGreenDark
 import com.example.ui.theme.SpaceMonoFamily
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.DashboardMetricCard
 import com.example.ui.viewmodel.VeridiaUiState
 
@@ -161,7 +149,9 @@ fun HomeDashboardScreen(
     onOpenAirQuality: () -> Unit,
     onOpenDetailedWeather: () -> Unit,
     onOpenRadar: () -> Unit,
+    onThemeModeChange: (AppThemeMode) -> Unit = {},
 ) {
+    val colors = veridiaColors
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasAutoPrompted by rememberSaveable { mutableStateOf(false) }
@@ -217,7 +207,7 @@ fun HomeDashboardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         // Real-time Photographic Sky Backdrop & Dynamic Weather Particle Layer
@@ -253,8 +243,8 @@ fun HomeDashboardScreen(
                             .clickable(onClick = onOpenCityModal)
                             .testTag("location_selector_pill"),
                         shape = RoundedCornerShape(50),
-                        color = PastelSurface,
-                        border = BorderStroke(1.dp, PastelBorder),
+                        color = colors.surface,
+                        border = BorderStroke(1.dp, colors.border),
                         shadowElevation = 2.dp,
                     ) {
                         Row(
@@ -264,14 +254,14 @@ fun HomeDashboardScreen(
                             Icon(
                                 imageVector = if (state.isGpsActive) Icons.Rounded.MyLocation else Icons.Rounded.NearMe,
                                 contentDescription = stringResource(R.string.cd_select_city),
-                                tint = PastelPrimary,
+                                tint = colors.primary,
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = state.selectedCity.name,
                                 style = MaterialTheme.typography.headlineMedium.copy(fontSize = 18.sp),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -279,7 +269,7 @@ fun HomeDashboardScreen(
                             Icon(
                                 imageVector = Icons.Rounded.ExpandMore,
                                 contentDescription = null,
-                                tint = PastelTextSub,
+                                tint = colors.textSub,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -297,8 +287,8 @@ fun HomeDashboardScreen(
                                 .clickable(enabled = !state.isSyncing, onClick = onRefreshNow)
                                 .testTag("home_refresh_button"),
                             shape = CircleShape,
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -306,13 +296,13 @@ fun HomeDashboardScreen(
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp,
-                                        color = PastelPrimary,
+                                        color = colors.primary,
                                     )
                                 } else {
                                     Icon(
                                         imageVector = Icons.Rounded.Refresh,
                                         contentDescription = "Refresh Live Telemetry",
-                                        tint = PastelPrimary,
+                                        tint = colors.primary,
                                         modifier = Modifier.size(18.dp),
                                     )
                                 }
@@ -326,15 +316,15 @@ fun HomeDashboardScreen(
                                 .clickable(onClick = onOpenRadar)
                                 .testTag("home_radar_button"),
                             shape = CircleShape,
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Rounded.Radar,
                                     contentDescription = stringResource(R.string.cd_open_radar),
-                                    tint = PastelPrimary,
+                                    tint = colors.primary,
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -347,15 +337,15 @@ fun HomeDashboardScreen(
                                 .clickable(onClick = onOpenCityModal)
                                 .testTag("search_locations_button"),
                             shape = CircleShape,
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Rounded.Search,
                                     contentDescription = stringResource(R.string.cd_search_locations),
-                                    tint = PastelTextMain,
+                                    tint = colors.textMain,
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -420,8 +410,8 @@ fun HomeDashboardScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Row(
@@ -431,21 +421,21 @@ fun HomeDashboardScreen(
                                 AnimatedHomeWeatherAvdIcon(
                                     controller = iconController,
                                     size = 18.dp,
-                                    tint = PastelPrimary,
+                                    tint = colors.primary,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = weather.conditionLabel,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
 
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Row(
@@ -454,13 +444,13 @@ fun HomeDashboardScreen(
                             ) {
                                 AnimatedHumidityDropletIcon(
                                     size = 15.dp,
-                                    tint = PastelPrimary,
+                                    tint = colors.primary,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = weather.precipStatusLabel,
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -519,6 +509,18 @@ fun HomeDashboardScreen(
                 }
             }
 
+            // Adaptive Solar Theme Switcher (Auto Dawn / Day / Dusk / Night)
+            item {
+                SolarThemeSwitcherCard(
+                    themeMode = state.settings.themeMode,
+                    activePhase = state.activeThemePhase,
+                    sunriseTime = weather.sunriseTime,
+                    sunsetTime = weather.sunsetTime,
+                    onSelectThemeMode = onThemeModeChange,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+
             // Hyper-Local GPS Coordinates & Location Permission Card
             item {
                 HyperLocalGpsCard(
@@ -554,8 +556,8 @@ fun HomeDashboardScreen(
                         .clickable(onClick = onOpenDisasterMonitor)
                         .testTag("seismic_notice_banner"),
                     shape = RoundedCornerShape(18.dp),
-                    color = PastelDangerBg,
-                    border = BorderStroke(1.dp, PastelDangerBorder),
+                    color = colors.dangerBg,
+                    border = BorderStroke(1.dp, colors.dangerBorder),
                     shadowElevation = 2.dp,
                 ) {
                     Row(
@@ -566,13 +568,13 @@ fun HomeDashboardScreen(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(DangerCrimson.copy(alpha = 0.12f)),
+                                .background(DangerCrimson.copy(alpha = 0.14f)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Sensors,
                                 contentDescription = null,
-                                tint = PastelDangerText,
+                                tint = colors.dangerText,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -585,16 +587,16 @@ fun HomeDashboardScreen(
                                 Text(
                                     text = state.seismic.bannerTitle.uppercase(),
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelDangerText,
+                                    color = colors.dangerText,
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = DangerCrimson.copy(alpha = 0.12f),
+                                    color = DangerCrimson.copy(alpha = 0.14f),
                                 ) {
                                     Text(
                                         text = state.seismic.bannerMagnitude,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelDangerText,
+                                        color = colors.dangerText,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
@@ -602,7 +604,7 @@ fun HomeDashboardScreen(
                             Text(
                                 text = state.seismic.bannerSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -614,13 +616,13 @@ fun HomeDashboardScreen(
                                 .clickable(onClick = onOpenDisasterMonitor)
                                 .testTag("seismic_details_button"),
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelDangerBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.dangerBorder),
                         ) {
                             Text(
                                 text = "Details",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                                color = PastelDangerText,
+                                color = colors.dangerText,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             )
                         }
@@ -646,7 +648,7 @@ fun HomeDashboardScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("home_temperature_tile"),
-                            borderColor = if (tempExpanded) PastelPrimary.copy(alpha = 0.5f) else PastelBorder,
+                            borderColor = if (tempExpanded) colors.primary.copy(alpha = 0.5f) else colors.border,
                             onClick = { onToggleMetricCard(DashboardMetricCard.TEMPERATURE) },
                         ) {
                             Row(
@@ -657,19 +659,19 @@ fun HomeDashboardScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     AnimatedThermometerIcon(
                                         size = 18.dp,
-                                        tint = WarningAmber,
+                                        tint = colors.warning,
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "TEMPERATURE",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelTextSub,
+                                        color = colors.textSub,
                                     )
                                 }
                                 Icon(
                                     imageVector = if (tempExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                                     contentDescription = "Toggle Temperature Details",
-                                    tint = PastelTextSub,
+                                    tint = colors.textSub,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -680,20 +682,20 @@ fun HomeDashboardScreen(
                                 Text(
                                     text = formatTempString(weather.currentTempC, tempUnit),
                                     style = MaterialTheme.typography.displaySmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "Feels ${formatTempString(weather.feelsLikeC, tempUnit)}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     modifier = Modifier.padding(bottom = 5.dp),
                                 )
                             }
                             Text(
                                 text = "H ${formatTempString(todayMax, tempUnit)} · L ${formatTempString(todayMin, tempUnit)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -709,8 +711,8 @@ fun HomeDashboardScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = WarningAmber,
-                                trackColor = PastelSubtle,
+                                color = colors.warning,
+                                trackColor = colors.subtle,
                                 strokeCap = StrokeCap.Round,
                             )
 
@@ -720,12 +722,12 @@ fun HomeDashboardScreen(
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
                                 Column(modifier = Modifier.padding(top = 10.dp)) {
-                                    HorizontalDivider(color = PastelBorder)
+                                    HorizontalDivider(color = colors.border)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "UV ${String.format(Locale.US, "%.1f", weather.uvIndex)} (${weather.uvLevelLabel})",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Row(
@@ -738,13 +740,13 @@ fun HomeDashboardScreen(
                                         Text(
                                             text = "Full Atmosphere",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = PastelPrimary,
+                                            color = colors.primary,
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                                             contentDescription = null,
-                                            tint = PastelPrimary,
+                                            tint = colors.primary,
                                             modifier = Modifier.size(12.dp),
                                         )
                                     }
@@ -758,7 +760,7 @@ fun HomeDashboardScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("home_humidity_tile"),
-                            borderColor = if (humidityExpanded) PastelPrimary.copy(alpha = 0.5f) else PastelBorder,
+                            borderColor = if (humidityExpanded) colors.primary.copy(alpha = 0.5f) else colors.border,
                             onClick = { onToggleMetricCard(DashboardMetricCard.HUMIDITY) },
                         ) {
                             Row(
@@ -769,19 +771,19 @@ fun HomeDashboardScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     AnimatedHumidityDropletIcon(
                                         size = 18.dp,
-                                        tint = PastelPrimary,
+                                        tint = colors.primary,
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "HUMIDITY",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelTextSub,
+                                        color = colors.textSub,
                                     )
                                 }
                                 Icon(
                                     imageVector = if (humidityExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                                     contentDescription = "Toggle Humidity Details",
-                                    tint = PastelTextSub,
+                                    tint = colors.textSub,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -792,7 +794,7 @@ fun HomeDashboardScreen(
                                 Text(
                                     text = "${weather.humidityPercent}%",
                                     style = MaterialTheme.typography.displaySmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -802,7 +804,7 @@ fun HomeDashboardScreen(
                                         else -> "Dry"
                                     },
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelPrimary,
+                                    color = colors.primary,
                                     modifier = Modifier.padding(bottom = 5.dp),
                                 )
                             }
@@ -813,7 +815,7 @@ fun HomeDashboardScreen(
                             Text(
                                 text = "Dew point $dewPointDisplay",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -829,8 +831,8 @@ fun HomeDashboardScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = PastelPrimary,
-                                trackColor = PastelSky,
+                                color = colors.primary,
+                                trackColor = colors.subtle,
                                 strokeCap = StrokeCap.Round,
                             )
 
@@ -840,12 +842,12 @@ fun HomeDashboardScreen(
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
                                 Column(modifier = Modifier.padding(top = 10.dp)) {
-                                    HorizontalDivider(color = PastelBorder)
+                                    HorizontalDivider(color = colors.border)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Precip chance: ${weather.precipChancePercent}%",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Row(
@@ -858,13 +860,13 @@ fun HomeDashboardScreen(
                                         Text(
                                             text = "Solar & Moisture",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = PastelPrimary,
+                                            color = colors.primary,
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                                             contentDescription = null,
-                                            tint = PastelPrimary,
+                                            tint = colors.primary,
                                             modifier = Modifier.size(12.dp),
                                         )
                                     }
@@ -883,7 +885,7 @@ fun HomeDashboardScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("home_wind_tile"),
-                            borderColor = if (windExpanded) PastelPrimary.copy(alpha = 0.5f) else PastelBorder,
+                            borderColor = if (windExpanded) colors.primary.copy(alpha = 0.5f) else colors.border,
                             onClick = { onToggleMetricCard(DashboardMetricCard.WIND_SPEED) },
                         ) {
                             Row(
@@ -895,19 +897,19 @@ fun HomeDashboardScreen(
                                     AnimatedWindSwayAvdIcon(
                                         controller = iconController,
                                         size = 18.dp,
-                                        tint = PastelPrimary,
+                                        tint = colors.primary,
                                     )
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
                                         text = "WIND SPEED",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelPrimary,
+                                        color = colors.primary,
                                     )
                                 }
                                 Icon(
                                     imageVector = if (windExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                                     contentDescription = "Toggle Wind Details",
-                                    tint = PastelTextSub,
+                                    tint = colors.textSub,
                                     modifier = Modifier.size(16.dp),
                                 )
                             }
@@ -928,7 +930,7 @@ fun HomeDashboardScreen(
                             Text(
                                 text = "Pressure $pressureVal $pressureUnitLabel",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -941,8 +943,8 @@ fun HomeDashboardScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = PastelPrimary,
-                                trackColor = PastelSky,
+                                color = colors.primary,
+                                trackColor = colors.subtle,
                                 strokeCap = StrokeCap.Round,
                             )
 
@@ -952,12 +954,12 @@ fun HomeDashboardScreen(
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
                                 Column(modifier = Modifier.padding(top = 10.dp)) {
-                                    HorizontalDivider(color = PastelBorder)
+                                    HorizontalDivider(color = colors.border)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Gusts $gustVal $windUnitLabel · ${weather.windBearingDeg}°",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Row(
@@ -970,13 +972,13 @@ fun HomeDashboardScreen(
                                         Text(
                                             text = "Wind Radar",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = PastelPrimary,
+                                            color = colors.primary,
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                                             contentDescription = null,
-                                            tint = PastelPrimary,
+                                            tint = colors.primary,
                                             modifier = Modifier.size(12.dp),
                                         )
                                     }
@@ -984,7 +986,7 @@ fun HomeDashboardScreen(
                             }
                         }
 
-                        // Interactive Card 4: Air Quality (Pastel Mint + controller-driven pulsating glow)
+                        // Interactive Card 4: Air Quality (Mint + controller-driven pulsating glow)
                         val aqiGlowColor = aqiGlowColorFor(state.airQuality.homeCardAqi)
                         VeridiaCard(
                             modifier = Modifier
@@ -994,7 +996,7 @@ fun HomeDashboardScreen(
                                     glowColor = aqiGlowColor,
                                 )
                                 .testTag("home_aqi_tile"),
-                            containerColor = PastelMint.copy(alpha = 0.94f),
+                            containerColor = colors.mint.copy(alpha = 0.94f),
                             borderColor = aqiGlowColor.copy(alpha = 0.30f + iconController.aqiGlowPulse * 0.35f),
                             onClick = onOpenAirQuality,
                         ) {
@@ -1008,18 +1010,18 @@ fun HomeDashboardScreen(
                                         aqiScore = state.airQuality.homeCardAqi,
                                         controller = iconController,
                                         size = 20.dp,
-                                        coreTint = SecondaryGreenDark,
+                                        coreTint = colors.greenText,
                                     )
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
                                         text = "AIR QUALITY",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = SecondaryGreenDark,
+                                        color = colors.greenText,
                                     )
                                 }
                                 AnimatedAirQualityWindIcon(
                                     size = 15.dp,
-                                    tint = SecondaryGreenDark,
+                                    tint = colors.greenText,
                                 )
                             }
 
@@ -1029,20 +1031,20 @@ fun HomeDashboardScreen(
                                 Text(
                                     text = state.airQuality.homeCardAqi.toString(),
                                     style = MaterialTheme.typography.displaySmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = state.airQuality.regionalCategory,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = SecondaryGreenDark,
+                                    color = colors.greenText,
                                     modifier = Modifier.padding(bottom = 5.dp),
                                 )
                             }
                             Text(
                                 text = "PM2.5: ${String.format(Locale.US, "%.1f", state.airQuality.homeCardPm25)} µg/m³",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -1058,8 +1060,8 @@ fun HomeDashboardScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = PastelAccent,
-                                trackColor = Color.White,
+                                color = colors.accent,
+                                trackColor = colors.surface,
                                 strokeCap = StrokeCap.Round,
                             )
                         }
@@ -1076,14 +1078,26 @@ fun HomeDashboardScreen(
                 )
             }
 
-            // Sun Cycle Card (Sunrise & Sunset with animated solar arc)
+            // Location-Aware Sunrise, Sunset & Moon Phase Dashboard Card
             item {
-                SunCycleCard(
+                SunriseSunsetDashboardCard(
                     locationName = state.selectedCity.name,
+                    coordinatesLabel = state.gpsCoordinatesLabel
+                        ?: LocationTracker.formatPrivateZoneLabel(
+                            state.selectedCity.latitude,
+                            state.selectedCity.longitude,
+                        ),
+                    isGpsActive = state.isGpsActive,
                     sunriseTime = weather.sunriseTime,
                     sunsetTime = weather.sunsetTime,
+                    solarNoonTime = weather.solarNoonTime,
                     daylightDuration = weather.daylightDuration,
                     solarProgress = weather.solarProgress,
+                    todayDateLabel = weather.solarDateLabel,
+                    nextSolarEventLabel = weather.nextSolarEventLabel,
+                    moonPhaseName = weather.moonPhaseName,
+                    moonIlluminationPercent = weather.moonIlluminationPercent,
+                    moonPhaseFraction = weather.moonPhaseFraction,
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
             }
@@ -1104,20 +1118,20 @@ fun HomeDashboardScreen(
                             Icon(
                                 imageVector = Icons.Rounded.CalendarToday,
                                 contentDescription = null,
-                                tint = PastelTextSub,
+                                tint = colors.textSub,
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "7-DAY FORECAST",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                         }
                         Text(
                             text = "Full Details",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            color = PastelPrimary,
+                            color = colors.primary,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(onClick = onOpenDetailedWeather)
@@ -1127,7 +1141,7 @@ fun HomeDashboardScreen(
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder.copy(alpha = 0.6f))
+                    HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1141,7 +1155,7 @@ fun HomeDashboardScreen(
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = if (day.dayLabel == "Today") FontWeight.Bold else FontWeight.Medium,
                                     ),
-                                    color = if (day.dayLabel == "Today") PastelTextMain else PastelTextSub,
+                                    color = if (day.dayLabel == "Today") colors.textMain else colors.textSub,
                                     modifier = Modifier.width(56.dp),
                                 )
                                 Row(
@@ -1160,7 +1174,7 @@ fun HomeDashboardScreen(
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (day.precipPercent >= 60) FontWeight.Bold else FontWeight.Medium,
                                         ),
-                                        color = if (day.precipPercent >= 60) PastelPrimary else PastelTextSub,
+                                        color = if (day.precipPercent >= 60) colors.primary else colors.textSub,
                                     )
                                 }
                                 Row(
@@ -1171,7 +1185,7 @@ fun HomeDashboardScreen(
                                     Text(
                                         text = formatTempString(day.minTempC, tempUnit),
                                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily),
-                                        color = PastelTextSub,
+                                        color = colors.textSub,
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Box(
@@ -1179,7 +1193,7 @@ fun HomeDashboardScreen(
                                             .width(86.dp)
                                             .height(6.dp)
                                             .clip(CircleShape)
-                                            .background(PastelSubtle),
+                                            .background(colors.subtle),
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -1187,7 +1201,7 @@ fun HomeDashboardScreen(
                                                 .height(6.dp)
                                                 .align(Alignment.Center)
                                                 .clip(CircleShape)
-                                                .background(PastelPrimary),
+                                                .background(colors.primary),
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -1197,7 +1211,7 @@ fun HomeDashboardScreen(
                                             fontFamily = SpaceMonoFamily,
                                             fontWeight = FontWeight.Bold,
                                         ),
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                 }
                             }
@@ -1250,12 +1264,13 @@ private fun HyperLocalGpsCard(
     onOpenAppSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     VeridiaCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("gps_status_card"),
-        containerColor = PastelSurface.copy(alpha = 0.95f),
-        borderColor = if (isGpsActive) PastelPrimary.copy(alpha = 0.3f) else PastelBorder,
+        containerColor = colors.surface.copy(alpha = 0.95f),
+        borderColor = if (isGpsActive) colors.primary.copy(alpha = 0.3f) else colors.border,
     ) {
         if (!hasLocationPermission) {
             Row(
@@ -1266,13 +1281,13 @@ private fun HyperLocalGpsCard(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(PastelPrimary.copy(alpha = 0.12f)),
+                        .background(colors.primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.GpsFixed,
                         contentDescription = null,
-                        tint = PastelPrimary,
+                        tint = colors.primary,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -1281,7 +1296,7 @@ private fun HyperLocalGpsCard(
                     Text(
                         text = stringResource(R.string.gps_prompt_title),
                         style = MaterialTheme.typography.labelLarge,
-                        color = PastelTextMain,
+                        color = colors.textMain,
                     )
                     Text(
                         text = if (locationPermissionDenied) {
@@ -1290,7 +1305,7 @@ private fun HyperLocalGpsCard(
                             stringResource(R.string.gps_prompt_body)
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = PastelTextSub,
+                        color = colors.textSub,
                     )
                 }
             }
@@ -1301,7 +1316,7 @@ private fun HyperLocalGpsCard(
             ) {
                 Button(
                     onClick = onRequestPermission,
-                    colors = ButtonDefaults.buttonColors(containerColor = PastelPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .weight(1f)
@@ -1309,7 +1324,7 @@ private fun HyperLocalGpsCard(
                 ) {
                     Text(
                         text = if (locationPermissionDenied) "Retry GPS Access" else stringResource(R.string.gps_enable_cta),
-                        color = Color.White,
+                        color = colors.onPrimary,
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
@@ -1317,12 +1332,12 @@ private fun HyperLocalGpsCard(
                     OutlinedButton(
                         onClick = onOpenAppSettings,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, PastelBorder),
+                        border = BorderStroke(1.dp, colors.border),
                         modifier = Modifier.testTag("gps_open_settings_button"),
                     ) {
                         Text(
                             text = stringResource(R.string.gps_open_settings),
-                            color = PastelTextMain,
+                            color = colors.textMain,
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
@@ -1343,8 +1358,8 @@ private fun HyperLocalGpsCard(
                             .size(34.dp)
                             .clip(CircleShape)
                             .background(
-                                if (isGpsActive) PastelAccent.copy(alpha = 0.14f)
-                                else PastelPrimary.copy(alpha = 0.12f),
+                                if (isGpsActive) colors.accent.copy(alpha = 0.14f)
+                                else colors.primary.copy(alpha = 0.12f),
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -1352,13 +1367,13 @@ private fun HyperLocalGpsCard(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
-                                color = PastelPrimary,
+                                color = colors.primary,
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.Rounded.MyLocation,
                                 contentDescription = null,
-                                tint = if (isGpsActive) SecondaryGreenDark else PastelPrimary,
+                                tint = if (isGpsActive) colors.greenText else colors.primary,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -1373,7 +1388,7 @@ private fun HyperLocalGpsCard(
                                     else -> "Viewing $cityName"
                                 },
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -1381,7 +1396,7 @@ private fun HyperLocalGpsCard(
                             Icon(
                                 imageVector = Icons.Rounded.Shield,
                                 contentDescription = "GPS Privacy Protected",
-                                tint = SecondaryGreenDark,
+                                tint = colors.greenText,
                                 modifier = Modifier.size(13.dp),
                             )
                         }
@@ -1393,7 +1408,7 @@ private fun HyperLocalGpsCard(
                                 else -> "Privacy-masked (~9 km) · $dataSourceLabel"
                             },
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (errorMessage != null) PastelDangerText else PastelTextSub,
+                            color = if (errorMessage != null) colors.dangerText else colors.textSub,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -1406,8 +1421,8 @@ private fun HyperLocalGpsCard(
                         .clickable(enabled = !isLocatingGps, onClick = onRefreshGps)
                         .testTag("gps_refresh_button"),
                     shape = RoundedCornerShape(12.dp),
-                    color = PastelSky,
-                    border = BorderStroke(1.dp, PastelPrimary.copy(alpha = 0.25f)),
+                    color = colors.sky,
+                    border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.25f)),
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -1416,14 +1431,14 @@ private fun HyperLocalGpsCard(
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
                             contentDescription = stringResource(R.string.cd_refresh_gps),
-                            tint = PastelPrimary,
+                            tint = colors.primary,
                             modifier = Modifier.size(14.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "GPS",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelPrimary,
+                            color = colors.primary,
                         )
                     }
                 }
@@ -1447,11 +1462,12 @@ private fun LocationsModalSheet(
     onSelectCity: (CityLocation) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val colors = veridiaColors
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PastelSurface,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(
@@ -1469,7 +1485,7 @@ private fun LocationsModalSheet(
                 Text(
                     text = "Locations",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = PastelTextMain,
+                    color = colors.textMain,
                 )
                 IconButton(
                     onClick = onDismiss,
@@ -1478,7 +1494,7 @@ private fun LocationsModalSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Close Cities",
-                        tint = PastelTextSub,
+                        tint = colors.textSub,
                     )
                 }
             }
@@ -1491,10 +1507,10 @@ private fun LocationsModalSheet(
                     .clickable(enabled = !isLocatingGps, onClick = onUseCurrentGps)
                     .testTag("gps_modal_option"),
                 shape = RoundedCornerShape(16.dp),
-                color = if (isGpsActive) PastelMint else PastelSky.copy(alpha = 0.6f),
+                color = if (isGpsActive) colors.mint else colors.sky.copy(alpha = 0.6f),
                 border = BorderStroke(
                     1.dp,
-                    if (isGpsActive) PastelAccent.copy(alpha = 0.5f) else PastelPrimary.copy(alpha = 0.3f),
+                    if (isGpsActive) colors.accent.copy(alpha = 0.5f) else colors.primary.copy(alpha = 0.3f),
                 ),
             ) {
                 Row(
@@ -1509,7 +1525,7 @@ private fun LocationsModalSheet(
                         Icon(
                             imageVector = Icons.Rounded.MyLocation,
                             contentDescription = null,
-                            tint = if (isGpsActive) SecondaryGreenDark else PastelPrimary,
+                            tint = if (isGpsActive) colors.greenText else colors.primary,
                             modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -1517,7 +1533,7 @@ private fun LocationsModalSheet(
                             Text(
                                 text = "Use Privacy-Protected Zone",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                             Text(
                                 text = when {
@@ -1527,14 +1543,14 @@ private fun LocationsModalSheet(
                                     else -> "Tap to allow approximate location"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isGpsActive) SecondaryGreenDark else PastelPrimary,
+                                color = if (isGpsActive) colors.greenText else colors.primary,
                             )
                         }
                     }
                     Icon(
                         imageVector = if (isGpsActive) Icons.Rounded.CheckCircle else Icons.Rounded.ChevronRight,
                         contentDescription = null,
-                        tint = if (isGpsActive) SecondaryGreenDark else PastelPrimary,
+                        tint = if (isGpsActive) colors.greenText else colors.primary,
                     )
                 }
             }
@@ -1546,23 +1562,25 @@ private fun LocationsModalSheet(
                     Text(
                         text = "Search city or airport...",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PastelTextSub,
+                        color = colors.textSub,
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Search,
                         contentDescription = null,
-                        tint = PastelTextSub,
+                        tint = colors.textSub,
                     )
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = PastelSubtle,
-                    unfocusedContainerColor = PastelSubtle,
-                    focusedBorderColor = PastelPrimary,
-                    unfocusedBorderColor = PastelBorder,
+                    focusedTextColor = colors.textMain,
+                    unfocusedTextColor = colors.textMain,
+                    focusedContainerColor = colors.subtle,
+                    unfocusedContainerColor = colors.subtle,
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.border,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1578,10 +1596,10 @@ private fun LocationsModalSheet(
                         .clickable { onSelectCity(city) }
                         .testTag("city_option_${city.id}"),
                     shape = RoundedCornerShape(16.dp),
-                    color = if (isSelected) PastelSky.copy(alpha = 0.65f) else PastelSurface,
+                    color = if (isSelected) colors.sky.copy(alpha = 0.65f) else colors.surface,
                     border = BorderStroke(
                         1.dp,
-                        if (isSelected) PastelPrimary.copy(alpha = 0.35f) else PastelBorder,
+                        if (isSelected) colors.primary.copy(alpha = 0.35f) else colors.border,
                     ),
                 ) {
                     Row(
@@ -1595,7 +1613,7 @@ private fun LocationsModalSheet(
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 ),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                             Text(
                                 text = if (isSelected) {
@@ -1604,13 +1622,13 @@ private fun LocationsModalSheet(
                                     "${city.summaryCondition} · ${city.summaryTempC}°C"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isSelected) PastelPrimary else PastelTextSub,
+                                color = if (isSelected) colors.primary else colors.textSub,
                             )
                         }
                         Icon(
                             imageVector = if (isSelected) Icons.Rounded.CheckCircle else Icons.Rounded.ChevronRight,
                             contentDescription = null,
-                            tint = if (isSelected) PastelPrimary else PastelTextSub,
+                            tint = if (isSelected) colors.primary else colors.textSub,
                         )
                     }
                 }

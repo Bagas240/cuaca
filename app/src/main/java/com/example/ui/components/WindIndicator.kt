@@ -52,13 +52,9 @@ import com.example.R
 import com.example.data.model.WindUnit
 import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelBorder
 import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -116,6 +112,30 @@ fun AnimatedWindArrowIcon(
     dialSize: Dp = 36.dp,
     arrowColor: Color = windIntensityColor(windSpeedKmh),
     showCompassRing: Boolean = true,
+) {
+    val colors = veridiaColors
+    AnimatedWindArrowIconContent(
+        windBearingDeg = windBearingDeg,
+        windSpeedKmh = windSpeedKmh,
+        modifier = modifier,
+        dialSize = dialSize,
+        arrowColor = if (arrowColor == PastelPrimary) colors.primary else arrowColor,
+        showCompassRing = showCompassRing,
+        ringBgColor = colors.sky,
+        tickColor = colors.textSub,
+    )
+}
+
+@Composable
+private fun AnimatedWindArrowIconContent(
+    windBearingDeg: Int,
+    windSpeedKmh: Int,
+    modifier: Modifier = Modifier,
+    dialSize: Dp = 36.dp,
+    arrowColor: Color,
+    showCompassRing: Boolean = true,
+    ringBgColor: Color,
+    tickColor: Color,
 ) {
     val targetBearing = normalizeWindBearing(windBearingDeg)
     var continuousBearing by remember { mutableFloatStateOf(targetBearing) }
@@ -203,7 +223,7 @@ fun AnimatedWindArrowIcon(
                 val center = Offset(size.width / 2f, size.height / 2f)
 
                 drawCircle(
-                    color = PastelSky.copy(alpha = 0.72f),
+                    color = ringBgColor.copy(alpha = 0.72f),
                     radius = radius - 1.dp.toPx(),
                     center = center,
                 )
@@ -228,7 +248,7 @@ fun AnimatedWindArrowIcon(
                         y = center.y + (sin(rad) * outerR).toFloat(),
                     )
                     drawLine(
-                        color = if (deg == 0) arrowColor else PastelTextSub.copy(alpha = 0.35f),
+                        color = if (deg == 0) arrowColor else tickColor.copy(alpha = 0.35f),
                         start = start,
                         end = end,
                         strokeWidth = if (deg == 0) 2.dp.toPx() else 1.2.dp.toPx(),
@@ -266,10 +286,12 @@ fun WindSpeedDirectionIndicator(
     style: WindIndicatorStyle = WindIndicatorStyle.COMPACT_PILL,
     useLargeReadout: Boolean = false,
 ) {
+    val colors = veridiaColors
     val (speedValue, unitLabel) = formatWindValue(windSpeedKmh, windUnit)
     val conditionText = windConditionSummary(windSpeedKmh)
     val cleanBearing = normalizeWindBearing(windBearingDeg).toInt()
-    val accentColor = windIntensityColor(windSpeedKmh)
+    val rawAccent = windIntensityColor(windSpeedKmh)
+    val accentColor = if (rawAccent == PastelPrimary) colors.primary else rawAccent
     val accessibilityLabel = stringResource(
         R.string.cd_wind_indicator,
         speedValue,
@@ -288,8 +310,8 @@ fun WindSpeedDirectionIndicator(
                     }
                     .testTag("wind_indicator_pill"),
                 shape = RoundedCornerShape(12.dp),
-                color = PastelSurface,
-                border = BorderStroke(1.dp, PastelBorder),
+                color = colors.surface,
+                border = BorderStroke(1.dp, colors.border),
                 shadowElevation = 2.dp,
             ) {
                 Row(
@@ -310,7 +332,7 @@ fun WindSpeedDirectionIndicator(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                         ),
-                        color = PastelTextMain,
+                        color = colors.textMain,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -344,21 +366,21 @@ fun WindSpeedDirectionIndicator(
                             } else {
                                 MaterialTheme.typography.displaySmall
                             },
-                            color = PastelTextMain,
+                            color = colors.textMain,
                             maxLines = 1,
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = unitLabel,
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                             modifier = Modifier.padding(bottom = if (useLargeReadout) 6.dp else 4.dp),
                         )
                     }
                     Text(
                         text = "$windDirectionLabel (${cleanBearing}°) · $conditionText",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = PastelTextSub,
+                        color = colors.textSub,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

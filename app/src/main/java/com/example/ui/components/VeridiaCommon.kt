@@ -115,15 +115,8 @@ import com.example.data.model.WeatherConditionKind
 import com.example.data.model.WindUnit
 import com.example.ui.navigation.LocalNavStateController
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelDangerBg
-import com.example.ui.theme.PastelDangerBorder
-import com.example.ui.theme.PastelDangerText
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -149,8 +142,8 @@ object VeridiaRoute {
 @Composable
 fun VeridiaCard(
     modifier: Modifier = Modifier,
-    containerColor: Color = PastelSurface.copy(alpha = 0.92f),
-    borderColor: Color = PastelBorder,
+    containerColor: Color = veridiaColors.surface.copy(alpha = 0.94f),
+    borderColor: Color = veridiaColors.border,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -235,15 +228,15 @@ fun VeridiaBackHeader(
                     .clip(RoundedCornerShape(12.dp))
                     .clickable(onClick = onBackClick),
                 shape = RoundedCornerShape(12.dp),
-                color = PastelSurface,
-                border = BorderStroke(1.dp, PastelBorder),
+                color = veridiaColors.surface,
+                border = BorderStroke(1.dp, veridiaColors.border),
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = stringResource(R.string.cd_back),
-                        tint = PastelTextMain,
+                        tint = veridiaColors.textMain,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -253,7 +246,7 @@ fun VeridiaBackHeader(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = PastelTextMain,
+                    color = veridiaColors.textMain,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -261,7 +254,7 @@ fun VeridiaBackHeader(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.labelSmall,
-                        color = PastelTextSub,
+                        color = veridiaColors.textSub,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -289,23 +282,24 @@ fun VeridiaBottomDock(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     val tabs = listOf(
         DockTab(
             route = VeridiaRoute.HOME,
             label = stringResource(R.string.nav_home),
-            activeTint = PastelPrimary,
+            activeTint = colors.primary,
             testTag = "dock_tab_home",
         ),
         DockTab(
             route = VeridiaRoute.WEATHER,
             label = stringResource(R.string.nav_weather),
-            activeTint = PastelPrimary,
+            activeTint = colors.primary,
             testTag = "dock_tab_weather",
         ),
         DockTab(
             route = VeridiaRoute.AIR,
             label = stringResource(R.string.nav_air),
-            activeTint = PastelPrimary,
+            activeTint = colors.primary,
             testTag = "dock_tab_air",
         ),
         DockTab(
@@ -318,7 +312,7 @@ fun VeridiaBottomDock(
         DockTab(
             route = VeridiaRoute.SETTINGS,
             label = stringResource(R.string.nav_settings),
-            activeTint = PastelPrimary,
+            activeTint = colors.primary,
             testTag = "dock_tab_settings",
         ),
     )
@@ -402,8 +396,8 @@ fun VeridiaBottomDock(
                     )
                 },
             shape = RoundedCornerShape(50),
-            color = PastelSurface.copy(alpha = 0.96f),
-            border = BorderStroke(1.dp, PastelBorder),
+            color = colors.surface.copy(alpha = 0.96f),
+            border = BorderStroke(1.dp, colors.border),
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -457,7 +451,7 @@ fun VeridiaBottomDock(
                         val tint by itemTransition.animateColor(
                             transitionSpec = { spring(stiffness = Spring.StiffnessMediumLow) },
                             label = "tab_tint_$idx",
-                        ) { selected -> if (selected) tab.activeTint else PastelTextSub }
+                        ) { selected -> if (selected) tab.activeTint else colors.textSub }
 
                         val iconScale by itemTransition.animateFloat(
                             transitionSpec = {
@@ -519,8 +513,8 @@ fun VeridiaBottomDock(
                                             .offset(x = 1.dp, y = (-1).dp)
                                             .size(7.dp)
                                             .clip(CircleShape)
-                                            .background(PastelDangerText)
-                                            .border(1.5.dp, PastelSurface, CircleShape),
+                                            .background(colors.dangerText)
+                                            .border(1.5.dp, colors.surface, CircleShape),
                                     )
                                 }
                             }
@@ -821,6 +815,7 @@ fun ActiveDisasterAlertOverlay(
         modifier = modifier,
     ) {
         if (alert != null) {
+            val colors = veridiaColors
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -829,7 +824,7 @@ fun ActiveDisasterAlertOverlay(
                     .clickable(onClick = onOpenDisasterMonitor)
                     .testTag("active_disaster_alert_overlay"),
                 shape = RoundedCornerShape(20.dp),
-                color = PastelDangerBg,
+                color = colors.dangerBg,
                 border = BorderStroke(1.5.dp, DangerCrimson.copy(alpha = 0.65f)),
                 shadowElevation = 10.dp,
             ) {
@@ -862,14 +857,14 @@ fun ActiveDisasterAlertOverlay(
                                 Text(
                                     text = "${alert.kind.badge} · ${alert.title}",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelDangerText,
+                                    color = colors.dangerText,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = alert.message,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -879,7 +874,7 @@ fun ActiveDisasterAlertOverlay(
                             Icon(
                                 imageVector = Icons.Rounded.Close,
                                 contentDescription = "Dismiss alert",
-                                tint = PastelDangerText,
+                                tint = colors.dangerText,
                             )
                         }
                     }
@@ -888,7 +883,7 @@ fun ActiveDisasterAlertOverlay(
                     Text(
                         text = alert.guidance,
                         style = MaterialTheme.typography.labelSmall,
-                        color = PastelDangerText,
+                        color = colors.dangerText,
                     )
 
                     if (isSirenPlaying) {
@@ -936,14 +931,15 @@ fun conditionIcon(kind: WeatherConditionKind): ImageVector = when (kind) {
     WeatherConditionKind.FOG -> Icons.Rounded.Cloud
 }
 
+@Composable
 fun conditionTint(kind: WeatherConditionKind): Color = when (kind) {
-    WeatherConditionKind.RAIN -> PastelPrimary
-    WeatherConditionKind.CLOUDY -> PastelTextSub
-    WeatherConditionKind.PARTLY_CLOUDY -> PastelPrimary
+    WeatherConditionKind.RAIN -> veridiaColors.primary
+    WeatherConditionKind.CLOUDY -> veridiaColors.textSub
+    WeatherConditionKind.PARTLY_CLOUDY -> veridiaColors.primary
     WeatherConditionKind.SUNNY -> WarningAmber
     WeatherConditionKind.THUNDERSTORM -> WarningAmber
     WeatherConditionKind.SUNSET -> WarningAmber
-    WeatherConditionKind.FOG -> PastelTextSub
+    WeatherConditionKind.FOG -> veridiaColors.textSub
 }
 
 fun formatTempValue(tempC: Int, unit: TemperatureUnit): Int = when (unit) {

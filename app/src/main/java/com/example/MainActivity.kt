@@ -1,5 +1,6 @@
 package com.example
 
+import android.app.Activity
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -23,7 +24,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -58,41 +63,46 @@ import com.example.ui.screens.WeatherRadarScreen
 import com.example.ui.theme.VeridiaTheme
 import com.example.ui.viewmodel.VeridiaViewModel
 
-import android.content.Intent
-import com.example.alerts.DisasterNotificationManager
-
 class MainActivity : ComponentActivity() {
-    private var pendingDeepLinkRoute by mutableStateOf<String?>(null)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pendingDeepLinkRoute = intent?.getStringExtra(DisasterNotificationManager.EXTRA_NAV_DESTINATION)
         enableEdgeToEdge()
         setContent {
-            VeridiaTheme {
-                VeridiaApp(
-                    initialDeepLinkRoute = pendingDeepLinkRoute,
-                    onConsumeDeepLink = { pendingDeepLinkRoute = null },
-                )
-            }
+            VeridiaApp()
         }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        pendingDeepLinkRoute = intent.getStringExtra(DisasterNotificationManager.EXTRA_NAV_DESTINATION)
     }
 }
 
 @Composable
 fun VeridiaApp(
     viewModel: VeridiaViewModel = viewModel(),
-    initialDeepLinkRoute: String? = null,
-    onConsumeDeepLink: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isDarkTheme = state.activeThemePhase == com.example.data.model.SolarThemePhase.NIGHT
+
+    SideEffect {
+        val window = (view.context as? Activity)?.window ?: return@SideEffect
+        val insetsController = WindowCompat.getInsetsController(window, view)
+        insetsController.isAppearanceLightStatusBars = !isDarkTheme
+        insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+    }
+
+    VeridiaTheme(themePhase = state.activeThemePhase) {
+        VeridiaAppContent(
+            state = state,
+            viewModel = viewModel,
+        )
+    }
+}
+
+@Composable
+private fun VeridiaAppContent(
+    state: com.example.ui.viewmodel.VeridiaUiState,
+    viewModel: VeridiaViewModel,
+) {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val navStateController = rememberNavStateController(navController)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -143,13 +153,6 @@ fun VeridiaApp(
             }
             launchSingleTop = true
             restoreState = true
-        }
-    }
-
-    LaunchedEffect(initialDeepLinkRoute) {
-        if (initialDeepLinkRoute == DisasterNotificationManager.DESTINATION_ALERTS) {
-            navigateTopLevel(VeridiaRoute.ALERTS)
-            onConsumeDeepLink()
         }
     }
 
@@ -234,6 +237,7 @@ fun VeridiaApp(
                             onOpenAirQuality = { navigateTopLevel(VeridiaRoute.AIR) },
                             onOpenDetailedWeather = { navigateTopLevel(VeridiaRoute.WEATHER) },
                             onOpenRadar = { navController.navigate(VeridiaRoute.RADAR) },
+                            onThemeModeChange = viewModel::setThemeMode,
                         )
                     }
                 }
@@ -273,7 +277,6 @@ fun VeridiaApp(
                             onTriggerSampleAlert = viewModel::triggerSampleDisasterAlert,
                             onStopSiren = viewModel::stopDisasterSiren,
                             onToggleSeismicSensor = viewModel::setSeismicSensorMonitoring,
-                            onCheckBackgroundAlertsNow = viewModel::triggerBackgroundAlertCheckNow,
                         )
                     }
                 }
@@ -303,6 +306,7 @@ fun VeridiaApp(
                             onGyroParallaxChange = viewModel::setGyroParallaxEnabled,
                             onGpsPrivacyModeChange = viewModel::setGpsPrivacyMode,
                             onBackgroundSyncChange = viewModel::setBackgroundSyncEnabled,
+                            onThemeModeChange = viewModel::setThemeMode,
                             onRefreshCache = viewModel::refreshOfflineCache,
                         )
                     }

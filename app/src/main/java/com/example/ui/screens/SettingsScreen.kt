@@ -43,23 +43,15 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppThemeMode
 import com.example.data.model.PressureUnit
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.WindUnit
+import com.example.ui.components.SolarThemeSwitcherCard
 import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelMint
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.SecondaryGreenDark
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
 import com.example.work.SyncBatteryTier
 
@@ -76,14 +68,16 @@ fun SettingsScreen(
     onGyroParallaxChange: (Boolean) -> Unit,
     onGpsPrivacyModeChange: (Boolean) -> Unit,
     onBackgroundSyncChange: (Boolean) -> Unit = {},
+    onThemeModeChange: (AppThemeMode) -> Unit = {},
     onRefreshCache: () -> Unit,
 ) {
+    val colors = veridiaColors
     val settings = state.settings
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
@@ -101,6 +95,18 @@ fun SettingsScreen(
                 )
             }
 
+            // Section 00: Dynamic Solar Theme Switcher
+            item {
+                SolarThemeSwitcherCard(
+                    themeMode = settings.themeMode,
+                    activePhase = state.activeThemePhase,
+                    sunriseTime = state.weather.sunriseTime,
+                    sunsetTime = state.weather.sunsetTime,
+                    onSelectThemeMode = onThemeModeChange,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
+
             // Section 0: GPS Privacy & Live Sync Security
             item {
                 VeridiaCard(
@@ -109,12 +115,12 @@ fun SettingsScreen(
                         .padding(horizontal = 20.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Shield, null, tint = PastelAccent, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.Shield, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("GPS Privacy & Real-Time Sync", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                        Text("GPS Privacy & Real-Time Sync", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -122,7 +128,7 @@ fun SettingsScreen(
                             title = "GPS Location Privacy Shield",
                             subtitle = "Locks telemetry to regency/kabupaten zone (~9-11 km); exact GPS discarded",
                             checked = settings.gpsPrivacyMode,
-                            checkedColor = PastelAccent,
+                            checkedColor = colors.accent,
                             onCheckedChange = onGpsPrivacyModeChange,
                             testTag = "switch_gps_privacy",
                         )
@@ -141,7 +147,7 @@ fun SettingsScreen(
                             title = "Power-Aware Background Sync",
                             subtitle = syncSubtitle,
                             checked = settings.backgroundSyncEnabled,
-                            checkedColor = PastelPrimary,
+                            checkedColor = colors.primary,
                             onCheckedChange = onBackgroundSyncChange,
                             testTag = "switch_background_sync",
                         )
@@ -151,23 +157,23 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Real-Time Telemetry Stream", style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
+                                Text("Real-Time Telemetry Stream", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
                                     text = "Adaptive WorkManager · ${batteryProfile.repeatIntervalMinutes}m (${batteryProfile.tier.name.lowercase().replace('_', ' ')})",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     modifier = Modifier.testTag("sync_battery_cadence_badge"),
                                 )
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = PastelSubtle,
-                                border = BorderStroke(1.dp, PastelBorder),
+                                color = colors.subtle,
+                                border = BorderStroke(1.dp, colors.border),
                             ) {
                                 Text(
                                     text = state.lastUpdatedLabel,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelPrimary,
+                                    color = colors.primary,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                                 )
                             }
@@ -184,7 +190,7 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .testTag("security_posture_card"),
-                    containerColor = if (posture.deviceIntegrityClean) PastelMint.copy(alpha = 0.55f) else PastelSurface,
+                    containerColor = if (posture.deviceIntegrityClean) colors.mint.copy(alpha = 0.55f) else colors.surface,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -192,25 +198,25 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Lock, null, tint = SecondaryGreenDark, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Lock, null, tint = colors.greenText, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Encryption & Hardening", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                            Text("Encryption & Hardening", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                         }
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                         ) {
                             Text(
                                 text = "AES-256-GCM",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = SecondaryGreenDark,
+                                color = colors.greenText,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -253,10 +259,10 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.NotificationsActive, null, tint = DangerCrimson, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Emergency Alerts", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                        Text("Emergency Alerts", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -272,7 +278,7 @@ fun SettingsScreen(
                             title = "Typhoon Flash Watch",
                             subtitle = "Barometer drops and storm surge alerts",
                             checked = settings.typhoonFlashWatch,
-                            checkedColor = PastelPrimary,
+                            checkedColor = colors.primary,
                             onCheckedChange = onTyphoonWatchChange,
                             testTag = "switch_typhoon_watch",
                         )
@@ -280,7 +286,7 @@ fun SettingsScreen(
                             title = "AQI Smog Inversion",
                             subtitle = "Notify when PM2.5 exceeds 100 µg/m³",
                             checked = settings.aqiSmogInversion,
-                            checkedColor = WarningAmber,
+                            checkedColor = colors.warning,
                             onCheckedChange = onAqiAlertChange,
                             testTag = "switch_aqi_inversion",
                         )
@@ -296,12 +302,12 @@ fun SettingsScreen(
                         .padding(horizontal = 20.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Straighten, null, tint = PastelPrimary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.Straighten, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Units & Telemetry Standards", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                        Text("Units & Telemetry Standards", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -312,11 +318,11 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Temperature Unit", style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
+                                Text("Temperature Unit", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
                                     text = "Current scale: ${if (settings.temperatureUnit == TemperatureUnit.CELSIUS) "Celsius" else "Fahrenheit"}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                 )
                             }
                             SegmentedOptionGroup(
@@ -338,11 +344,11 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Wind Velocity", style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
+                                Text("Wind Velocity", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
                                     text = "Current scale: ${settings.windUnit.name.lowercase()}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                 )
                             }
                             SegmentedOptionGroup(
@@ -371,11 +377,11 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Barometric Scale", style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
+                                Text("Barometric Scale", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
                                     text = "Current scale: ${if (settings.pressureUnit == PressureUnit.HPA) "hPa" else "inHg"}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                 )
                             }
                             SegmentedOptionGroup(
@@ -401,12 +407,12 @@ fun SettingsScreen(
                         .padding(horizontal = 20.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Tune, null, tint = PastelAccent, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.Tune, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Display & Parallax", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                        Text("Display & Parallax", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -414,7 +420,7 @@ fun SettingsScreen(
                             title = "Gyroscope Camera Parallax",
                             subtitle = "Tilt device to orbit 3D viewpoints",
                             checked = settings.gyroParallaxEnabled,
-                            checkedColor = PastelAccent,
+                            checkedColor = colors.accent,
                             onCheckedChange = onGyroParallaxChange,
                             testTag = "switch_gyro_parallax",
                         )
@@ -425,18 +431,18 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Glass Refraction Depth", style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
-                                Text("Hardware accelerated blur", style = MaterialTheme.typography.bodySmall, color = PastelTextSub)
+                                Text("Glass Refraction Depth", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text("Hardware accelerated blur", style = MaterialTheme.typography.bodySmall, color = colors.textSub)
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = PastelSubtle,
-                                border = BorderStroke(1.dp, PastelBorder),
+                                color = colors.subtle,
+                                border = BorderStroke(1.dp, colors.border),
                             ) {
                                 Text(
                                     text = "20px Clean",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                                 )
                             }
@@ -458,34 +464,34 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.CloudSync, null, tint = PastelAccent, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.CloudSync, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Offline Disaster Cache", style = MaterialTheme.typography.headlineSmall, color = PastelTextMain)
+                            Text("Offline Disaster Cache", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                         }
                         Text(
                             text = "128 MB Active",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelAccent,
+                            color = colors.accent,
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Fault line & topographic vectors", style = MaterialTheme.typography.bodySmall, color = PastelTextMain)
-                        Text(settings.offlineCacheLabel, style = MaterialTheme.typography.labelSmall, color = PastelAccent)
+                        Text("Fault line & topographic vectors", style = MaterialTheme.typography.bodySmall, color = colors.textMain)
+                        Text(settings.offlineCacheLabel, style = MaterialTheme.typography.labelSmall, color = colors.accent)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Emergency shelter GPS markers", style = MaterialTheme.typography.bodySmall, color = PastelTextMain)
-                        Text("Offline Ready", style = MaterialTheme.typography.labelSmall, color = PastelAccent)
+                        Text("Emergency shelter GPS markers", style = MaterialTheme.typography.bodySmall, color = colors.textMain)
+                        Text("Offline Ready", style = MaterialTheme.typography.labelSmall, color = colors.accent)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -497,8 +503,8 @@ fun SettingsScreen(
                             .clickable(enabled = !state.cacheRefreshing, onClick = onRefreshCache)
                             .testTag("refresh_cache_button"),
                         shape = RoundedCornerShape(12.dp),
-                        color = PastelSubtle,
-                        border = BorderStroke(1.dp, PastelBorder),
+                        color = colors.subtle,
+                        border = BorderStroke(1.dp, colors.border),
                     ) {
                         Box(
                             modifier = Modifier.padding(vertical = 12.dp),
@@ -511,7 +517,7 @@ fun SettingsScreen(
                                     "Refresh Regional Offline Cache"
                                 },
                                 style = MaterialTheme.typography.labelMedium,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                         }
                     }
@@ -530,14 +536,15 @@ private fun SettingSwitchRow(
     onCheckedChange: (Boolean) -> Unit,
     testTag: String,
 ) {
+    val colors = veridiaColors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.labelMedium, color = PastelTextMain)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = PastelTextSub)
+            Text(title, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSub)
         }
         Switch(
             checked = checked,
@@ -546,7 +553,7 @@ private fun SettingSwitchRow(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = checkedColor,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = PastelBorder,
+                uncheckedTrackColor = colors.border,
                 uncheckedBorderColor = Color.Transparent,
             ),
             modifier = Modifier.testTag(testTag),
@@ -560,10 +567,11 @@ private fun SegmentedOptionGroup(
     onSelect: (Int) -> Unit,
     testTagPrefix: String,
 ) {
+    val colors = veridiaColors
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = PastelSubtle,
-        border = BorderStroke(1.dp, PastelBorder),
+        color = colors.subtle,
+        border = BorderStroke(1.dp, colors.border),
     ) {
         Row(
             modifier = Modifier.padding(3.dp),
@@ -576,7 +584,7 @@ private fun SegmentedOptionGroup(
                         .clickable { onSelect(idx) }
                         .testTag("${testTagPrefix}_$idx"),
                     shape = RoundedCornerShape(9.dp),
-                    color = if (isSelected) PastelSurface else Color.Transparent,
+                    color = if (isSelected) colors.surface else Color.Transparent,
                     shadowElevation = if (isSelected) 1.dp else 0.dp,
                 ) {
                     Text(
@@ -585,7 +593,7 @@ private fun SegmentedOptionGroup(
                             fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         ),
-                        color = if (isSelected) PastelPrimary else PastelTextSub,
+                        color = if (isSelected) colors.primary else colors.textSub,
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
                     )
                 }
@@ -600,6 +608,7 @@ private fun SecurityStatusRow(
     status: String,
     isSecure: Boolean,
 ) {
+    val colors = veridiaColors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -608,21 +617,21 @@ private fun SecurityStatusRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = PastelTextMain,
+            color = colors.textMain,
             modifier = Modifier.weight(1f),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = if (isSecure) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber,
                 contentDescription = null,
-                tint = if (isSecure) SecondaryGreenDark else WarningAmber,
+                tint = if (isSecure) colors.greenText else colors.warning,
                 modifier = Modifier.size(14.dp),
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = status,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isSecure) SecondaryGreenDark else DangerCrimson,
+                color = if (isSecure) colors.greenText else DangerCrimson,
             )
         }
     }

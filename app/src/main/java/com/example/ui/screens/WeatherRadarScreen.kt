@@ -50,17 +50,8 @@ import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
 import com.example.ui.components.formatTempString
 import com.example.ui.components.formatWindValue
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.SecondaryGreenDark
 import com.example.ui.theme.SpaceMonoFamily
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
 import kotlin.math.roundToInt
 
@@ -73,6 +64,7 @@ fun WeatherRadarScreen(
     onPlaybackOffsetChange: (Int) -> Unit,
     onRefreshNow: () -> Unit,
 ) {
+    val colors = veridiaColors
     val radar = state.radar
     val tempUnit = state.settings.temperatureUnit
     val (cellSpeedVal, speedUnitLabel) = formatWindValue(radar.cellSpeedKmh, state.settings.windUnit)
@@ -91,7 +83,7 @@ fun WeatherRadarScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
@@ -109,8 +101,8 @@ fun WeatherRadarScreen(
                     trailingContent = {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelSurface,
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface,
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Row(
@@ -121,13 +113,13 @@ fun WeatherRadarScreen(
                                     modifier = Modifier
                                         .size(7.dp)
                                         .clip(CircleShape)
-                                        .background(PastelPrimary),
+                                        .background(colors.primary),
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "Live Sweep",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -167,8 +159,8 @@ fun WeatherRadarScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = PastelSurface,
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface,
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Row(
@@ -215,48 +207,48 @@ fun WeatherRadarScreen(
                             Text(
                                 text = "ACTIVE PRECIPITATION CELL",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
                                     text = radar.echoCoreDbz.toString(),
                                     style = MaterialTheme.typography.displayLarge,
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "dBZ Rain Core",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                     modifier = Modifier.padding(bottom = 10.dp),
                                 )
                             }
                             Text(
                                 text = radar.summaryDescription,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = PastelPrimary.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, PastelPrimary.copy(alpha = 0.25f)),
+                            color = colors.primary.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.25f)),
                         ) {
                             Column(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Icon(Icons.Rounded.WaterDrop, null, tint = PastelPrimary, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Rounded.WaterDrop, null, tint = colors.primary, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(radar.intensityBadge, style = MaterialTheme.typography.labelSmall, color = PastelPrimary)
+                                Text(radar.intensityBadge, style = MaterialTheme.typography.labelSmall, color = colors.primary)
                             }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
@@ -266,21 +258,21 @@ fun WeatherRadarScreen(
                         RadarSummaryStat(
                             label = "Cell Speed",
                             value = "$cellSpeedVal $speedUnitLabel",
-                            valueColor = PastelTextMain,
+                            valueColor = colors.textMain,
                             modifier = Modifier.weight(1f),
                         )
-                        Box(modifier = Modifier.width(1.dp).height(26.dp).background(PastelBorder))
+                        Box(modifier = Modifier.width(1.dp).height(26.dp).background(colors.border))
                         RadarSummaryStat(
                             label = "Echo Top",
                             value = String.format("%,d m", radar.echoTopMeters),
-                            valueColor = PastelTextMain,
+                            valueColor = colors.textMain,
                             modifier = Modifier.weight(1f),
                         )
-                        Box(modifier = Modifier.width(1.dp).height(26.dp).background(PastelBorder))
+                        Box(modifier = Modifier.width(1.dp).height(26.dp).background(colors.border))
                         RadarSummaryStat(
                             label = "Accumulation",
                             value = "${radar.accumulationMmH} mm/h",
-                            valueColor = PastelPrimary,
+                            valueColor = colors.primary,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -303,26 +295,26 @@ fun WeatherRadarScreen(
                             title = "SURFACE RAIN",
                             value = String.format("%.1f", radar.surfaceRainMmH),
                             unit = "mm/h",
-                            unitColor = PastelTextSub,
+                            unitColor = colors.textSub,
                             subtitle = "Moderate steady rain",
                             footerLeft = "Next 60m",
                             footerRight = "${radar.next60mMm} mm",
-                            footerRightColor = PastelTextMain,
+                            footerRightColor = colors.textMain,
                             icon = Icons.Rounded.WaterDrop,
-                            iconTint = PastelPrimary,
+                            iconTint = colors.primary,
                             modifier = Modifier.weight(1f),
                         )
                         RadarMetricCard(
                             title = "CELL VECTOR",
                             value = radar.cellVectorLabel,
                             unit = "",
-                            unitColor = PastelTextSub,
+                            unitColor = colors.textSub,
                             subtitle = radar.cellDestination,
                             footerLeft = "Velocity",
                             footerRight = "$cellSpeedVal $speedUnitLabel",
-                            footerRightColor = PastelTextMain,
+                            footerRightColor = colors.textMain,
                             icon = Icons.Rounded.NearMe,
-                            iconTint = PastelAccent,
+                            iconTint = colors.accent,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -334,26 +326,26 @@ fun WeatherRadarScreen(
                             title = "REFLECTIVITY",
                             value = radar.echoCoreDbz.toString(),
                             unit = "dBZ",
-                            unitColor = PastelSunset,
+                            unitColor = colors.sunset,
                             subtitle = "Doppler band echo",
                             footerLeft = "Hail Risk",
                             footerRight = radar.hailRiskLabel,
-                            footerRightColor = SecondaryGreenDark,
+                            footerRightColor = colors.greenText,
                             icon = Icons.Rounded.Radar,
-                            iconTint = WarningAmber,
+                            iconTint = colors.warning,
                             modifier = Modifier.weight(1f),
                         )
                         RadarMetricCard(
                             title = "IR CLOUD TOP",
                             value = "${radar.irCloudTopC}°",
                             unit = "C",
-                            unitColor = PastelTextSub,
+                            unitColor = colors.textSub,
                             subtitle = "Deep convective deck",
                             footerLeft = "Satellite",
                             footerRight = radar.satelliteName,
-                            footerRightColor = PastelTextMain,
+                            footerRightColor = colors.textMain,
                             icon = Icons.Rounded.SatelliteAlt,
-                            iconTint = PastelPrimary,
+                            iconTint = colors.primary,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -373,18 +365,18 @@ fun WeatherRadarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.Schedule, null, tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Rounded.Schedule, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "RADAR PLAYBACK TRACK",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                         }
                         Text(
                             text = playbackStatusLabel,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = PastelPrimary,
+                            color = colors.primary,
                         )
                     }
 
@@ -396,9 +388,9 @@ fun WeatherRadarScreen(
                         valueRange = -60f..30f,
                         steps = 5,
                         colors = SliderDefaults.colors(
-                            thumbColor = PastelPrimary,
-                            activeTrackColor = PastelPrimary,
-                            inactiveTrackColor = PastelBorder,
+                            thumbColor = colors.primary,
+                            activeTrackColor = colors.primary,
+                            inactiveTrackColor = colors.border,
                         ),
                         modifier = Modifier.testTag("radar_playback_slider"),
                     )
@@ -407,17 +399,17 @@ fun WeatherRadarScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("-60 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = PastelTextSub)
-                        Text("-30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = PastelTextSub)
+                        Text("-60 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
+                        Text("-30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
                         Text(
                             "Now",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = SpaceMonoFamily,
                                 fontWeight = FontWeight.Bold,
                             ),
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
-                        Text("+30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = PastelTextSub)
+                        Text("+30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
                     }
                 }
             }
@@ -432,12 +424,13 @@ private fun RadarLayerTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) PastelPrimary else Color.Transparent,
+        color = if (selected) colors.primary else Color.Transparent,
     ) {
         Box(
             modifier = Modifier.padding(vertical = 8.dp),
@@ -449,7 +442,7 @@ private fun RadarLayerTab(
                     fontSize = 11.sp,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 ),
-                color = if (selected) Color.White else PastelTextSub,
+                color = if (selected) colors.onPrimary else colors.textSub,
             )
         }
     }
@@ -462,11 +455,12 @@ private fun RadarSummaryStat(
     valueColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = value,
@@ -490,17 +484,18 @@ private fun RadarMetricCard(
     iconTint: Color,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     VeridiaCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(title, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+            Text(title, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
             Icon(icon, null, tint = iconTint, modifier = Modifier.size(16.dp))
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = MaterialTheme.typography.displayMedium, color = PastelTextMain)
+            Text(value, style = MaterialTheme.typography.displayMedium, color = colors.textMain)
             if (unit.isNotEmpty()) {
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -511,15 +506,15 @@ private fun RadarMetricCard(
                 )
             }
         }
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = PastelTextSub)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSub)
         Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = PastelBorder)
+        HorizontalDivider(color = colors.border)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(footerLeft, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+            Text(footerLeft, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
             Text(footerRight, style = MaterialTheme.typography.labelSmall, color = footerRightColor)
         }
     }

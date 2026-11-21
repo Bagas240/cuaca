@@ -76,20 +76,7 @@ import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
 import com.example.ui.navigation.rememberIsDestinationAnimating
 import com.example.ui.theme.DangerCrimson
-import com.example.ui.theme.PastelAccent
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelDangerBg
-import com.example.ui.theme.PastelDangerBorder
-import com.example.ui.theme.PastelDangerText
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSky
-import com.example.ui.theme.PastelSubtle
-import com.example.ui.theme.PastelSunset
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
-import com.example.ui.theme.SecondaryGreenDark
-import com.example.ui.theme.WarningAmber
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
 import java.util.Locale
 
@@ -106,6 +93,7 @@ fun DisasterMonitorScreen(
     onToggleSeismicSensor: (Boolean) -> Unit = {},
     onCheckBackgroundAlertsNow: () -> Unit = {},
 ) {
+    val colors = veridiaColors
     val seismic = state.seismic
     val isAnimating = rememberIsDestinationAnimating()
     val sensorScale: Float
@@ -128,7 +116,7 @@ fun DisasterMonitorScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PastelSky),
+            .background(colors.sky),
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
@@ -201,7 +189,7 @@ fun DisasterMonitorScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp),
-                    borderColor = PastelDangerBorder,
+                    borderColor = colors.dangerBorder,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -209,8 +197,8 @@ fun DisasterMonitorScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = PastelDangerBg,
-                            border = BorderStroke(1.dp, PastelDangerBorder),
+                            color = colors.dangerBg,
+                            border = BorderStroke(1.dp, colors.dangerBorder),
                             modifier = Modifier
                                 .size(42.dp)
                                 .graphicsLayer {
@@ -219,7 +207,7 @@ fun DisasterMonitorScreen(
                                 },
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Sensors, null, tint = PastelDangerText, modifier = Modifier.size(22.dp))
+                                Icon(Icons.Rounded.Sensors, null, tint = colors.dangerText, modifier = Modifier.size(22.dp))
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -231,17 +219,17 @@ fun DisasterMonitorScreen(
                                 Text(
                                     text = seismic.warningHeader.uppercase(),
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelDangerText,
+                                    color = colors.dangerText,
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = PastelDangerBg,
-                                    border = BorderStroke(1.dp, PastelDangerBorder),
+                                    color = colors.dangerBg,
+                                    border = BorderStroke(1.dp, colors.dangerBorder),
                                 ) {
                                     Text(
                                         text = seismic.shindoBadge,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = PastelDangerText,
+                                        color = colors.dangerText,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
@@ -250,19 +238,19 @@ fun DisasterMonitorScreen(
                             Text(
                                 text = seismic.activeEventTitle,
                                 style = MaterialTheme.typography.displayMedium.copy(fontSize = 26.sp, lineHeight = 32.sp),
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = seismic.activeEventDescription,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = PastelTextSub,
+                                color = colors.textSub,
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
@@ -272,19 +260,19 @@ fun DisasterMonitorScreen(
                         SeismicStatPill(
                             label = "Depth",
                             value = "${String.format(Locale.US, "%.1f", seismic.depthKm)} km",
-                            valueColor = PastelTextMain,
+                            valueColor = colors.textMain,
                             modifier = Modifier.weight(1f),
                         )
                         SeismicStatPill(
                             label = "Peak PGA",
                             value = "${seismic.peakPgaGal} gal",
-                            valueColor = PastelDangerText,
+                            valueColor = colors.dangerText,
                             modifier = Modifier.weight(1f),
                         )
                         SeismicStatPill(
                             label = "Tsunami",
                             value = seismic.tsunamiStatus,
-                            valueColor = PastelSunset,
+                            valueColor = colors.sunset,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -298,7 +286,7 @@ fun DisasterMonitorScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .testTag("disaster_siren_panel"),
-                    borderColor = if (state.isSirenPlaying) DangerCrimson.copy(alpha = 0.6f) else PastelBorder,
+                    borderColor = if (state.isSirenPlaying) DangerCrimson.copy(alpha = 0.6f) else colors.border,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -317,25 +305,25 @@ fun DisasterMonitorScreen(
                                 Text(
                                     text = "CIVIL-DEFENSE DISASTER SIREN",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                 )
                                 Text(
                                     text = "Zone Early Warning & Notification",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             LiveTelemetryPulseDot(
-                                color = if (state.isSirenPlaying) DangerCrimson else PastelAccent,
+                                color = if (state.isSirenPlaying) DangerCrimson else colors.accent,
                                 size = 6.dp,
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = if (state.isSirenPlaying) "SIREN ACTIVE" else "ARMED",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = if (state.isSirenPlaying) DangerCrimson else SecondaryGreenDark,
+                                color = if (state.isSirenPlaying) DangerCrimson else colors.greenText,
                             )
                         }
                     }
@@ -344,7 +332,7 @@ fun DisasterMonitorScreen(
                     Text(
                         text = "Automatically dispatches disaster-specific notifications & a sweeping civil-defense siren (non-ambulance) when earthquakes, tsunami advisories, extreme storms, or hazardous air strike ${state.selectedCity.name}.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PastelTextSub,
+                        color = colors.textSub,
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -363,7 +351,7 @@ fun DisasterMonitorScreen(
                         DisasterSirenChip(
                             label = "Tsunami",
                             icon = Icons.Rounded.Waves,
-                            accent = PastelPrimary,
+                            accent = colors.primary,
                             onClick = { onTriggerSampleAlert(DisasterKind.TSUNAMI) },
                             modifier = Modifier.weight(1f).testTag("test_siren_tsunami"),
                         )
@@ -378,14 +366,14 @@ fun DisasterMonitorScreen(
                         DisasterSirenChip(
                             label = "Storm",
                             icon = Icons.Rounded.Thunderstorm,
-                            accent = WarningAmber,
+                            accent = colors.warning,
                             onClick = { onTriggerSampleAlert(DisasterKind.SEVERE_STORM) },
                             modifier = Modifier.weight(1f).testTag("test_siren_storm"),
                         )
                         DisasterSirenChip(
                             label = "Air Hazard",
                             icon = Icons.Rounded.Air,
-                            accent = PastelSunset,
+                            accent = colors.sunset,
                             onClick = { onTriggerSampleAlert(DisasterKind.HAZARDOUS_AIR) },
                             modifier = Modifier.weight(1f).testTag("test_siren_air"),
                         )
@@ -472,7 +460,7 @@ fun DisasterMonitorScreen(
                             Icon(
                                 imageVector = Icons.Rounded.Vibration,
                                 contentDescription = null,
-                                tint = PastelPrimary,
+                                tint = colors.primary,
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -480,7 +468,7 @@ fun DisasterMonitorScreen(
                                 Text(
                                     text = "ACCELEROMETER SEISMIC SENSOR",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = PastelTextSub,
+                                    color = colors.textSub,
                                 )
                                 Text(
                                     text = if (!state.seismicSensorAvailable) {
@@ -491,7 +479,7 @@ fun DisasterMonitorScreen(
                                         "Sensor Monitoring Paused"
                                     },
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = PastelTextMain,
+                                    color = colors.textMain,
                                 )
                             }
                         }
@@ -500,16 +488,16 @@ fun DisasterMonitorScreen(
                             onCheckedChange = onToggleSeismicSensor,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = PastelPrimary,
+                                checkedTrackColor = colors.primary,
                                 uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = PastelBorder,
+                                uncheckedTrackColor = colors.border,
                             ),
                             modifier = Modifier.testTag("switch_accelerometer_seismic"),
                         )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
@@ -520,12 +508,12 @@ fun DisasterMonitorScreen(
                         Text(
                             text = "Live Linear Vibration: ${String.format(Locale.US, "%.2f", state.liveAccelerometerMs2)} m/s²",
                             style = MaterialTheme.typography.bodySmall,
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
                         Text(
                             text = "Detections: ${state.seismicPatternDetectedCount}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (state.seismicPatternDetectedCount > 0) DangerCrimson else PastelTextSub,
+                            color = if (state.seismicPatternDetectedCount > 0) DangerCrimson else colors.textSub,
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -535,15 +523,15 @@ fun DisasterMonitorScreen(
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(CircleShape),
-                        color = if (state.liveAccelerometerMs2 >= 2.4f) DangerCrimson else PastelPrimary,
-                        trackColor = PastelSubtle,
+                        color = if (state.liveAccelerometerMs2 >= 2.4f) DangerCrimson else colors.primary,
+                        trackColor = colors.subtle,
                         strokeCap = StrokeCap.Round,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "Monitors sustained oscillatory tremor patterns (≥2.4 m/s² with axis reversals) to trigger instant siren alerts.",
                         style = MaterialTheme.typography.labelSmall,
-                        color = PastelTextSub,
+                        color = colors.textSub,
                     )
                 }
             }
@@ -564,11 +552,11 @@ fun DisasterMonitorScreen(
                             title = "P-WAVE LEAD",
                             value = String.format(Locale.US, "%04.1f", seismic.pWaveLeadSec),
                             unit = "sec",
-                            unitColor = PastelTextSub,
+                            unitColor = colors.textSub,
                             subtitle = "Primary wave elapsed",
                             footerLeft = "Status",
                             footerRight = "Decaying",
-                            footerRightColor = SecondaryGreenDark,
+                            footerRightColor = colors.greenText,
                             icon = Icons.Rounded.Timer,
                             iconTint = DangerCrimson,
                             modifier = Modifier.weight(1f),
@@ -577,13 +565,13 @@ fun DisasterMonitorScreen(
                             title = "S-WAVE SHOCK",
                             value = String.format(Locale.US, "%.1f", seismic.sWaveJma),
                             unit = "JMA",
-                            unitColor = PastelSunset,
+                            unitColor = colors.sunset,
                             subtitle = "Felt strong indoors",
                             footerLeft = "Structural",
                             footerRight = "Safe",
-                            footerRightColor = SecondaryGreenDark,
+                            footerRightColor = colors.greenText,
                             icon = Icons.Rounded.Vibration,
-                            iconTint = WarningAmber,
+                            iconTint = colors.warning,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -595,26 +583,26 @@ fun DisasterMonitorScreen(
                             title = "TSUNAMI BUOY",
                             value = String.format(Locale.US, "%.1f", seismic.tsunamiSurgeMeters),
                             unit = "m surge",
-                            unitColor = PastelTextSub,
+                            unitColor = colors.textSub,
                             subtitle = "Coastal marine advisory",
                             footerLeft = "Bayside",
                             footerRight = "Restricted",
-                            footerRightColor = PastelSunset,
+                            footerRightColor = colors.sunset,
                             icon = Icons.Rounded.Waves,
-                            iconTint = PastelPrimary,
+                            iconTint = colors.primary,
                             modifier = Modifier.weight(1f),
                         )
                         HazardMetricCard(
                             title = "VOLCANIC ARRAY",
                             value = seismic.volcanicLevel,
                             unit = "Normal",
-                            unitColor = SecondaryGreenDark,
+                            unitColor = colors.greenText,
                             subtitle = seismic.volcanicNote,
                             footerLeft = "Tiltmeter",
                             footerRight = "${seismic.volcanicTiltUrad} µrad",
-                            footerRightColor = PastelTextMain,
+                            footerRightColor = colors.textMain,
                             icon = Icons.Rounded.Volcano,
-                            iconTint = PastelAccent,
+                            iconTint = colors.accent,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -639,23 +627,23 @@ fun DisasterMonitorScreen(
                             Text(
                                 text = "Recent Seismic Activity",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = PastelTextMain,
+                                color = colors.textMain,
                             )
                         }
                         Text(
                             text = "Past 48 Hours",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PastelTextSub,
+                            color = colors.textSub,
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = PastelBorder)
+                    HorizontalDivider(color = colors.border)
 
                     seismic.recentEvents.forEachIndexed { idx, event ->
                         val (dotColor, valueColor) = when (event.severity) {
-                            SeismicSeverity.HIGH -> DangerCrimson to PastelDangerText
-                            SeismicSeverity.MODERATE -> WarningAmber to PastelSunset
-                            SeismicSeverity.LOW -> PastelAccent to SecondaryGreenDark
+                            SeismicSeverity.HIGH -> DangerCrimson to colors.dangerText
+                            SeismicSeverity.MODERATE -> colors.warning to colors.sunset
+                            SeismicSeverity.LOW -> colors.accent to colors.greenText
                         }
                         Row(
                             modifier = Modifier
@@ -679,12 +667,12 @@ fun DisasterMonitorScreen(
                                     Text(
                                         text = event.location,
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = PastelTextMain,
+                                        color = colors.textMain,
                                     )
                                     Text(
                                         text = "Depth ${event.depthKm}km · ${event.timeAgoLabel}",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = PastelTextSub,
+                                        color = colors.textSub,
                                     )
                                 }
                             }
@@ -702,7 +690,7 @@ fun DisasterMonitorScreen(
                             }
                         }
                         if (idx < seismic.recentEvents.lastIndex) {
-                            HorizontalDivider(color = PastelBorder.copy(alpha = 0.6f))
+                            HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -722,17 +710,18 @@ private fun SeismicStatPill(
     valueColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = PastelSubtle,
-        border = BorderStroke(1.dp, PastelBorder),
+        color = colors.subtle,
+        border = BorderStroke(1.dp, colors.border),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
@@ -757,17 +746,18 @@ private fun HazardMetricCard(
     iconTint: Color,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     VeridiaCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(title, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+            Text(title, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
             Icon(icon, null, tint = iconTint, modifier = Modifier.size(16.dp))
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = MaterialTheme.typography.displayMedium, color = PastelTextMain)
+            Text(value, style = MaterialTheme.typography.displayMedium, color = colors.textMain)
             Spacer(modifier = Modifier.width(5.dp))
             Text(
                 text = unit,
@@ -776,15 +766,15 @@ private fun HazardMetricCard(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = PastelTextSub)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSub)
         Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = PastelBorder)
+        HorizontalDivider(color = colors.border)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(footerLeft, style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
+            Text(footerLeft, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
             Text(footerRight, style = MaterialTheme.typography.labelSmall, color = footerRightColor)
         }
     }
@@ -798,6 +788,7 @@ private fun DisasterSirenChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = veridiaColors
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -821,7 +812,7 @@ private fun DisasterSirenChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = PastelTextMain,
+                color = colors.textMain,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Icon(
@@ -837,11 +828,12 @@ private fun DisasterSirenChip(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SosEmergencyModalSheet(onDismiss: () -> Unit) {
+    val colors = veridiaColors
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PastelSurface,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         Column(
@@ -862,18 +854,18 @@ private fun SosEmergencyModalSheet(onDismiss: () -> Unit) {
                     Text(
                         text = "Emergency Safety Protocol",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = PastelTextMain,
+                        color = colors.textMain,
                     )
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Rounded.Close, "Close SOS", tint = PastelTextSub)
+                    Icon(Icons.Rounded.Close, "Close SOS", tint = colors.textSub)
                 }
             }
 
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = PastelDangerBg,
-                border = BorderStroke(1.dp, PastelDangerBorder),
+                color = colors.dangerBg,
+                border = BorderStroke(1.dp, colors.dangerBorder),
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -882,14 +874,14 @@ private fun SosEmergencyModalSheet(onDismiss: () -> Unit) {
                     Text(
                         text = "Immediate Shake Response",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = PastelDangerText,
+                        color = colors.dangerText,
                     )
                     Text(
                         text = "1. Drop, Cover under sturdy furniture, and Hold On.\n" +
                             "2. Keep away from glass windows and unsecured shelving.\n" +
                             "3. Avoid coastal bayside zones during Tsunami Advisory.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = PastelTextMain,
+                        color = colors.textMain,
                     )
                 }
             }
@@ -901,23 +893,23 @@ private fun SosEmergencyModalSheet(onDismiss: () -> Unit) {
                 Surface(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp),
-                    color = PastelSubtle,
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.subtle,
+                    border = BorderStroke(1.dp, colors.border),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Fire / Ambulance", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                        Text("119", style = MaterialTheme.typography.headlineMedium, color = PastelDangerText)
+                        Text("Fire / Ambulance", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                        Text("119", style = MaterialTheme.typography.headlineMedium, color = colors.dangerText)
                     }
                 }
                 Surface(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp),
-                    color = PastelSubtle,
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.subtle,
+                    border = BorderStroke(1.dp, colors.border),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Police / Rescue", style = MaterialTheme.typography.labelSmall, color = PastelTextSub)
-                        Text("110", style = MaterialTheme.typography.headlineMedium, color = PastelPrimary)
+                        Text("Police / Rescue", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                        Text("110", style = MaterialTheme.typography.headlineMedium, color = colors.primary)
                     }
                 }
             }

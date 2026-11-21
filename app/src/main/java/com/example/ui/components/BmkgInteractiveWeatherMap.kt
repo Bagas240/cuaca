@@ -67,12 +67,8 @@ import com.example.data.location.LocationMaskingUtility
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.WeatherMapLayer
 import com.example.data.model.WeatherMapStation
-import com.example.ui.theme.PastelBorder
-import com.example.ui.theme.PastelPrimary
-import com.example.ui.theme.PastelSurface
-import com.example.ui.theme.PastelTextMain
-import com.example.ui.theme.PastelTextSub
 import com.example.ui.theme.SpaceMonoFamily
+import com.example.ui.theme.veridiaColors
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
@@ -367,6 +363,7 @@ fun BmkgInteractiveWeatherMap(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = context.resources.displayMetrics.density
+    val colors = veridiaColors
 
     OsmdroidRuntimeConfig.ensureConfigured(context)
 
@@ -512,13 +509,13 @@ fun BmkgInteractiveWeatherMap(
                             .clickable { onSelectLayer(layer) }
                             .testTag("weather_map_layer_${layer.name.lowercase()}"),
                         shape = RoundedCornerShape(12.dp),
-                        color = if (selected) PastelPrimary else PastelSurface,
-                        border = BorderStroke(1.dp, if (selected) PastelPrimary else PastelBorder),
+                        color = if (selected) colors.primary else colors.surface,
+                        border = BorderStroke(1.dp, if (selected) colors.primary else colors.border),
                     ) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (selected) Color.White else PastelTextMain,
+                            color = if (selected) colors.onPrimary else colors.textMain,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         )
                     }
@@ -535,21 +532,21 @@ fun BmkgInteractiveWeatherMap(
                 Surface(
                     modifier = Modifier.size(34.dp),
                     shape = CircleShape,
-                    color = PastelSurface,
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface,
+                    border = BorderStroke(1.dp, colors.border),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         if (isSyncing) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(14.dp),
                                 strokeWidth = 2.dp,
-                                color = PastelPrimary,
+                                color = colors.primary,
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.Rounded.Refresh,
                                 contentDescription = "Refresh BMKG Precipitation Map",
-                                tint = PastelPrimary,
+                                tint = colors.primary,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -565,8 +562,8 @@ fun BmkgInteractiveWeatherMap(
                 .height(340.dp)
                 .testTag("bmkg_osmdroid_weather_map"),
             shape = RoundedCornerShape(22.dp),
-            color = Color(0xFFCBE2F6),
-            border = BorderStroke(1.dp, PastelBorder),
+            color = if (colors.isDark) Color(0xFF0F1E33) else Color(0xFFCBE2F6),
+            border = BorderStroke(1.dp, colors.border),
             shadowElevation = 2.dp,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -581,20 +578,20 @@ fun BmkgInteractiveWeatherMap(
                         .align(Alignment.TopStart)
                         .padding(10.dp),
                     shape = RoundedCornerShape(12.dp),
-                    color = PastelSurface.copy(alpha = 0.94f),
-                    border = BorderStroke(1.dp, PastelBorder),
+                    color = colors.surface.copy(alpha = 0.94f),
+                    border = BorderStroke(1.dp, colors.border),
                     shadowElevation = 2.dp,
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Rounded.Map, contentDescription = null, tint = PastelPrimary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Rounded.Map, contentDescription = null, tint = colors.primary, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "BMKG Precip · Z${currentZoom.roundToInt()} · $lastUpdatedLabel",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = PastelTextMain,
+                            color = colors.textMain,
                         )
                     }
                 }
@@ -618,12 +615,12 @@ fun BmkgInteractiveWeatherMap(
                         Surface(
                             modifier = Modifier.size(34.dp),
                             shape = CircleShape,
-                            color = PastelSurface.copy(alpha = 0.94f),
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Add, contentDescription = "Zoom In Map", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Rounded.Add, contentDescription = "Zoom In Map", tint = colors.textMain, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -639,12 +636,12 @@ fun BmkgInteractiveWeatherMap(
                         Surface(
                             modifier = Modifier.size(34.dp),
                             shape = CircleShape,
-                            color = PastelSurface.copy(alpha = 0.94f),
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out Map", tint = PastelTextMain, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out Map", tint = colors.textMain, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -660,12 +657,12 @@ fun BmkgInteractiveWeatherMap(
                         Surface(
                             modifier = Modifier.size(34.dp),
                             shape = CircleShape,
-                            color = PastelSurface.copy(alpha = 0.94f),
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface.copy(alpha = 0.94f),
+                            border = BorderStroke(1.dp, colors.border),
                             shadowElevation = 2.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = PastelPrimary, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = colors.primary, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -682,8 +679,8 @@ fun BmkgInteractiveWeatherMap(
                     if (activeLayer == WeatherMapLayer.RAIN_RADAR) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = PastelSurface.copy(alpha = 0.92f),
-                            border = BorderStroke(1.dp, PastelBorder),
+                            color = colors.surface.copy(alpha = 0.92f),
+                            border = BorderStroke(1.dp, colors.border),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -704,8 +701,8 @@ fun BmkgInteractiveWeatherMap(
                                 .fillMaxWidth()
                                 .testTag("bmkg_station_inspector"),
                             shape = RoundedCornerShape(14.dp),
-                            color = PastelSurface.copy(alpha = 0.96f),
-                            border = BorderStroke(1.dp, PastelPrimary.copy(alpha = 0.38f)),
+                            color = colors.surface.copy(alpha = 0.96f),
+                            border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.38f)),
                             shadowElevation = 3.dp,
                         ) {
                             Row(
@@ -720,7 +717,7 @@ fun BmkgInteractiveWeatherMap(
                                     Icon(
                                         imageVector = Icons.Rounded.WaterDrop,
                                         contentDescription = null,
-                                        tint = PastelPrimary,
+                                        tint = colors.primary,
                                         modifier = Modifier.size(16.dp),
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -728,14 +725,14 @@ fun BmkgInteractiveWeatherMap(
                                         Text(
                                             text = "${selectedStation.name} · ${selectedStation.conditionLabel}",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = PastelTextMain,
+                                            color = colors.textMain,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                         Text(
                                             text = "Precip ${String.format(Locale.US, "%.1f", selectedStation.precipMm)} mm/h (${selectedStation.precipChancePercent}%) · Wind ${selectedStation.windSpeedKmh} km/h · BMKG & OSM",
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                            color = PastelTextSub,
+                                            color = colors.textSub,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
@@ -748,7 +745,7 @@ fun BmkgInteractiveWeatherMap(
                                         fontFamily = SpaceMonoFamily,
                                         fontWeight = FontWeight.Bold,
                                     ),
-                                    color = PastelPrimary,
+                                    color = colors.primary,
                                 )
                             }
                         }
@@ -761,6 +758,7 @@ fun BmkgInteractiveWeatherMap(
 
 @Composable
 private fun LegendDotLabel(color: Color, text: String) {
+    val colors = veridiaColors
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -772,7 +770,7 @@ private fun LegendDotLabel(color: Color, text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Medium),
-            color = PastelTextMain,
+            color = colors.textMain,
         )
     }
 }

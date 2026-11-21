@@ -6,6 +6,7 @@ import com.example.data.local.CachedWeatherEntity
 import com.example.data.local.TelemetryCacheDao
 import com.example.data.local.VeridiaDatabase
 import com.example.data.location.LocationMaskingUtility
+import com.example.data.location.SolarScheduleCalculator
 import com.example.data.security.NetworkSecurityInterceptor
 import com.example.data.security.TelemetryCrypto
 import com.example.data.model.AirQualityTelemetry
@@ -302,7 +303,10 @@ class VeridiaRepository(
                 precipMm = if (precipPct >= 65) 2.8 else 0.2,
             )
         }
-        val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics("05:38", "17:52")
+        val solarSchedule = SolarScheduleCalculator.computeForLocation(
+            latitude = city.latitude,
+            longitude = city.longitude,
+        )
         return WeatherTelemetry(
             city = city,
             currentTempC = baseTemp,
@@ -322,10 +326,10 @@ class VeridiaRepository(
             uvIndex = 6.8,
             uvLevelLabel = "High",
             uvPeakWindow = "Peak solar window 11:00 - 14:00",
-            sunriseTime = "05:38",
-            sunsetTime = "17:52",
-            daylightDuration = daylightLabel,
-            solarProgress = solarProgressNow,
+            sunriseTime = solarSchedule.sunriseTime,
+            sunsetTime = solarSchedule.sunsetTime,
+            daylightDuration = solarSchedule.daylightDuration,
+            solarProgress = solarSchedule.solarProgress,
             hourlyForecast = defaultTrend,
             dailyForecast = listOf(
                 DailyForecastItem("Today", 75, conditionKind, baseTemp - 4, baseTemp + 1),
@@ -339,6 +343,13 @@ class VeridiaRepository(
             next24hForecast = defaultTrend,
             isLiveSynced = false,
             dataSourceLabel = if (isBmkg) "BMKG (api.bmkg.go.id)" else "Open-Meteo Live",
+            solarNoonTime = solarSchedule.solarNoonTime,
+            solarDateLabel = solarSchedule.todayDateLabel,
+            nextSolarEventLabel = solarSchedule.nextSolarEventLabel,
+            moonPhaseName = solarSchedule.moonPhase.phaseName,
+            moonIlluminationPercent = solarSchedule.moonPhase.illuminationPercent,
+            moonPhaseFraction = solarSchedule.moonPhase.phaseFraction,
+            moonAgeDays = solarSchedule.moonPhase.ageDays,
         )
     }
 
@@ -667,9 +678,12 @@ class VeridiaRepository(
             val dew = omResponse?.hourly?.dewPoint2m?.firstOrNull()
                 ?: (tempC - ((100 - humidity) / 5.0))
             val uvMax = omResponse?.daily?.uvIndexMax?.firstOrNull() ?: 7.0
-            val sunrise = omResponse?.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5) ?: "05:38"
-            val sunset = omResponse?.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5) ?: "17:52"
-            val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics(sunrise, sunset)
+            val astroFallback = SolarScheduleCalculator.computeForLocation(apiCity.latitude, apiCity.longitude)
+            val sunrise = omResponse?.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5)
+                ?: astroFallback.sunriseTime
+            val sunset = omResponse?.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5)
+                ?: astroFallback.sunsetTime
+            val solarSchedule = SolarScheduleCalculator.enrichFromTimes(sunrise, sunset, apiCity.longitude)
             val dailyList = parseOpenMeteoDaily(omResponse, tempC, kind)
 
             val resolvedLocationName = bmkgResponse?.lokasi?.kotkab
@@ -703,15 +717,22 @@ class VeridiaRepository(
                     uvIndex = uvMax,
                     uvLevelLabel = uvLabelFor(uvMax),
                     uvPeakWindow = "Peak solar window 11:00 - 14:00",
-                    sunriseTime = sunrise,
-                    sunsetTime = sunset,
-                    daylightDuration = daylightLabel,
-                    solarProgress = solarProgressNow,
+                    sunriseTime = solarSchedule.sunriseTime,
+                    sunsetTime = solarSchedule.sunsetTime,
+                    daylightDuration = solarSchedule.daylightDuration,
+                    solarProgress = solarSchedule.solarProgress,
                     hourlyForecast = trend24hList,
                     dailyForecast = if (dailyList.isNotEmpty()) dailyList else defaultWeatherFor(city).dailyForecast,
                     next24hForecast = trend24hList,
                     isLiveSynced = true,
                     dataSourceLabel = "BMKG (api.bmkg.go.id)",
+                    solarNoonTime = solarSchedule.solarNoonTime,
+                    solarDateLabel = solarSchedule.todayDateLabel,
+                    nextSolarEventLabel = solarSchedule.nextSolarEventLabel,
+                    moonPhaseName = solarSchedule.moonPhase.phaseName,
+                    moonIlluminationPercent = solarSchedule.moonPhase.illuminationPercent,
+                    moonPhaseFraction = solarSchedule.moonPhase.phaseFraction,
+                    moonAgeDays = solarSchedule.moonPhase.ageDays,
                 )
             )
         }
@@ -740,9 +761,12 @@ class VeridiaRepository(
                 ?: response.hourly?.uvIndex?.firstOrNull()
                 ?: 5.0
             val dew = response.hourly?.dewPoint2m?.firstOrNull() ?: 14.0
-            val sunrise = response.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5) ?: "05:38"
-            val sunset = response.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5) ?: "18:42"
-            val (solarProgressNow, daylightLabel) = computeSolarCycleMetrics(sunrise, sunset)
+            val astroFallback = SolarScheduleCalculator.computeForLocation(apiCity.latitude, apiCity.longitude)
+            val sunrise = response.daily?.sunrise?.firstOrNull()?.substringAfter("T")?.take(5)
+                ?: astroFallback.sunriseTime
+            val sunset = response.daily?.sunset?.firstOrNull()?.substringAfter("T")?.take(5)
+                ?: astroFallback.sunsetTime
+            val solarSchedule = SolarScheduleCalculator.enrichFromTimes(sunrise, sunset, apiCity.longitude)
 
             WeatherTelemetry(
                 city = apiCity.copy(summaryCondition = conditionLabel, summaryTempC = tempC),
@@ -763,15 +787,22 @@ class VeridiaRepository(
                 uvIndex = uvMax,
                 uvLevelLabel = uvLabelFor(uvMax),
                 uvPeakWindow = "Peak solar window 11:30 - 14:00",
-                sunriseTime = sunrise,
-                sunsetTime = sunset,
-                daylightDuration = daylightLabel,
-                solarProgress = solarProgressNow,
+                sunriseTime = solarSchedule.sunriseTime,
+                sunsetTime = solarSchedule.sunsetTime,
+                daylightDuration = solarSchedule.daylightDuration,
+                solarProgress = solarSchedule.solarProgress,
                 hourlyForecast = if (trend24hList.isNotEmpty()) trend24hList else defaultWeatherFor(city).hourlyForecast,
                 dailyForecast = if (dailyList.isNotEmpty()) dailyList else defaultWeatherFor(city).dailyForecast,
                 next24hForecast = if (trend24hList.isNotEmpty()) trend24hList else defaultWeatherFor(city).next24hForecast,
                 isLiveSynced = true,
                 dataSourceLabel = if (adm4 != null) "BMKG Fallback · Open-Meteo Live" else "Open-Meteo Live",
+                solarNoonTime = solarSchedule.solarNoonTime,
+                solarDateLabel = solarSchedule.todayDateLabel,
+                nextSolarEventLabel = solarSchedule.nextSolarEventLabel,
+                moonPhaseName = solarSchedule.moonPhase.phaseName,
+                moonIlluminationPercent = solarSchedule.moonPhase.illuminationPercent,
+                moonPhaseFraction = solarSchedule.moonPhase.phaseFraction,
+                moonAgeDays = solarSchedule.moonPhase.ageDays,
             )
         }
     }
@@ -1236,24 +1267,6 @@ class VeridiaRepository(
                 precipMm = ((a.precipMm + (b.precipMm - a.precipMm) * frac) * 10.0).roundToInt() / 10.0,
             )
         }
-    }
-
-    private fun computeSolarCycleMetrics(sunrise: String, sunset: String): Pair<Float, String> {
-        fun toMinutes(hhmm: String, defaultMin: Int): Int {
-            val parts = hhmm.split(":")
-            val h = parts.getOrNull(0)?.toIntOrNull() ?: return defaultMin
-            val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
-            return h * 60 + m
-        }
-        val riseMin = toMinutes(sunrise, 5 * 60 + 38)
-        val setMin = toMinutes(sunset, 17 * 60 + 52)
-        val totalMin = (setMin - riseMin).coerceAtLeast(60)
-        val cal = java.util.Calendar.getInstance()
-        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-        val progress = ((nowMin - riseMin).toFloat() / totalMin.toFloat()).coerceIn(0.04f, 0.96f)
-        val hours = totalMin / 60
-        val mins = totalMin % 60
-        return progress to "${hours}h ${mins}m Daylight"
     }
 
     private fun categoryForAqi(aqi: Int): String = when {

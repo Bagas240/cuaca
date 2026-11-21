@@ -20,7 +20,9 @@ import com.example.alerts.DisasterSirenPlayer
 import com.example.alerts.SeismicAccelerometerDetector
 import com.example.data.location.LocationMaskingUtility
 import com.example.data.location.LocationTracker
+import com.example.data.location.SolarScheduleCalculator
 import com.example.data.model.AirQualityTelemetry
+import com.example.data.model.AppThemeMode
 import com.example.data.model.AqiMapLayer
 import com.example.data.model.AtmosphereStratum
 import com.example.data.model.CityLocation
@@ -28,6 +30,7 @@ import com.example.data.model.PressureUnit
 import com.example.data.model.RadarLayer
 import com.example.data.model.RadarTelemetry
 import com.example.data.model.SeismicTelemetry
+import com.example.data.model.SolarThemePhase
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.UserSettings
 import com.example.data.model.WeatherMapLayer
@@ -97,7 +100,7 @@ data class VeridiaUiState(
     val seismicPatternDetectedCount: Int = 0,
     val securityPosture: SecurityPosture = SecurityGuard.currentPosture(),
     val syncBatteryProfile: SyncBatteryProfile = SyncBatteryProfile(),
-    val backgroundAlertCheckStatus: String = "Periodic WorkManager Armed (15m)",
+    val activeThemePhase: SolarThemePhase = SolarThemePhase.DAY,
 )
 
 typealias WeatherViewModel = VeridiaViewModel
@@ -145,21 +148,33 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private val _uiState = MutableStateFlow(
-        VeridiaUiState(
-            selectedCity = initialCity,
-            presetCities = repository.presetCities,
-            searchResults = repository.presetCities,
-            weather = repository.defaultWeatherFor(initialCity),
-            weatherMapStations = repository.defaultWeatherMapStations(),
-            airQuality = repository.defaultAirQuality(initialCity),
-            seismic = repository.defaultSeismicTelemetry(),
-            radar = repository.defaultRadarTelemetry(),
-            hasLocationPermission = locationTracker.hasLocationPermission(),
-            isGpsActive = restoredGpsActive,
-            gpsCoordinatesLabel = restoredGpsLabel,
-            seismicSensorAvailable = accelerometerSensor != null,
-            syncBatteryProfile = WeatherSyncScheduler.readBatteryPowerProfile(application.applicationContext),
-        )
+        run {
+            val defaultWeather = repository.defaultWeatherFor(initialCity)
+            val initialSettings = settingsStore.currentSettings
+            val initialPhase = SolarScheduleCalculator.resolveEffectiveThemePhase(
+                themeMode = initialSettings.themeMode,
+                sunriseTime = defaultWeather.sunriseTime,
+                sunsetTime = defaultWeather.sunsetTime,
+                longitude = initialCity.longitude,
+            )
+            VeridiaUiState(
+                selectedCity = initialCity,
+                presetCities = repository.presetCities,
+                searchResults = repository.presetCities,
+                weather = defaultWeather,
+                weatherMapStations = repository.defaultWeatherMapStations(),
+                airQuality = repository.defaultAirQuality(initialCity),
+                seismic = repository.defaultSeismicTelemetry(),
+                radar = repository.defaultRadarTelemetry(),
+                settings = initialSettings,
+                hasLocationPermission = locationTracker.hasLocationPermission(),
+                isGpsActive = restoredGpsActive,
+                gpsCoordinatesLabel = restoredGpsLabel,
+                seismicSensorAvailable = accelerometerSensor != null,
+                syncBatteryProfile = WeatherSyncScheduler.readBatteryPowerProfile(application.applicationContext),
+                activeThemePhase = initialPhase,
+            )
+        }
     )
     val uiState: StateFlow<VeridiaUiState> = _uiState.asStateFlow()
 
@@ -184,11 +199,6 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                 val profile = WeatherSyncScheduler.schedulePeriodicWeatherSync(application.applicationContext)
                 _uiState.update { it.copy(syncBatteryProfile = profile) }
             }
-        } else if (anyEmergencyAlertEnabled(settingsStore.currentSettings)) {
-            runCatching {
-                val profile = WeatherSyncScheduler.schedulePeriodicWeatherAlerts(application.applicationContext)
-                _uiState.update { it.copy(syncBatteryProfile = profile) }
-            }
         }
         if (locationTracker.hasLocationPermission()) {
             fetchWeatherForCurrentGps()
@@ -196,6 +206,28 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
             refreshTelemetryFor(initialCity, preserveGpsActive = restoredGpsActive)
         }
         startRealtimeAutoRefresh()
+        startSolarThemeTicker()
+    }
+
+    private fun startSolarThemeTicker() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(60_000L)
+                _uiState.update { current ->
+                    val nextPhase = resolveThemePhaseForState(current)
+                    if (nextPhase == current.activeThemePhase) current else current.copy(activeThemePhase = nextPhase)
+                }
+            }
+        }
+    }
+
+    private fun resolveThemePhaseForState(state: VeridiaUiState): SolarThemePhase {
+        return SolarScheduleCalculator.resolveEffectiveThemePhase(
+            themeMode = state.settings.themeMode,
+            sunriseTime = state.weather.sunriseTime,
+            sunsetTime = state.weather.sunsetTime,
+            longitude = state.selectedCity.longitude,
+        )
     }
 
     private fun registerBatteryStateReceiver() {
@@ -320,6 +352,12 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                         weatherMapStations = liveStations ?: state.weatherMapStations,
                         isOfflineMode = isOfflineFallback,
                         securityPosture = SecurityGuard.currentPosture(),
+                        activeThemePhase = SolarScheduleCalculator.resolveEffectiveThemePhase(
+                            themeMode = state.settings.themeMode,
+                            sunriseTime = nextWeather.sunriseTime,
+                            sunsetTime = nextWeather.sunsetTime,
+                            longitude = state.selectedCity.longitude,
+                        ),
                         lastUpdatedLabel = if (isOfflineFallback && cachedStamp != null) {
                             repository.formatOfflineCacheTimestamp(cachedStamp)
                         } else if (!isOfflineFallback) {
@@ -351,9 +389,16 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                         savedSettings.selectedCityId != "gps_current" &&
                         !current.isGpsActive &&
                         matchedPreset.id != current.selectedCity.id
+                    val nextCity = if (shouldSwitchToPreset) matchedPreset!! else current.selectedCity
                     current.copy(
                         settings = savedSettings,
-                        selectedCity = if (shouldSwitchToPreset) matchedPreset!! else current.selectedCity,
+                        selectedCity = nextCity,
+                        activeThemePhase = SolarScheduleCalculator.resolveEffectiveThemePhase(
+                            themeMode = savedSettings.themeMode,
+                            sunriseTime = current.weather.sunriseTime,
+                            sunsetTime = current.weather.sunsetTime,
+                            longitude = nextCity.longitude,
+                        ),
                     ).also {
                         if (shouldSwitchToPreset && matchedPreset != null) {
                             refreshTelemetryFor(matchedPreset)
@@ -539,6 +584,12 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                     airQuality = nextAqi,
                     seismic = nextSeismic,
                     securityPosture = SecurityGuard.currentPosture(),
+                    activeThemePhase = SolarScheduleCalculator.resolveEffectiveThemePhase(
+                        themeMode = state.settings.themeMode,
+                        sunriseTime = nextWeather.sunriseTime,
+                        sunsetTime = nextWeather.sunsetTime,
+                        longitude = nextWeather.city.longitude,
+                    ),
                     lastUpdatedLabel = if (offlineFallback && oldestCacheMillis != null) {
                         repository.formatOfflineCacheTimestamp(oldestCacheMillis)
                     } else if (offlineFallback) {
@@ -631,61 +682,16 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { it.copy(selectedAqiSectorId = sectorId) }
     }
 
-    private fun anyEmergencyAlertEnabled(settings: UserSettings): Boolean {
-        return settings.seismicPWaveAlert || settings.typhoonFlashWatch || settings.aqiSmogInversion
-    }
-
-    private fun syncAlertMonitorSchedule() {
-        val appContext = getApplication<Application>().applicationContext
-        val settings = settingsStore.currentSettings
-        runCatching {
-            if (anyEmergencyAlertEnabled(settings) || settings.backgroundSyncEnabled) {
-                val profile = WeatherSyncScheduler.schedulePeriodicWeatherAlerts(appContext)
-                _uiState.update {
-                    it.copy(
-                        syncBatteryProfile = profile,
-                        backgroundAlertCheckStatus = "Periodic WorkManager Armed (${profile.repeatIntervalMinutes}m)",
-                    )
-                }
-            } else {
-                WeatherSyncScheduler.cancelPeriodicWeatherAlerts(appContext)
-                _uiState.update {
-                    it.copy(backgroundAlertCheckStatus = "Alert Monitor Paused")
-                }
-            }
-        }
-    }
-
-    fun triggerBackgroundAlertCheckNow() {
-        val appContext = getApplication<Application>().applicationContext
-        runCatching {
-            WeatherSyncScheduler.triggerImmediateAlertCheck(appContext)
-        }
-        _uiState.update {
-            it.copy(backgroundAlertCheckStatus = "WorkManager Alert Check Queued · ${repository.formatLiveClockTimestamp()}")
-        }
-        refreshLiveTelemetryNow()
-    }
-
     fun setSeismicPWaveAlert(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsStore.setSeismicPWaveAlert(enabled)
-            syncAlertMonitorSchedule()
-        }
+        viewModelScope.launch { settingsStore.setSeismicPWaveAlert(enabled) }
     }
 
     fun setTyphoonFlashWatch(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsStore.setTyphoonFlashWatch(enabled)
-            syncAlertMonitorSchedule()
-        }
+        viewModelScope.launch { settingsStore.setTyphoonFlashWatch(enabled) }
     }
 
     fun setAqiSmogInversion(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsStore.setAqiSmogInversion(enabled)
-            syncAlertMonitorSchedule()
-        }
+        viewModelScope.launch { settingsStore.setAqiSmogInversion(enabled) }
     }
 
     fun setTemperatureUnit(unit: TemperatureUnit) {
@@ -702,6 +708,22 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
 
     fun setGyroParallaxEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsStore.setGyroParallaxEnabled(enabled) }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        _uiState.update { current ->
+            val updatedSettings = current.settings.copy(themeMode = mode)
+            current.copy(
+                settings = updatedSettings,
+                activeThemePhase = SolarScheduleCalculator.resolveEffectiveThemePhase(
+                    themeMode = mode,
+                    sunriseTime = current.weather.sunriseTime,
+                    sunsetTime = current.weather.sunsetTime,
+                    longitude = current.selectedCity.longitude,
+                ),
+            )
+        }
+        viewModelScope.launch { settingsStore.setThemeMode(mode) }
     }
 
     fun setGpsPrivacyMode(enabled: Boolean) {
