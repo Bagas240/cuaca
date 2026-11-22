@@ -1,17 +1,16 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,23 +35,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.navigation.rememberIsDestinationAnimating
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.SpaceMonoFamily
-import com.example.ui.theme.WarningAmber
 import com.example.ui.theme.veridiaColors
 
 const val HOME_SKY_IMAGE_URL =
@@ -68,6 +73,7 @@ fun SunCycleCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     VeridiaCard(
         modifier = modifier
             .fillMaxWidth()
@@ -88,7 +94,7 @@ fun SunCycleCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Column {
                     Text(
-                        text = "SUN CYCLE",
+                        text = strings.sunCycleTitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.textSub,
                     )
@@ -105,7 +111,7 @@ fun SunCycleCard(
                 border = BorderStroke(1.dp, colors.border),
             ) {
                 Text(
-                    text = daylightDuration,
+                    text = VeridiaLocalizer.daylightDuration(daylightDuration, strings),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.sunset,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -150,7 +156,7 @@ fun SunCycleCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.WbSunny,
-                            contentDescription = "Sunrise",
+                            contentDescription = strings.sunriseLabel,
                             tint = colors.warning,
                             modifier = Modifier.size(16.dp),
                         )
@@ -167,7 +173,7 @@ fun SunCycleCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Sunrise",
+                            text = strings.sunriseLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSub,
                         )
@@ -206,7 +212,7 @@ fun SunCycleCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.NightsStay,
-                            contentDescription = "Sunset",
+                            contentDescription = strings.sunsetLabel,
                             tint = colors.primary,
                             modifier = Modifier.size(16.dp),
                         )
@@ -223,7 +229,7 @@ fun SunCycleCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = "Sunset",
+                            text = strings.sunsetLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSub,
                         )
@@ -252,6 +258,7 @@ fun SolarArcCanvas(
     showInlineLabels: Boolean = true,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val animatedProgress by animateFloatAsState(
         targetValue = solarProgress.coerceIn(0.04f, 0.96f),
         animationSpec = spring(
@@ -260,28 +267,42 @@ fun SolarArcCanvas(
         ),
         label = "solar_progress_anim",
     )
-    val isAnimating = rememberIsDestinationAnimating()
-    val orbScale: Float
-    if (isAnimating) {
-        val pulseTransition = rememberInfiniteTransition(label = "sun_orb_pulse")
-        val animatedOrbScale by pulseTransition.animateFloat(
-            initialValue = 0.90f,
-            targetValue = 1.24f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1800, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "orb_scale",
-        )
-        orbScale = animatedOrbScale
-    } else {
-        orbScale = 1f
+    val orbPulsePhase by rememberQuantizedCyclePhase(
+        enabled = true,
+        cycleDurationMs = 3600,
+        pingPong = true,
+        idleValue = 0.35f,
+        label = "sun_orb_pulse",
+    )
+    var tapCount by remember { mutableIntStateOf(0) }
+    val tapBurst = remember { Animatable(0f) }
+    LaunchedEffect(tapCount) {
+        if (tapCount > 0) {
+            tapBurst.snapTo(1f)
+            tapBurst.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 720, easing = FastOutSlowInEasing),
+            )
+        }
     }
+    val orbScale = 0.90f + orbPulsePhase * 0.34f + tapBurst.value * 0.55f
+    val arcPath = remember { Path() }
+    val horizonDash = remember { PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f) }
+    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(if (showInlineLabels) 104.dp else 82.dp),
+            .height(if (showInlineLabels) 104.dp else 82.dp)
+            .semantics {
+                contentDescription = "Solar arc trajectory, tap to pulse sun orb"
+            }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+            ) { tapCount += 1 }
+            .testTag("solar_arc_interactive_canvas"),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
@@ -297,14 +318,13 @@ fun SolarArcCanvas(
                 start = Offset(w * 0.05f, horizonY),
                 end = Offset(w * 0.95f, horizonY),
                 strokeWidth = 2.5f,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f),
+                pathEffect = horizonDash,
             )
 
-            // Solar arc quadratic curve
-            val arcPath = Path().apply {
-                moveTo(leftX, horizonY)
-                quadraticTo(w * 0.5f, peakY, rightX, horizonY)
-            }
+            // Solar arc quadratic curve (reusing hoisted Path)
+            arcPath.rewind()
+            arcPath.moveTo(leftX, horizonY)
+            arcPath.quadraticTo(w * 0.5f, peakY, rightX, horizonY)
             drawPath(
                 path = arcPath,
                 color = colors.warning.copy(alpha = 0.45f),
@@ -322,14 +342,22 @@ fun SolarArcCanvas(
             val sunX = (oneMinusT * oneMinusT * leftX) + (2f * oneMinusT * t * ctrlX) + (t * t * rightX)
             val sunY = (oneMinusT * oneMinusT * horizonY) + (2f * oneMinusT * t * peakY) + (t * t * horizonY)
 
+            if (tapBurst.value > 0.02f) {
+                drawCircle(
+                    color = colors.warning.copy(alpha = tapBurst.value * 0.42f),
+                    radius = 18f + (1f - tapBurst.value) * 28f,
+                    center = Offset(sunX, sunY),
+                    style = Stroke(width = 2.5f),
+                )
+            }
             drawCircle(
-                color = colors.warning.copy(alpha = 0.24f),
+                color = colors.warning.copy(alpha = 0.24f + tapBurst.value * 0.16f),
                 radius = 18f * orbScale,
                 center = Offset(sunX, sunY),
             )
             drawCircle(
                 color = colors.warning,
-                radius = 9f,
+                radius = 9f + tapBurst.value * 2.5f,
                 center = Offset(sunX, sunY),
             )
         }
@@ -341,7 +369,7 @@ fun SolarArcCanvas(
                     .padding(start = 8.dp),
             ) {
                 Text(
-                    text = "Sunrise",
+                    text = strings.sunriseLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSub,
                 )
@@ -359,7 +387,7 @@ fun SolarArcCanvas(
                 horizontalAlignment = Alignment.End,
             ) {
                 Text(
-                    text = "Sunset",
+                    text = strings.sunsetLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSub,
                 )

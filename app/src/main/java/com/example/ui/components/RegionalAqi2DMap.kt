@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.location.LocationTracker
 import com.example.data.model.AqiMapLayer
 import com.example.data.model.RegionalAqiSector
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.PastelAccent
@@ -114,6 +116,7 @@ fun RegionalAqi2DMap(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     var zoomLevel by remember { mutableIntStateOf(10) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -142,7 +145,7 @@ fun RegionalAqi2DMap(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf(
-                    AqiMapLayer.AQI to "US AQI",
+                    AqiMapLayer.AQI to strings.aqiLayerUsAqi,
                     AqiMapLayer.PM25 to "PM2.5",
                     AqiMapLayer.PM10 to "PM10",
                     AqiMapLayer.NO2 to "NO₂",
@@ -187,7 +190,7 @@ fun RegionalAqi2DMap(
                             color = colors.primary,
                         )
                     } else {
-                        Icon(Icons.Rounded.Refresh, contentDescription = "Refresh AQI Map", tint = colors.primary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Refresh, contentDescription = strings.refreshAqiMapCd, tint = colors.primary, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -272,7 +275,7 @@ fun RegionalAqi2DMap(
                         AqiMapLayer.PM10 -> String.format(Locale.US, "%.0f", sector.pm10)
                         AqiMapLayer.NO2 -> String.format(Locale.US, "%.0f", sector.no2Ppb)
                     }
-                    val metricPrefix = shortSectorCode(sector.id)
+                    val metricPrefix = VeridiaLocalizer.shortSectorCode(sector.id, strings)
 
                     Surface(
                         modifier = Modifier
@@ -332,7 +335,7 @@ fun RegionalAqi2DMap(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "$cityName AQI · $lastUpdatedLabel",
+                        text = "$cityName ${strings.aqiMapSuffix} · ${VeridiaLocalizer.timestampLabel(lastUpdatedLabel, strings)}",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                         color = colors.textMain,
                     )
@@ -359,7 +362,7 @@ fun RegionalAqi2DMap(
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = colors.textMain, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Add, contentDescription = strings.zoomInLabel, tint = colors.textMain, modifier = Modifier.size(16.dp))
                     }
                 }
                 Surface(
@@ -375,7 +378,7 @@ fun RegionalAqi2DMap(
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = colors.textMain, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Remove, contentDescription = strings.zoomOutLabel, tint = colors.textMain, modifier = Modifier.size(16.dp))
                     }
                 }
                 Surface(
@@ -395,7 +398,7 @@ fun RegionalAqi2DMap(
                     shadowElevation = 2.dp,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = colors.primary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.RestartAlt, contentDescription = strings.recenterLabel, tint = colors.primary, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -439,14 +442,14 @@ fun RegionalAqi2DMap(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = selectedSector.name,
+                                    text = VeridiaLocalizer.aqiSectorName(selectedSector.name, strings),
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = colors.textMain,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = "${LocationTracker.formatCoordLabel(selectedSector.latitude, selectedSector.longitude)} · ${selectedSector.statusLabel}",
+                                    text = "${LocationTracker.formatCoordLabel(selectedSector.latitude, selectedSector.longitude)} · ${VeridiaLocalizer.aqiCategory(selectedSector.statusLabel, strings)}",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = colors.textSub,
                                     maxLines = 1,
@@ -512,7 +515,7 @@ fun RegionalAqi2DMap(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "${sector.directionLabel} · $chipNum",
+                            text = "${VeridiaLocalizer.aqiSectorDirection(sector.directionLabel, strings)} · $chipNum",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             ),

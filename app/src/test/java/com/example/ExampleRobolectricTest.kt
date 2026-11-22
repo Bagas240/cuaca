@@ -16,11 +16,15 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -1053,30 +1057,36 @@ class ExampleRobolectricTest {
         assertFalse(capturedIsDark)
         assertFalse(DayVeridiaPalette.isDark)
 
-        // Switch to Dawn/Sunset (rose-white "putih kemerahan")
+        // Switch to Sunrise/Sunset ("kuning keputihan")
         composeRule.onNodeWithTag("theme_switch_sunrise_sunset").performClick()
         composeRule.waitForIdle()
         assertEquals(AppThemeMode.SUNRISE_SUNSET, currentMode)
         assertEquals(SolarThemePhase.SUNRISE_SUNSET, capturedPhase)
         assertFalse(SunriseSunsetVeridiaPalette.isDark)
-        composeRule.onNodeWithText("Sunrise/Sunset · Rose-White").assertIsDisplayed()
+        assertTrue(SunriseSunsetVeridiaPalette.sky.red > 0.95f && SunriseSunsetVeridiaPalette.sky.green > 0.90f)
+        composeRule.onNodeWithText("Sunrise/Sunset · Whitish Gold").assertIsDisplayed()
 
-        // Switch to Dusk (slightly darker afternoon)
+        // Switch to Afternoon ("biru kebiruan")
         composeRule.onNodeWithTag("theme_switch_afternoon_dusk").performClick()
         composeRule.waitForIdle()
         assertEquals(AppThemeMode.AFTERNOON_DUSK, currentMode)
         assertEquals(SolarThemePhase.AFTERNOON_DUSK, capturedPhase)
         assertFalse(AfternoonDuskVeridiaPalette.isDark)
-        composeRule.onNodeWithText("Afternoon · Shaded Dusk").assertIsDisplayed()
+        assertTrue(AfternoonDuskVeridiaPalette.sky.blue > AfternoonDuskVeridiaPalette.sky.red)
+        composeRule.onNodeWithText("Afternoon · Cool Blue").assertIsDisplayed()
 
-        // Switch to Night (dark & cool)
+        // Switch to Night (dark mode across entire app)
         composeRule.onNodeWithTag("theme_switch_night").performClick()
         composeRule.waitForIdle()
         assertEquals(AppThemeMode.NIGHT, currentMode)
         assertEquals(SolarThemePhase.NIGHT, capturedPhase)
         assertTrue(capturedIsDark)
         assertTrue(NightVeridiaPalette.isDark)
-        composeRule.onNodeWithText("Night · Dark & Cool").assertIsDisplayed()
+        assertTrue(NightVeridiaPalette.sky.red < 0.1f && NightVeridiaPalette.surface.red < 0.15f)
+        composeRule.onNodeWithText("Night · Dark Mode").assertIsDisplayed()
+
+        // Verify Morning/Day warm cream palette ("putih tapi ada kuning-kuningnya")
+        assertTrue(DayVeridiaPalette.sky.red > 0.9f && DayVeridiaPalette.sky.green > 0.9f && DayVeridiaPalette.sky.blue < 0.88f)
 
         // Switch back to Auto
         composeRule.onNodeWithTag("theme_switch_auto").performClick()
@@ -1101,6 +1111,251 @@ class ExampleRobolectricTest {
         assertFalse(rawContents.contains("SUNRISE_SUNSET"))
         assertFalse(rawContents.contains("NIGHT"))
     }
-}
 
+    @Test
+    fun `interactive solar arc and wind pill respond to user taps`() {
+        var windClicks = 0
+        composeRule.setContent {
+            VeridiaTheme(themePhase = SolarThemePhase.AFTERNOON_DUSK) {
+                Column {
+                    com.example.ui.components.SolarArcCanvas(
+                        sunriseTime = "05:45",
+                        sunsetTime = "17:55",
+                        solarProgress = 0.52f,
+                    )
+                    WindSpeedDirectionIndicator(
+                        windSpeedKmh = 24,
+                        windBearingDeg = 220,
+                        windDirectionLabel = "SW",
+                        windUnit = WindUnit.KMH,
+                        style = WindIndicatorStyle.COMPACT_PILL,
+                        onClick = { windClicks += 1 },
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("solar_arc_interactive_canvas").performClick()
+        composeRule.onNodeWithTag("wind_indicator_pill").performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, windClicks)
+    }
+
+    @Test
+    fun `home weather backdrop renders realistic cloud layers across all solar phases and weather conditions`() {
+        var activePhase by mutableStateOf(SolarThemePhase.DAY)
+        var activeCondition by mutableStateOf(WeatherConditionKind.PARTLY_CLOUDY)
+        var impulseCount by mutableStateOf(0)
+
+        composeRule.setContent {
+            VeridiaTheme(themePhase = activePhase) {
+                com.example.ui.components.HomeWeatherBackdrop(
+                    conditionKind = activeCondition,
+                    windSpeedKmh = 28,
+                    precipChancePercent = 70,
+                    gyroTilt = androidx.compose.ui.geometry.Offset.Zero,
+                    interactionImpulseCount = impulseCount,
+                    onInteract = { impulseCount += 1 },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val scenarios = listOf(
+            SolarThemePhase.SUNRISE_SUNSET to WeatherConditionKind.SUNNY,
+            SolarThemePhase.DAY to WeatherConditionKind.CLOUDY,
+            SolarThemePhase.AFTERNOON_DUSK to WeatherConditionKind.RAIN,
+            SolarThemePhase.NIGHT to WeatherConditionKind.THUNDERSTORM,
+        )
+        for ((phase, condition) in scenarios) {
+            composeRule.runOnIdle {
+                activePhase = phase
+                activeCondition = condition
+                impulseCount += 1
+            }
+            composeRule.waitForIdle()
+        }
+        assertEquals(4, impulseCount)
+    }
+
+    @Test
+    fun `disaster notification manager detects severe storm, hazardous air, and deduplicates alerts within cooldown`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = DisasterNotificationManager(context)
+        manager.clearDedupHistory()
+
+        val repo = VeridiaRepository()
+        val jakarta = repo.presetCities.first()
+        val quietSeismic = repo.defaultSeismicTelemetry().copy(
+            tsunamiStatus = "Tidak Berpotensi Tsunami",
+            epicenterLat = -3.0,
+            epicenterLon = 128.0,
+            recentEvents = emptyList(),
+        )
+        val stormWeather = repo.defaultWeatherFor(jakarta).copy(
+            conditionKind = WeatherConditionKind.THUNDERSTORM,
+            conditionLabel = "Severe Thunderstorm",
+            windSpeedKmh = 54,
+            windGustKmh = 72,
+        )
+        val cleanAqi = repo.defaultAirQuality(jakarta).copy(pm25 = 18.0, regionalAqi = 42)
+        val stormEvent = manager.evaluateTelemetryForDisaster(
+            city = jakarta,
+            weather = stormWeather,
+            airQuality = cleanAqi,
+            seismic = quietSeismic,
+            settings = UserSettings(typhoonFlashWatch = true, seismicPWaveAlert = true, aqiSmogInversion = true),
+        )
+        assertNotNull(stormEvent)
+        assertEquals(DisasterKind.SEVERE_STORM, stormEvent?.kind)
+
+        val now = 1_750_000_000_000L
+        assertTrue(manager.notifyIfNew(stormEvent!!, force = false, nowMillis = now))
+        // Immediate duplicate within cooldown is suppressed
+        assertFalse(manager.notifyIfNew(stormEvent, force = false, nowMillis = now + 60_000L))
+        // Forced alert always dispatches
+        assertTrue(manager.notifyIfNew(stormEvent, force = true, nowMillis = now + 60_000L))
+
+        // Hazardous air evaluation when storm subsides
+        val calmWeather = repo.defaultWeatherFor(jakarta).copy(
+            conditionKind = WeatherConditionKind.PARTLY_CLOUDY,
+            windSpeedKmh = 12,
+            windGustKmh = 16,
+            precipChancePercent = 20,
+            pressureHpa = 1014,
+            hourlyForecast = emptyList(),
+        )
+        val smogAqi = cleanAqi.copy(pm25 = 148.5, regionalAqi = 198, regionalCategory = "Unhealthy")
+        val aqiEvent = manager.evaluateTelemetryForDisaster(
+            city = jakarta,
+            weather = calmWeather,
+            airQuality = smogAqi,
+            seismic = quietSeismic,
+            settings = UserSettings(aqiSmogInversion = true),
+        )
+        assertNotNull(aqiEvent)
+        assertEquals(DisasterKind.HAZARDOUS_AIR, aqiEvent?.kind)
+    }
+
+    @Test
+    fun `main activity configures osmdroid and live precipitation tracking layer renders interactively`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        com.example.ui.components.configureOsmdroidRuntime(context)
+        val osmConfig = org.osmdroid.config.Configuration.getInstance()
+        assertFalse(osmConfig.userAgentValue.isNullOrBlank())
+        assertNotNull(osmConfig.osmdroidTileCache)
+
+        val repo = VeridiaRepository()
+        val stations = repo.defaultWeatherMapStations()
+        var currentLayer by mutableStateOf(com.example.data.model.WeatherMapLayer.RAIN_RADAR)
+        var refreshCount = 0
+        var expandCount = 0
+
+        composeRule.setContent {
+            VeridiaTheme(themePhase = SolarThemePhase.DAY) {
+                com.example.ui.components.BmkgInteractiveWeatherMap(
+                    centerLat = -6.20,
+                    centerLon = 106.85,
+                    stations = stations,
+                    rainViewerTilePrefix = "https://tilecache.rainviewer.com/v2/radar/1700000000",
+                    activeLayer = currentLayer,
+                    tempUnit = TemperatureUnit.CELSIUS,
+                    lastUpdatedLabel = "Live",
+                    isSyncing = false,
+                    onSelectLayer = { currentLayer = it },
+                    onRefreshNow = { refreshCount += 1 },
+                    mapHeight = 290.dp,
+                    onExpandRadar = { expandCount += 1 },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("bmkg_osmdroid_weather_map").assertIsDisplayed()
+        composeRule.onNodeWithTag("bmkg_station_inspector").assertIsDisplayed()
+        composeRule.onNodeWithTag("weather_map_expand_radar").assertIsDisplayed()
+        composeRule.onNodeWithText("7.0+ mm/h").assertIsDisplayed()
+
+        // Toggle layer to Clouds & Temp then Wind Vector
+        composeRule.onNodeWithTag("weather_map_layer_clouds_temp").performClick()
+        composeRule.waitForIdle()
+        assertEquals(com.example.data.model.WeatherMapLayer.CLOUDS_TEMP, currentLayer)
+
+        composeRule.onNodeWithTag("weather_map_layer_wind_vector").performClick()
+        composeRule.waitForIdle()
+        assertEquals(com.example.data.model.WeatherMapLayer.WIND_VECTOR, currentLayer)
+
+        composeRule.onNodeWithTag("weather_map_layer_rain_radar").performClick()
+        composeRule.onNodeWithTag("osmdroid_zoom_level_badge").assertIsDisplayed()
+        composeRule.onNodeWithText("Z6").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("osmdroid_zoom_in").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Z7").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("osmdroid_zoom_out").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Z6").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("osmdroid_zoom_preset_local").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Z11").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("osmdroid_zoom_preset_regional").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Z5").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("osmdroid_recenter").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Z6").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("weather_map_refresh").performClick()
+        composeRule.onNodeWithTag("weather_map_expand_radar").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(com.example.data.model.WeatherMapLayer.RAIN_RADAR, currentLayer)
+        assertEquals(1, refreshCount)
+        assertEquals(1, expandCount)
+    }
+
+    @Test
+    fun `home dashboard hosts live osmdroid precipitation tracker card`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        Shadows.shadowOf(app).grantPermissions(Manifest.permission.ACCESS_COARSE_LOCATION)
+        val vm = WeatherViewModel(app)
+
+        composeRule.setContent {
+            val state by vm.uiState.collectAsState()
+            VeridiaTheme(themePhase = state.activeThemePhase) {
+                com.example.ui.screens.HomeDashboardScreen(
+                    state = state,
+                    gyroTilt = androidx.compose.ui.geometry.Offset.Zero,
+                    onRefreshNow = {},
+                    onOpenCityModal = {},
+                    onCloseCityModal = {},
+                    onSearchQueryChange = {},
+                    onSelectCity = {},
+                    onPermissionResult = {},
+                    onSyncPermissionState = {},
+                    onFetchCurrentGpsWeather = {},
+                    onToggleMetricCard = {},
+                    onOpenDisasterMonitor = {},
+                    onOpenAirQuality = {},
+                    onOpenDetailedWeather = {},
+                    onOpenRadar = {},
+                    onSelectWeatherMapLayer = vm::selectWeatherMapLayer,
+                    onThemeModeChange = vm::setThemeMode,
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("home_live_precipitation_map_card"))
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home_live_precipitation_map_card").assertIsDisplayed()
+        composeRule.onNodeWithText("LIVE PRECIPITATION TRACKER").assertIsDisplayed()
+        composeRule.onNodeWithTag("bmkg_osmdroid_weather_map").assertIsDisplayed()
+    }
+}
 

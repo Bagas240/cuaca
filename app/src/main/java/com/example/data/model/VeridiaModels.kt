@@ -1,5 +1,10 @@
 package com.example.data.model
 
+enum class AppLanguage {
+    ENGLISH,
+    INDONESIAN,
+}
+
 enum class TemperatureUnit { CELSIUS, FAHRENHEIT }
 enum class WindUnit { KMH, MPH, KNOTS }
 enum class PressureUnit { HPA, INHG }
@@ -61,6 +66,12 @@ data class DailyForecastItem(
     val condition: WeatherConditionKind,
     val minTempC: Int,
     val maxTempC: Int,
+    val dateLabel: String = "",
+    val precipMm: Double = 0.0,
+    val windMaxKmh: Int = 18,
+    val humidityPercent: Int = 72,
+    val uvIndexMax: Double = 6.0,
+    val conditionSummary: String = "",
 )
 
 data class WeatherTelemetry(
@@ -236,5 +247,6 @@ data class UserSettings(
     val backgroundSyncEnabled: Boolean = true,
     val lastBackgroundSyncMillis: Long = 0L,
     val themeMode: AppThemeMode = AppThemeMode.AUTO_SOLAR,
+    val appLanguage: AppLanguage = AppLanguage.ENGLISH,
 )
 

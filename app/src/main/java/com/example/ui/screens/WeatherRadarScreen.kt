@@ -50,6 +50,8 @@ import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
 import com.example.ui.components.formatTempString
 import com.example.ui.components.formatWindValue
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
@@ -65,6 +67,7 @@ fun WeatherRadarScreen(
     onRefreshNow: () -> Unit,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val radar = state.radar
     val tempUnit = state.settings.temperatureUnit
     val (cellSpeedVal, speedUnitLabel) = formatWindValue(radar.cellSpeedKmh, state.settings.windUnit)
@@ -75,9 +78,9 @@ fun WeatherRadarScreen(
     }
 
     val playbackStatusLabel = when {
-        state.radarPlaybackOffsetMinutes == 0 -> "Live (Now)"
-        state.radarPlaybackOffsetMinutes < 0 -> "${state.radarPlaybackOffsetMinutes} min"
-        else -> "+${state.radarPlaybackOffsetMinutes} min"
+        state.radarPlaybackOffsetMinutes == 0 -> strings.liveNowLabel
+        state.radarPlaybackOffsetMinutes < 0 -> "${state.radarPlaybackOffsetMinutes} ${strings.minShort}"
+        else -> "+${state.radarPlaybackOffsetMinutes} ${strings.minShort}"
     }
 
     Box(
@@ -95,8 +98,8 @@ fun WeatherRadarScreen(
         ) {
             item {
                 VeridiaBackHeader(
-                    title = "Weather Radar",
-                    subtitle = "Doppler Precipitation & Satellite Array",
+                    title = strings.weatherRadarTitle,
+                    subtitle = strings.weatherRadarSubtitle,
                     onBackClick = onBack,
                     trailingContent = {
                         Surface(
@@ -117,7 +120,7 @@ fun WeatherRadarScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Live Sweep",
+                                    text = strings.liveSweepLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = colors.textMain,
                                 )
@@ -170,19 +173,19 @@ fun WeatherRadarScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         RadarLayerTab(
-                            label = "Rain Doppler",
+                            label = strings.radarTabRain,
                             selected = state.selectedRadarLayer == RadarLayer.RAIN_DOPPLER,
                             onClick = { onSelectRadarLayer(RadarLayer.RAIN_DOPPLER) },
                             modifier = Modifier.weight(1f).testTag("radar_tab_rain"),
                         )
                         RadarLayerTab(
-                            label = "Wind Stream",
+                            label = strings.radarTabWind,
                             selected = state.selectedRadarLayer == RadarLayer.WIND_STREAM,
                             onClick = { onSelectRadarLayer(RadarLayer.WIND_STREAM) },
                             modifier = Modifier.weight(1f).testTag("radar_tab_wind"),
                         )
                         RadarLayerTab(
-                            label = "Satellite",
+                            label = strings.radarTabSatellite,
                             selected = state.selectedRadarLayer == RadarLayer.SATELLITE,
                             onClick = { onSelectRadarLayer(RadarLayer.SATELLITE) },
                             modifier = Modifier.weight(1f).testTag("radar_tab_satellite"),
@@ -205,7 +208,7 @@ fun WeatherRadarScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "ACTIVE PRECIPITATION CELL",
+                                text = strings.activePrecipCellUpper,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSub,
                             )
@@ -218,14 +221,14 @@ fun WeatherRadarScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "dBZ Rain Core",
+                                    text = strings.dbzRainCoreLabel,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = colors.textSub,
                                     modifier = Modifier.padding(bottom = 10.dp),
                                 )
                             }
                             Text(
-                                text = radar.summaryDescription,
+                                text = VeridiaLocalizer.radarSummaryDescription(radar.summaryDescription, strings),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.textSub,
                             )
@@ -256,21 +259,21 @@ fun WeatherRadarScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadarSummaryStat(
-                            label = "Cell Speed",
+                            label = strings.cellSpeedLabel,
                             value = "$cellSpeedVal $speedUnitLabel",
                             valueColor = colors.textMain,
                             modifier = Modifier.weight(1f),
                         )
                         Box(modifier = Modifier.width(1.dp).height(26.dp).background(colors.border))
                         RadarSummaryStat(
-                            label = "Echo Top",
+                            label = strings.echoTopLabel,
                             value = String.format("%,d m", radar.echoTopMeters),
                             valueColor = colors.textMain,
                             modifier = Modifier.weight(1f),
                         )
                         Box(modifier = Modifier.width(1.dp).height(26.dp).background(colors.border))
                         RadarSummaryStat(
-                            label = "Accumulation",
+                            label = strings.accumulationLabel,
                             value = "${radar.accumulationMmH} mm/h",
                             valueColor = colors.primary,
                             modifier = Modifier.weight(1f),
@@ -292,12 +295,12 @@ fun WeatherRadarScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         RadarMetricCard(
-                            title = "SURFACE RAIN",
+                            title = strings.surfaceRainUpper,
                             value = String.format("%.1f", radar.surfaceRainMmH),
                             unit = "mm/h",
                             unitColor = colors.textSub,
-                            subtitle = "Moderate steady rain",
-                            footerLeft = "Next 60m",
+                            subtitle = strings.moderateSteadyRain,
+                            footerLeft = strings.next60mLabel,
                             footerRight = "${radar.next60mMm} mm",
                             footerRightColor = colors.textMain,
                             icon = Icons.Rounded.WaterDrop,
@@ -305,12 +308,12 @@ fun WeatherRadarScreen(
                             modifier = Modifier.weight(1f),
                         )
                         RadarMetricCard(
-                            title = "CELL VECTOR",
-                            value = radar.cellVectorLabel,
+                            title = strings.cellVectorUpper,
+                            value = VeridiaLocalizer.windDirection(radar.cellVectorLabel, strings),
                             unit = "",
                             unitColor = colors.textSub,
-                            subtitle = radar.cellDestination,
-                            footerLeft = "Velocity",
+                            subtitle = VeridiaLocalizer.radarCellDestination(radar.cellDestination, strings),
+                            footerLeft = strings.velocityLabel,
                             footerRight = "$cellSpeedVal $speedUnitLabel",
                             footerRightColor = colors.textMain,
                             icon = Icons.Rounded.NearMe,
@@ -323,25 +326,25 @@ fun WeatherRadarScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         RadarMetricCard(
-                            title = "REFLECTIVITY",
+                            title = strings.reflectivityUpper,
                             value = radar.echoCoreDbz.toString(),
                             unit = "dBZ",
                             unitColor = colors.sunset,
-                            subtitle = "Doppler band echo",
-                            footerLeft = "Hail Risk",
-                            footerRight = radar.hailRiskLabel,
+                            subtitle = strings.dopplerBandEcho,
+                            footerLeft = strings.hailRiskLabel,
+                            footerRight = VeridiaLocalizer.hailRisk(radar.hailRiskLabel, strings),
                             footerRightColor = colors.greenText,
                             icon = Icons.Rounded.Radar,
                             iconTint = colors.warning,
                             modifier = Modifier.weight(1f),
                         )
                         RadarMetricCard(
-                            title = "IR CLOUD TOP",
+                            title = strings.irCloudTopUpper,
                             value = "${radar.irCloudTopC}°",
                             unit = "C",
                             unitColor = colors.textSub,
-                            subtitle = "Deep convective deck",
-                            footerLeft = "Satellite",
+                            subtitle = strings.deepConvectiveDeck,
+                            footerLeft = strings.satelliteLabel,
                             footerRight = radar.satelliteName,
                             footerRightColor = colors.textMain,
                             icon = Icons.Rounded.SatelliteAlt,
@@ -368,7 +371,7 @@ fun WeatherRadarScreen(
                             Icon(Icons.Rounded.Schedule, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "RADAR PLAYBACK TRACK",
+                                text = strings.radarPlaybackTrackUpper,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSub,
                             )
@@ -399,17 +402,17 @@ fun WeatherRadarScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("-60 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
-                        Text("-30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
+                        Text("-60 ${strings.minShort}", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
+                        Text("-30 ${strings.minShort}", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
                         Text(
-                            "Now",
+                            strings.nowLabel,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = SpaceMonoFamily,
                                 fontWeight = FontWeight.Bold,
                             ),
                             color = colors.textMain,
                         )
-                        Text("+30 min", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
+                        Text("+30 ${strings.minShort}", style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily), color = colors.textSub)
                     }
                 }
             }

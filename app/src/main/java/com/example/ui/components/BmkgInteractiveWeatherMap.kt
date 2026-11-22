@@ -31,11 +31,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +69,8 @@ import com.example.data.location.LocationMaskingUtility
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.WeatherMapLayer
 import com.example.data.model.WeatherMapStation
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 import org.osmdroid.config.Configuration
@@ -88,6 +92,14 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+import androidx.compose.material.icons.rounded.OpenInFull
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.unit.Dp
+
+fun configureOsmdroidRuntime(context: Context) {
+    OsmdroidRuntimeConfig.ensureConfigured(context)
+}
+
 private object OsmdroidRuntimeConfig {
     @Volatile
     private var configured = false
@@ -97,7 +109,9 @@ private object OsmdroidRuntimeConfig {
         synchronized(this) {
             if (configured) return
             val appCtx = context.applicationContext
+            val prefs = appCtx.getSharedPreferences("osmdroid_prefs", Context.MODE_PRIVATE)
             val config = Configuration.getInstance()
+            config.load(appCtx, prefs)
             config.userAgentValue = appCtx.packageName.ifBlank { "com.aistudio.veridia.wxqmpk" }
             val baseDir = File(appCtx.cacheDir, "osmdroid").apply { mkdirs() }
             val tileDir = File(baseDir, "tiles").apply { mkdirs() }
@@ -359,13 +373,16 @@ fun BmkgInteractiveWeatherMap(
     onSelectLayer: (WeatherMapLayer) -> Unit,
     onRefreshNow: () -> Unit,
     modifier: Modifier = Modifier,
+    mapHeight: Dp = 340.dp,
+    onExpandRadar: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = context.resources.displayMetrics.density
     val colors = veridiaColors
+    val strings = veridiaStrings
 
-    OsmdroidRuntimeConfig.ensureConfigured(context)
+    configureOsmdroidRuntime(context)
 
     var selectedStationId by remember {
         mutableStateOf(stations.firstOrNull()?.id ?: "")
@@ -433,16 +450,24 @@ fun BmkgInteractiveWeatherMap(
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_RESUME -> runCatching { mapView.onResume() }
+                Lifecycle.Event.ON_PAUSE -> runCatching { mapView.onPause() }
                 else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            mapView.onDetach()
+            runCatching { mapView.onDetach() }
         }
+    }
+
+    // Apply dark-mode tile filter when Night theme is active so base OSM tiles harmonize
+    LaunchedEffect(colors.isDark) {
+        mapView.overlayManager.tilesOverlay.setColorFilter(
+            if (colors.isDark) TilesOverlay.INVERT_COLORS else null,
+        )
+        mapView.invalidate()
     }
 
     // Recenter when user selects a different city (using privacy-masked coordinates)
@@ -481,6 +506,19 @@ fun BmkgInteractiveWeatherMap(
         mapView.invalidate()
     }
 
+    val minZoom = 3.5
+    val maxZoom = 15.0
+    val canZoomIn = currentZoom < maxZoom - 0.1
+    val canZoomOut = currentZoom > minZoom + 0.1
+
+    fun applyMapZoom(targetZoom: Double) {
+        val clamped = targetZoom.coerceIn(minZoom, maxZoom)
+        currentZoom = clamped
+        runCatching {
+            mapView.controller.animateTo(mapView.mapCenter, clamped, 220L)
+        }
+    }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -498,9 +536,9 @@ fun BmkgInteractiveWeatherMap(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 listOf(
-                    WeatherMapLayer.RAIN_RADAR to "BMKG Precip",
-                    WeatherMapLayer.CLOUDS_TEMP to "Clouds & Temp",
-                    WeatherMapLayer.WIND_VECTOR to "Wind Vector",
+                    WeatherMapLayer.RAIN_RADAR to strings.mapLayerRainRadar,
+                    WeatherMapLayer.CLOUDS_TEMP to strings.mapLayerCloudsTemp,
+                    WeatherMapLayer.WIND_VECTOR to strings.mapLayerWindVector,
                 ).forEach { (layer, label) ->
                     val selected = activeLayer == layer
                     Surface(
@@ -545,7 +583,7 @@ fun BmkgInteractiveWeatherMap(
                         } else {
                             Icon(
                                 imageVector = Icons.Rounded.Refresh,
-                                contentDescription = "Refresh BMKG Precipitation Map",
+                                contentDescription = strings.refreshPrecipitationMapCd,
                                 tint = colors.primary,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -559,7 +597,7 @@ fun BmkgInteractiveWeatherMap(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(340.dp)
+                .height(mapHeight)
                 .testTag("bmkg_osmdroid_weather_map"),
             shape = RoundedCornerShape(22.dp),
             color = if (colors.isDark) Color(0xFF0F1E33) else Color(0xFFCBE2F6),
@@ -572,103 +610,171 @@ fun BmkgInteractiveWeatherMap(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                // Top-left Live BMKG Header + Zoom Indicator
-                Surface(
+                // Top-left Live BMKG + RainViewer Status & Optional Full Radar Link
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(10.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = colors.surface.copy(alpha = 0.94f),
-                    border = BorderStroke(1.dp, colors.border),
-                    shadowElevation = 2.dp,
+                        .padding(start = 10.dp, top = 10.dp, end = 64.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = colors.surface.copy(alpha = 0.94f),
+                        border = BorderStroke(1.dp, colors.border),
+                        shadowElevation = 2.dp,
                     ) {
-                        Icon(Icons.Rounded.Map, contentDescription = null, tint = colors.primary, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "BMKG Precip · Z${currentZoom.roundToInt()} · $lastUpdatedLabel",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                            color = colors.textMain,
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Rounded.Map, contentDescription = null, tint = colors.primary, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${strings.osmPrecipPrefix} · ${VeridiaLocalizer.timestampLabel(lastUpdatedLabel, strings)}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                color = colors.textMain,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+
+                    if (onExpandRadar != null) {
+                        Surface(
+                            modifier = Modifier
+                                .minimumInteractiveComponentSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(onClick = onExpandRadar)
+                                .testTag("weather_map_expand_radar"),
+                            shape = RoundedCornerShape(12.dp),
+                            color = colors.primary,
+                            shadowElevation = 2.dp,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.OpenInFull,
+                                    contentDescription = strings.openFullRadarCd,
+                                    tint = colors.onPrimary,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = strings.radarButton,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                    color = colors.onPrimary,
+                                )
+                            }
+                        }
                     }
                 }
 
-                // Top-right Zoom & Recenter Controls
-                Row(
+                // Right-side Vertical Map Zoom In/Out & Recenter Overlay Controls
+                Column(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                        .padding(top = 8.dp, end = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    IconButton(
-                        onClick = {
-                            mapView.controller.zoomIn()
-                            currentZoom = mapView.zoomLevelDouble
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .testTag("osmdroid_zoom_in"),
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = colors.surface.copy(alpha = 0.95f),
+                        border = BorderStroke(1.dp, colors.border),
+                        shadowElevation = 4.dp,
                     ) {
-                        Surface(
-                            modifier = Modifier.size(34.dp),
-                            shape = CircleShape,
-                            color = colors.surface.copy(alpha = 0.94f),
-                            border = BorderStroke(1.dp, colors.border),
-                            shadowElevation = 2.dp,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Add, contentDescription = "Zoom In Map", tint = colors.textMain, modifier = Modifier.size(16.dp))
+                            IconButton(
+                                onClick = { applyMapZoom(currentZoom + 1.0) },
+                                enabled = canZoomIn,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .testTag("osmdroid_zoom_in"),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Add,
+                                    contentDescription = strings.zoomInMapCd,
+                                    tint = if (canZoomIn) colors.textMain else colors.textSub.copy(alpha = 0.35f),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+
+                            HorizontalDivider(
+                                modifier = Modifier.width(28.dp),
+                                color = colors.border,
+                            )
+
+                            Text(
+                                text = "Z${currentZoom.roundToInt()}",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = SpaceMonoFamily,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                color = colors.primary,
+                                modifier = Modifier
+                                    .padding(vertical = 3.dp)
+                                    .testTag("osmdroid_zoom_level_badge"),
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.width(28.dp),
+                                color = colors.border,
+                            )
+
+                            IconButton(
+                                onClick = { applyMapZoom(currentZoom - 1.0) },
+                                enabled = canZoomOut,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .testTag("osmdroid_zoom_out"),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Remove,
+                                    contentDescription = strings.zoomOutMapCd,
+                                    tint = if (canZoomOut) colors.textMain else colors.textSub.copy(alpha = 0.35f),
+                                    modifier = Modifier.size(20.dp),
+                                )
                             }
                         }
                     }
+
                     IconButton(
                         onClick = {
-                            mapView.controller.zoomOut()
-                            currentZoom = mapView.zoomLevelDouble
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .testTag("osmdroid_zoom_out"),
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(34.dp),
-                            shape = CircleShape,
-                            color = colors.surface.copy(alpha = 0.94f),
-                            border = BorderStroke(1.dp, colors.border),
-                            shadowElevation = 2.dp,
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out Map", tint = colors.textMain, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    }
-                    IconButton(
-                        onClick = {
-                            mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 5.8, 360L)
                             currentZoom = 5.8
+                            runCatching {
+                                mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 5.8, 360L)
+                            }
                         },
                         modifier = Modifier
                             .size(48.dp)
                             .testTag("osmdroid_recenter"),
                     ) {
                         Surface(
-                            modifier = Modifier.size(34.dp),
+                            modifier = Modifier.size(38.dp),
                             shape = CircleShape,
-                            color = colors.surface.copy(alpha = 0.94f),
+                            color = colors.surface.copy(alpha = 0.95f),
                             border = BorderStroke(1.dp, colors.border),
-                            shadowElevation = 2.dp,
+                            shadowElevation = 3.dp,
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Map", tint = colors.primary, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    imageVector = Icons.Rounded.MyLocation,
+                                    contentDescription = strings.recenterMapCd,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
                             }
                         }
                     }
                 }
 
-                // Bottom Overlay: Precipitation Scale Legend + Selected BMKG Station Card
+                // Bottom Overlay: Quick Zoom Presets + Precipitation Scale Legend + Selected BMKG Station Card
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -676,21 +782,57 @@ fun BmkgInteractiveWeatherMap(
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if (activeLayer == WeatherMapLayer.RAIN_RADAR) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = colors.surface.copy(alpha = 0.92f),
-                            border = BorderStroke(1.dp, colors.border),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (activeLayer == WeatherMapLayer.RAIN_RADAR) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = colors.surface.copy(alpha = 0.92f),
+                                border = BorderStroke(1.dp, colors.border),
                             ) {
-                                LegendDotLabel(color = Color(0xFF38BDF8), text = "Light")
-                                LegendDotLabel(color = Color(0xFF0284C7), text = "0.5+ mm")
-                                LegendDotLabel(color = Color(0xFFF59E0B), text = "2.5+ mm")
-                                LegendDotLabel(color = Color(0xFFDC2626), text = "7.0+ mm/h")
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LegendDotLabel(color = Color(0xFF38BDF8), text = strings.legendLight)
+                                    LegendDotLabel(color = Color(0xFF0284C7), text = "0.5+ mm")
+                                    LegendDotLabel(color = Color(0xFFF59E0B), text = "2.5+ mm")
+                                    LegendDotLabel(color = Color(0xFFDC2626), text = "7.0+ mm/h")
+                                }
+                            }
+                        }
+
+                        // Quick scale zoom presets for regional storm systems vs local rainfall tracking
+                        listOf(
+                            Triple(strings.presetRegion, 5.0, "osmdroid_zoom_preset_regional"),
+                            Triple(strings.presetMetro, 8.0, "osmdroid_zoom_preset_metro"),
+                            Triple(strings.presetLocal, 11.0, "osmdroid_zoom_preset_local"),
+                        ).forEach { (presetLabel, presetZoom, tag) ->
+                            val isNearPreset = kotlin.math.abs(currentZoom - presetZoom) <= 0.8
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { applyMapZoom(presetZoom) }
+                                    .testTag(tag),
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isNearPreset) colors.primary else colors.surface.copy(alpha = 0.92f),
+                                border = BorderStroke(1.dp, if (isNearPreset) colors.primary else colors.border),
+                            ) {
+                                Text(
+                                    text = presetLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                    color = if (isNearPreset) colors.onPrimary else colors.textMain,
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                )
                             }
                         }
                     }
@@ -723,14 +865,14 @@ fun BmkgInteractiveWeatherMap(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            text = "${selectedStation.name} · ${selectedStation.conditionLabel}",
+                                            text = "${selectedStation.name} · ${VeridiaLocalizer.conditionLabel(selectedStation.conditionLabel, selectedStation.condition, strings)}",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                             color = colors.textMain,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                         Text(
-                                            text = "Precip ${String.format(Locale.US, "%.1f", selectedStation.precipMm)} mm/h (${selectedStation.precipChancePercent}%) · Wind ${selectedStation.windSpeedKmh} km/h · BMKG & OSM",
+                                            text = "${strings.stationPrecipLabel} ${String.format(Locale.US, "%.1f", selectedStation.precipMm)} mm/h (${selectedStation.precipChancePercent}%) · ${strings.stationWindLabel} ${selectedStation.windSpeedKmh} km/h · BMKG & OSM",
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                             color = colors.textSub,
                                             maxLines = 1,

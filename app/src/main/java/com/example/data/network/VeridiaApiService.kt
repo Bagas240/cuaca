@@ -45,6 +45,8 @@ data class DailyWeatherDto(
     val sunrise: List<String> = emptyList(),
     val sunset: List<String> = emptyList(),
     @Json(name = "uv_index_max") val uvIndexMax: List<Double> = emptyList(),
+    @Json(name = "precipitation_sum") val precipitationSum: List<Double> = emptyList(),
+    @Json(name = "wind_speed_10m_max") val windSpeed10mMax: List<Double> = emptyList(),
 )
 
 @JsonClass(generateAdapter = true)
@@ -105,7 +107,7 @@ interface OpenMeteoForecastApi {
         @Query("longitude") longitude: Double,
         @Query("current") current: String = "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
         @Query("hourly") hourly: String = "temperature_2m,precipitation_probability,precipitation,weather_code,uv_index,dew_point_2m",
-        @Query("daily") daily: String = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max",
+        @Query("daily") daily: String = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,precipitation_sum,wind_speed_10m_max",
         @Query("timezone") timezone: String = "auto",
     ): OpenMeteoForecastResponse
 }

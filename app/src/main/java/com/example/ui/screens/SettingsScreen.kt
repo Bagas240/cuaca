@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Straighten
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.HorizontalDivider
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.AppThemeMode
 import com.example.data.model.PressureUnit
 import com.example.data.model.TemperatureUnit
@@ -50,6 +52,8 @@ import com.example.data.model.WindUnit
 import com.example.ui.components.SolarThemeSwitcherCard
 import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
@@ -69,9 +73,11 @@ fun SettingsScreen(
     onGpsPrivacyModeChange: (Boolean) -> Unit,
     onBackgroundSyncChange: (Boolean) -> Unit = {},
     onThemeModeChange: (AppThemeMode) -> Unit = {},
+    onLanguageChange: (AppLanguage) -> Unit = {},
     onRefreshCache: () -> Unit,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val settings = state.settings
 
     Box(
@@ -89,13 +95,94 @@ fun SettingsScreen(
         ) {
             item {
                 VeridiaBackHeader(
-                    title = "Settings",
+                    title = strings.settingsTitle,
                     subtitle = null,
                     onBackClick = onBack,
                 )
             }
 
-            // Section 00: Dynamic Solar Theme Switcher
+            // Section 00a: App Language Switcher (English / Full Bahasa Indonesia)
+            item {
+                VeridiaCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .testTag("language_selector_card"),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Translate, null, tint = colors.primary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.appLanguageCardTitle,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = colors.textMain,
+                            )
+                            Text(
+                                text = strings.appLanguageCardSubtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.textSub,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        val enSelected = settings.appLanguage == AppLanguage.ENGLISH
+                        val idSelected = settings.appLanguage == AppLanguage.INDONESIAN
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onLanguageChange(AppLanguage.ENGLISH) }
+                                .testTag("language_option_en"),
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (enSelected) colors.primary else colors.subtle,
+                            border = BorderStroke(1.dp, if (enSelected) colors.primary else colors.border),
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = strings.languageEnglishOption,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (enSelected) FontWeight.Bold else FontWeight.Medium,
+                                    ),
+                                    color = if (enSelected) colors.onPrimary else colors.textMain,
+                                )
+                            }
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onLanguageChange(AppLanguage.INDONESIAN) }
+                                .testTag("language_option_id"),
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (idSelected) colors.primary else colors.subtle,
+                            border = BorderStroke(1.dp, if (idSelected) colors.primary else colors.border),
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = strings.languageIndonesianOption,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (idSelected) FontWeight.Bold else FontWeight.Medium,
+                                    ),
+                                    color = if (idSelected) colors.onPrimary else colors.textMain,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Section 00b: Dynamic Solar Theme Switcher (placed exclusively in Settings)
             item {
                 SolarThemeSwitcherCard(
                     themeMode = settings.themeMode,
@@ -117,7 +204,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Shield, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("GPS Privacy & Real-Time Sync", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                        Text(strings.gpsPrivacySyncTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = colors.border)
@@ -125,26 +212,39 @@ fun SettingsScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SettingSwitchRow(
-                            title = "GPS Location Privacy Shield",
-                            subtitle = "Locks telemetry to regency/kabupaten zone (~9-11 km); exact GPS discarded",
+                            title = strings.gpsPrivacyShieldTitle,
+                            subtitle = strings.gpsPrivacyShieldSubtitle,
                             checked = settings.gpsPrivacyMode,
                             checkedColor = colors.accent,
                             onCheckedChange = onGpsPrivacyModeChange,
                             testTag = "switch_gps_privacy",
                         )
                         val batteryProfile = state.syncBatteryProfile
+                        val isId = settings.appLanguage == AppLanguage.INDONESIAN
                         val syncSubtitle = when (batteryProfile.tier) {
-                            SyncBatteryTier.CRITICAL_BATTERY ->
+                            SyncBatteryTier.CRITICAL_BATTERY -> if (isId) {
+                                "Baterai kritis (${batteryProfile.batteryPercent}%): dijeda ke ${batteryProfile.repeatIntervalMinutes} mnt hingga terisi"
+                            } else {
                                 "Battery critical (${batteryProfile.batteryPercent}%): paused/deferred to ${batteryProfile.repeatIntervalMinutes}m until charged"
-                            SyncBatteryTier.LOW_BATTERY ->
+                            }
+                            SyncBatteryTier.LOW_BATTERY -> if (isId) {
+                                "Baterai lemah (${batteryProfile.batteryPercent}%): frekuensi dikurangi ke ${batteryProfile.repeatIntervalMinutes} mnt di Wi-Fi"
+                            } else {
                                 "Low battery (${batteryProfile.batteryPercent}%): frequency reduced to every ${batteryProfile.repeatIntervalMinutes}m on Wi-Fi"
-                            SyncBatteryTier.CHARGING ->
+                            }
+                            SyncBatteryTier.CHARGING -> if (isId) {
+                                "Mengisi daya (${batteryProfile.batteryPercent}%): menyegarkan tiap ${batteryProfile.repeatIntervalMinutes} mnt"
+                            } else {
                                 "Charging (${batteryProfile.batteryPercent}%): refreshes every ${batteryProfile.repeatIntervalMinutes}m"
-                            SyncBatteryTier.NORMAL ->
+                            }
+                            SyncBatteryTier.NORMAL -> if (isId) {
+                                "Manajer Baterai (${if (batteryProfile.isBatteryUnknown) "Normal" else "${batteryProfile.batteryPercent}%"}): tiap ${batteryProfile.repeatIntervalMinutes} mnt saat Wi-Fi/mengisi"
+                            } else {
                                 "BatteryManager (${if (batteryProfile.isBatteryUnknown) "Nominal" else "${batteryProfile.batteryPercent}%"}): every ${batteryProfile.repeatIntervalMinutes}m on Wi-Fi or charging"
+                            }
                         }
                         SettingSwitchRow(
-                            title = "Power-Aware Background Sync",
+                            title = strings.powerAwareSyncTitle,
                             subtitle = syncSubtitle,
                             checked = settings.backgroundSyncEnabled,
                             checkedColor = colors.primary,
@@ -157,9 +257,9 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Real-Time Telemetry Stream", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text(strings.realTimeTelemetryStream, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
-                                    text = "Adaptive WorkManager · ${batteryProfile.repeatIntervalMinutes}m (${batteryProfile.tier.name.lowercase().replace('_', ' ')})",
+                                    text = "${strings.adaptiveWorkManagerPrefix} · ${batteryProfile.repeatIntervalMinutes}m (${VeridiaLocalizer.batteryTierLabel(batteryProfile.tier, strings)})",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.textSub,
                                     modifier = Modifier.testTag("sync_battery_cadence_badge"),
@@ -171,7 +271,7 @@ fun SettingsScreen(
                                 border = BorderStroke(1.dp, colors.border),
                             ) {
                                 Text(
-                                    text = state.lastUpdatedLabel,
+                                    text = VeridiaLocalizer.timestampLabel(state.lastUpdatedLabel, strings),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = colors.primary,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -200,7 +300,7 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Lock, null, tint = colors.greenText, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Encryption & Hardening", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                            Text(strings.encryptionHardeningTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                         }
                         Surface(
                             shape = RoundedCornerShape(8.dp),
@@ -221,28 +321,28 @@ fun SettingsScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SecurityStatusRow(
-                            label = "User Settings & GPS Coordinates",
-                            status = if (posture.encryptedPrefsActive) "EncryptedSharedPreferences · AES-256" else "AES Encrypted",
+                            label = strings.secSettingsAndGps,
+                            status = if (posture.encryptedPrefsActive) strings.secEncryptedPrefs else strings.secAesEncrypted,
                             isSecure = posture.encryptedPrefsActive,
                         )
                         SecurityStatusRow(
-                            label = "Local Room Database Cache",
-                            status = if (posture.encryptedStorageActive) "AndroidKeyStore AES-256 Encrypted" else "Standard",
+                            label = strings.secRoomDbCache,
+                            status = if (posture.encryptedStorageActive) strings.secKeystoreEncrypted else strings.secStandard,
                             isSecure = posture.encryptedStorageActive,
                         )
                         SecurityStatusRow(
-                            label = "BMKG & Telemetry Domain Allowlist",
-                            status = "HTTPS Only · ${posture.blockedOutboundAttempts} Blocked",
+                            label = strings.secDomainAllowlist,
+                            status = strings.secHttpsOnlyBlocked(posture.blockedOutboundAttempts),
                             isSecure = posture.tlsAllowlistActive,
                         )
                         SecurityStatusRow(
-                            label = "Coarse Regency GPS Guard",
-                            status = "Enforced (~11 km · No Pinpoint)",
+                            label = strings.secCoarseGpsGuard,
+                            status = strings.secCoarseEnforced,
                             isSecure = posture.coarseLocationShieldLocked,
                         )
                         SecurityStatusRow(
-                            label = "Binary & Runtime Integrity",
-                            status = posture.tamperWarning ?: "R8 Hardened · No Hook Detected",
+                            label = strings.secBinaryIntegrity,
+                            status = posture.tamperWarning ?: strings.secR8Hardened,
                             isSecure = posture.deviceIntegrityClean,
                         )
                     }
@@ -259,7 +359,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.NotificationsActive, null, tint = DangerCrimson, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Emergency Alerts", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                        Text(strings.emergencyAlertsTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = colors.border)
@@ -267,24 +367,24 @@ fun SettingsScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SettingSwitchRow(
-                            title = "Seismic P-Wave Alert",
-                            subtitle = "Bypass silent mode for M 4.5+ shocks",
+                            title = strings.seismicPWaveAlertTitle,
+                            subtitle = strings.seismicPWaveAlertSubtitle,
                             checked = settings.seismicPWaveAlert,
                             checkedColor = DangerCrimson,
                             onCheckedChange = onSeismicAlertChange,
                             testTag = "switch_seismic_alert",
                         )
                         SettingSwitchRow(
-                            title = "Typhoon Flash Watch",
-                            subtitle = "Barometer drops and storm surge alerts",
+                            title = strings.typhoonFlashWatchTitle,
+                            subtitle = strings.typhoonFlashWatchSubtitle,
                             checked = settings.typhoonFlashWatch,
                             checkedColor = colors.primary,
                             onCheckedChange = onTyphoonWatchChange,
                             testTag = "switch_typhoon_watch",
                         )
                         SettingSwitchRow(
-                            title = "AQI Smog Inversion",
-                            subtitle = "Notify when PM2.5 exceeds 100 µg/m³",
+                            title = strings.aqiSmogInversionTitle,
+                            subtitle = strings.aqiSmogInversionSubtitle,
                             checked = settings.aqiSmogInversion,
                             checkedColor = colors.warning,
                             onCheckedChange = onAqiAlertChange,
@@ -304,7 +404,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Straighten, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Units & Telemetry Standards", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                        Text(strings.unitsTelemetryTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = colors.border)
@@ -318,17 +418,17 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Temperature Unit", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text(strings.temperatureUnitTitle, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
-                                    text = "Current scale: ${if (settings.temperatureUnit == TemperatureUnit.CELSIUS) "Celsius" else "Fahrenheit"}",
+                                    text = "${strings.currentScalePrefix}: ${if (settings.temperatureUnit == TemperatureUnit.CELSIUS) strings.celsiusName else strings.fahrenheitName}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.textSub,
                                 )
                             }
                             SegmentedOptionGroup(
                                 options = listOf(
-                                    "°C Metric" to (settings.temperatureUnit == TemperatureUnit.CELSIUS),
-                                    "°F Imperial" to (settings.temperatureUnit == TemperatureUnit.FAHRENHEIT),
+                                    strings.tempMetricOption to (settings.temperatureUnit == TemperatureUnit.CELSIUS),
+                                    strings.tempImperialOption to (settings.temperatureUnit == TemperatureUnit.FAHRENHEIT),
                                 ),
                                 onSelect = { idx ->
                                     onTempUnitChange(if (idx == 0) TemperatureUnit.CELSIUS else TemperatureUnit.FAHRENHEIT)
@@ -344,9 +444,9 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Wind Velocity", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text(strings.windVelocityTitle, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
-                                    text = "Current scale: ${settings.windUnit.name.lowercase()}",
+                                    text = "${strings.currentScalePrefix}: ${settings.windUnit.name.lowercase()}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.textSub,
                                 )
@@ -377,9 +477,9 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Barometric Scale", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text(strings.pressureScaleTitle, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
                                 Text(
-                                    text = "Current scale: ${if (settings.pressureUnit == PressureUnit.HPA) "hPa" else "inHg"}",
+                                    text = "${strings.currentScalePrefix}: ${if (settings.pressureUnit == PressureUnit.HPA) "hPa" else "inHg"}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.textSub,
                                 )
@@ -409,7 +509,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Tune, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Display & Parallax", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                        Text(strings.displayParallaxTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     HorizontalDivider(color = colors.border)
@@ -417,8 +517,8 @@ fun SettingsScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SettingSwitchRow(
-                            title = "Gyroscope Camera Parallax",
-                            subtitle = "Tilt device to orbit 3D viewpoints",
+                            title = strings.gyroParallaxTitle,
+                            subtitle = strings.gyroParallaxSubtitle,
                             checked = settings.gyroParallaxEnabled,
                             checkedColor = colors.accent,
                             onCheckedChange = onGyroParallaxChange,
@@ -431,8 +531,8 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Glass Refraction Depth", style = MaterialTheme.typography.labelMedium, color = colors.textMain)
-                                Text("Hardware accelerated blur", style = MaterialTheme.typography.bodySmall, color = colors.textSub)
+                                Text(strings.glassRefractionTitle, style = MaterialTheme.typography.labelMedium, color = colors.textMain)
+                                Text(strings.glassRefractionSubtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSub)
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
@@ -440,7 +540,7 @@ fun SettingsScreen(
                                 border = BorderStroke(1.dp, colors.border),
                             ) {
                                 Text(
-                                    text = "20px Clean",
+                                    text = strings.glassRefractionValue,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = colors.textMain,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -466,10 +566,10 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.CloudSync, null, tint = colors.accent, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Offline Disaster Cache", style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
+                            Text(strings.offlineDisasterCacheTitle, style = MaterialTheme.typography.headlineSmall, color = colors.textMain)
                         }
                         Text(
-                            text = "128 MB Active",
+                            text = strings.cacheActiveSize,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.accent,
                         )
@@ -482,16 +582,16 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Fault line & topographic vectors", style = MaterialTheme.typography.bodySmall, color = colors.textMain)
-                        Text(settings.offlineCacheLabel, style = MaterialTheme.typography.labelSmall, color = colors.accent)
+                        Text(strings.faultLineVectorsLabel, style = MaterialTheme.typography.bodySmall, color = colors.textMain)
+                        Text(VeridiaLocalizer.timestampLabel(settings.offlineCacheLabel, strings), style = MaterialTheme.typography.labelSmall, color = colors.accent)
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Emergency shelter GPS markers", style = MaterialTheme.typography.bodySmall, color = colors.textMain)
-                        Text("Offline Ready", style = MaterialTheme.typography.labelSmall, color = colors.accent)
+                        Text(strings.emergencyShelterMarkersLabel, style = MaterialTheme.typography.bodySmall, color = colors.textMain)
+                        Text(strings.offlineReadyLabel, style = MaterialTheme.typography.labelSmall, color = colors.accent)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -512,9 +612,9 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 text = if (state.cacheRefreshing) {
-                                    "Syncing Regional Cache..."
+                                    strings.syncingRegionalCache
                                 } else {
-                                    "Refresh Regional Offline Cache"
+                                    strings.refreshOfflineCacheButton
                                 },
                                 style = MaterialTheme.typography.labelMedium,
                                 color = colors.textMain,

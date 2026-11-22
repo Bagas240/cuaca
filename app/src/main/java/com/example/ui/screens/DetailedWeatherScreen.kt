@@ -1,13 +1,16 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,6 +35,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.material.icons.rounded.NearMe
 import androidx.compose.material.icons.rounded.Radar
@@ -44,6 +49,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,11 +60,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AtmosphereStratum
+import com.example.data.model.DailyForecastItem
+import com.example.data.model.TemperatureUnit
 import com.example.data.model.WeatherConditionKind
 import com.example.data.model.WeatherMapLayer
+import com.example.data.model.WindUnit
 import com.example.ui.components.AnimatedAirQualityWindIcon
 import com.example.ui.components.AnimatedHumidityDropletIcon
 import com.example.ui.components.AnimatedWeatherConditionIcon
@@ -73,8 +85,13 @@ import com.example.ui.components.conditionTint
 import com.example.ui.components.formatPressureValue
 import com.example.ui.components.formatTempString
 import com.example.ui.components.formatWindValue
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.VeridiaStrings
+import com.example.ui.i18n.veridiaStrings
+import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaUiState
+import java.util.Locale
 
 @Composable
 fun DetailedWeatherScreen(
@@ -86,21 +103,24 @@ fun DetailedWeatherScreen(
     onOpenRadar: () -> Unit,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val weather = state.weather
     val tempUnit = state.settings.temperatureUnit
-    val (_, windUnitLabel) = formatWindValue(weather.windSpeedKmh, state.settings.windUnit)
-    val (gustVal, _) = formatWindValue(weather.windGustKmh, state.settings.windUnit)
+    val windUnit = state.settings.windUnit
+    val (_, windUnitLabel) = formatWindValue(weather.windSpeedKmh, windUnit)
+    val (gustVal, _) = formatWindValue(weather.windGustKmh, windUnit)
     val (pressureVal, pressureUnitLabel) = formatPressureValue(weather.pressureHpa, state.settings.pressureUnit)
+    var expandedDayIndex by rememberSaveable { mutableIntStateOf(1) }
 
     val altitudeBadge = when (state.selectedStratum) {
-        AtmosphereStratum.SURFACE -> "Surface · 42m"
-        AtmosphereStratum.MID_CLOUD -> "Mid-Cloud · 4,200m"
-        AtmosphereStratum.UPPER_STRATUM -> "Stratosphere · 12,000m"
+        AtmosphereStratum.SURFACE -> strings.altitudeSurface
+        AtmosphereStratum.MID_CLOUD -> strings.altitudeMidCloud
+        AtmosphereStratum.UPPER_STRATUM -> strings.altitudeUpper
     }
     val strataRangeLabel = when (state.selectedStratum) {
-        AtmosphereStratum.SURFACE -> "0 - 1,200m Ground Level"
-        AtmosphereStratum.MID_CLOUD -> "1,200 - 8,000m Troposphere"
-        AtmosphereStratum.UPPER_STRATUM -> "8,000 - 15,000m Stratum"
+        AtmosphereStratum.SURFACE -> strings.strataRangeSurface
+        AtmosphereStratum.MID_CLOUD -> strings.strataRangeMidCloud
+        AtmosphereStratum.UPPER_STRATUM -> strings.strataRangeUpper
     }
 
     Box(
@@ -118,8 +138,8 @@ fun DetailedWeatherScreen(
         ) {
             item {
                 VeridiaBackHeader(
-                    title = "Weather & Atmosphere",
-                    subtitle = "${state.selectedCity.name} · ${weather.dataSourceLabel} · ${state.lastUpdatedLabel}",
+                    title = strings.weatherAtmosphereTitle,
+                    subtitle = "${state.selectedCity.name} · ${VeridiaLocalizer.dataSourceLabel(weather.dataSourceLabel, strings)} · ${VeridiaLocalizer.timestampLabel(state.lastUpdatedLabel, strings)}",
                     onBackClick = onBack,
                     trailingContent = {
                         Surface(
@@ -138,13 +158,13 @@ fun DetailedWeatherScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Radar,
-                                    contentDescription = "Open Radar",
+                                    contentDescription = strings.openRadarCd,
                                     tint = colors.primary,
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Radar",
+                                    text = strings.radarButton,
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                     color = colors.textMain,
                                 )
@@ -197,7 +217,7 @@ fun DetailedWeatherScreen(
                                     LiveTelemetryPulseDot(color = Color(0xFF4ADE80), size = 6.dp)
                                     Spacer(modifier = Modifier.width(5.dp))
                                     Text(
-                                        text = "REAL-TIME ATMOSPHERE",
+                                        text = strings.realTimeAtmosphereBadge,
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                         color = Color.White.copy(alpha = 0.88f),
                                     )
@@ -208,7 +228,7 @@ fun DetailedWeatherScreen(
                                     color = Color.White,
                                 )
                                 Text(
-                                    text = "${weather.conditionLabel} · Feels ${formatTempString(weather.feelsLikeC, tempUnit)}",
+                                    text = "${VeridiaLocalizer.conditionLabel(weather.conditionLabel, weather.conditionKind, strings)} · ${strings.heroFeelsWord} ${formatTempString(weather.feelsLikeC, tempUnit)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.White.copy(alpha = 0.92f),
                                 )
@@ -258,19 +278,19 @@ fun DetailedWeatherScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         StratumSegmentButton(
-                            label = "Surface",
+                            label = strings.surfaceTab,
                             selected = state.selectedStratum == AtmosphereStratum.SURFACE,
                             onClick = { onSelectStratum(AtmosphereStratum.SURFACE) },
                             modifier = Modifier.weight(1f).testTag("stratum_btn_surface"),
                         )
                         StratumSegmentButton(
-                            label = "Mid-Cloud",
+                            label = strings.midCloudTab,
                             selected = state.selectedStratum == AtmosphereStratum.MID_CLOUD,
                             onClick = { onSelectStratum(AtmosphereStratum.MID_CLOUD) },
                             modifier = Modifier.weight(1f).testTag("stratum_btn_mid"),
                         )
                         StratumSegmentButton(
-                            label = "Upper Stratum",
+                            label = strings.upperStratumTab,
                             selected = state.selectedStratum == AtmosphereStratum.UPPER_STRATUM,
                             onClick = { onSelectStratum(AtmosphereStratum.UPPER_STRATUM) },
                             modifier = Modifier.weight(1f).testTag("stratum_btn_high"),
@@ -298,7 +318,7 @@ fun DetailedWeatherScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "ATMOSPHERE STRATUM",
+                                text = strings.atmosphereStratumUpper,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSub,
                             )
@@ -344,19 +364,19 @@ fun DetailedWeatherScreen(
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         StratumLayerRow(
-                            title = "Upper Stratosphere",
+                            title = strings.upperStratosphereTitle,
                             meta = "12,000m · ${formatTempString(-52, tempUnit, true)}",
                             dotColor = colors.primary,
                             isActive = state.selectedStratum == AtmosphereStratum.UPPER_STRATUM,
                         )
                         StratumLayerRow(
-                            title = "Mid-Troposphere Rain Clouds",
+                            title = strings.midTroposphereTitle,
                             meta = "4,200m · ${formatTempString(-8, tempUnit, true)}",
                             dotColor = colors.accent,
                             isActive = state.selectedStratum == AtmosphereStratum.MID_CLOUD,
                         )
                         StratumLayerRow(
-                            title = "Ground Boundary & Precipitation",
+                            title = strings.groundBoundaryTitle,
                             meta = "42m · ${formatTempString(weather.currentTempC, tempUnit, true)}",
                             dotColor = colors.primary,
                             isActive = state.selectedStratum == AtmosphereStratum.SURFACE,
@@ -383,7 +403,7 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("WIND", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.windUpper, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 Icon(Icons.Rounded.NearMe, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -391,7 +411,7 @@ fun DetailedWeatherScreen(
                                 windSpeedKmh = weather.windSpeedKmh,
                                 windBearingDeg = weather.windBearingDeg,
                                 windDirectionLabel = weather.windDirectionLabel,
-                                windUnit = state.settings.windUnit,
+                                windUnit = windUnit,
                                 style = WindIndicatorStyle.DETAILED_DIAL,
                                 useLargeReadout = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -403,7 +423,7 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("Gusts", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.gustsLabel, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 Text(
                                     "$gustVal $windUnitLabel",
                                     style = MaterialTheme.typography.labelSmall,
@@ -418,7 +438,7 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("UV INDEX", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.uvIndexUpper, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 Icon(Icons.Rounded.WbSunny, null, tint = colors.warning, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -430,14 +450,14 @@ fun DetailedWeatherScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = weather.uvLevelLabel.uppercase(),
+                                    text = VeridiaLocalizer.uvLevel(weather.uvLevelLabel, strings).uppercase(),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = colors.warning,
                                     modifier = Modifier.padding(bottom = 6.dp),
                                 )
                             }
                             Text(
-                                text = weather.uvPeakWindow,
+                                text = strings.uvPeakWindowText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.textSub,
                             )
@@ -470,7 +490,7 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("HUMIDITY", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.humidityUpper, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 AnimatedHumidityDropletIcon(size = 18.dp, tint = colors.primary)
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -480,7 +500,7 @@ fun DetailedWeatherScreen(
                                 color = colors.textMain,
                             )
                             Text(
-                                text = "Dew point is ${String.format("%.1f", weather.dewPointC)}°C right now",
+                                text = strings.dewPointSentence(String.format("%.1f", weather.dewPointC)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.textSub,
                             )
@@ -508,7 +528,7 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("PRESSURE", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.pressureUpper, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
                                 Icon(Icons.Rounded.Compress, null, tint = colors.accent, modifier = Modifier.size(16.dp))
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -531,7 +551,7 @@ fun DetailedWeatherScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = weather.pressureTrendLabel,
+                                    text = VeridiaLocalizer.pressureTrend(weather.pressureTrendLabel, strings),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.accent,
                                 )
@@ -543,8 +563,8 @@ fun DetailedWeatherScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Text("Reference", style = MaterialTheme.typography.labelSmall, color = colors.textSub)
-                                Text("1,013.25 Std", style = MaterialTheme.typography.labelSmall, color = colors.textMain)
+                                Text(strings.referenceLabel, style = MaterialTheme.typography.labelSmall, color = colors.textSub)
+                                Text(strings.referenceStdValue, style = MaterialTheme.typography.labelSmall, color = colors.textMain)
                             }
                         }
                     }
@@ -572,112 +592,306 @@ fun DetailedWeatherScreen(
                 )
             }
 
-            // 7-Day Extended Forecast
+            // Detailed Expandable Multi-Day Forecast (Today, Tomorrow, Day After & Week)
             item {
+                val weekMin = weather.dailyForecast.minOfOrNull { it.minTempC } ?: 20
+                val weekMax = (weather.dailyForecast.maxOfOrNull { it.maxTempC } ?: 35)
+                    .coerceAtLeast(weekMin + 1)
+
                 VeridiaCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 20.dp)
+                        .testTag("detailed_multiday_forecast_card"),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f),
+                        ) {
                             Icon(Icons.Rounded.CalendarToday, null, tint = colors.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "7-Day Forecast",
+                                text = strings.forecast7DayTitle,
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = colors.textMain,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        Text(
-                            text = "Next 168 Hours",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.textSub,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = colors.border)
-
-                    weather.dailyForecast.forEachIndexed { idx, day ->
-                        val barColor = when (day.condition) {
-                            WeatherConditionKind.SUNNY -> if (day.dayLabel == "Sun") colors.accent else colors.warning
-                            WeatherConditionKind.THUNDERSTORM -> colors.warning
-                            WeatherConditionKind.RAIN -> colors.primary
-                            else -> colors.border
-                        }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.subtle,
+                            border = BorderStroke(1.dp, colors.border),
                         ) {
                             Text(
-                                text = day.dayLabel,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (idx == 0) FontWeight.Bold else FontWeight.Medium,
-                                ),
-                                color = if (idx == 0) colors.textMain else colors.textSub,
-                                modifier = Modifier.width(58.dp),
+                                text = strings.next168HoursLabel,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = colors.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             )
-                            Row(
-                                modifier = Modifier.width(72.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                AnimatedWeatherConditionIcon(
-                                    kind = day.condition,
-                                    size = 18.dp,
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "${day.precipPercent}%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = conditionTint(day.condition),
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = formatTempString(day.minTempC, tempUnit),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = colors.textSub,
-                                    modifier = Modifier.width(30.dp),
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(6.dp)
-                                        .clip(CircleShape)
-                                        .background(colors.subtle),
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(0.55f)
-                                            .height(6.dp)
-                                            .align(Alignment.Center)
-                                            .clip(CircleShape)
-                                            .background(barColor),
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = formatTempString(day.maxTempC, tempUnit),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = colors.textMain,
-                                )
-                            }
                         }
-                        if (idx < weather.dailyForecast.lastIndex) {
-                            HorizontalDivider(color = colors.border.copy(alpha = 0.6f))
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = strings.tapDayForDetailsHint,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = colors.textSub,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = colors.border)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        weather.dailyForecast.forEachIndexed { idx, day ->
+                            DetailedDailyForecastCardRow(
+                                idx = idx,
+                                day = day,
+                                isExpanded = expandedDayIndex == idx,
+                                weekMin = weekMin,
+                                weekMax = weekMax,
+                                tempUnit = tempUnit,
+                                windUnit = windUnit,
+                                strings = strings,
+                                onToggle = {
+                                    expandedDayIndex = if (expandedDayIndex == idx) -1 else idx
+                                },
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DetailedDailyForecastCardRow(
+    idx: Int,
+    day: DailyForecastItem,
+    isExpanded: Boolean,
+    weekMin: Int,
+    weekMax: Int,
+    tempUnit: TemperatureUnit,
+    windUnit: WindUnit,
+    strings: VeridiaStrings,
+    onToggle: () -> Unit,
+) {
+    val colors = veridiaColors
+    val barColor = when (day.condition) {
+        WeatherConditionKind.SUNNY -> colors.warning
+        WeatherConditionKind.THUNDERSTORM -> colors.warning
+        WeatherConditionKind.RAIN -> colors.primary
+        else -> colors.accent
+    }
+    val span = (weekMax - weekMin).coerceAtLeast(1).toFloat()
+    val endFraction = ((day.maxTempC - weekMin) / span).coerceIn(0.35f, 1f)
+    val relLabel = VeridiaLocalizer.dayRelativeLabel(idx, day.dayLabel, strings)
+    val localizedDate = VeridiaLocalizer.dateLabel(day.dateLabel, strings)
+    val condText = VeridiaLocalizer.conditionLabel(
+        day.conditionSummary.ifBlank { day.condition.name.lowercase().replace('_', ' ') },
+        day.condition,
+        strings,
+    )
+    val (windMaxVal, windUnitLabel) = formatWindValue(day.windMaxKmh, windUnit)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onToggle)
+            .testTag("daily_forecast_card_$idx"),
+        shape = RoundedCornerShape(14.dp),
+        color = if (isExpanded) colors.sky.copy(alpha = 0.55f) else colors.subtle.copy(alpha = 0.7f),
+        border = BorderStroke(
+            1.dp,
+            if (isExpanded) colors.primary.copy(alpha = 0.4f) else colors.border,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.width(86.dp)) {
+                    Text(
+                        text = relLabel,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = if (idx <= 1 || isExpanded) FontWeight.Bold else FontWeight.SemiBold,
+                        ),
+                        color = if (idx <= 1 || isExpanded) colors.textMain else colors.textSub,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (localizedDate.isNotBlank()) {
+                        Text(
+                            text = localizedDate,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = colors.textSub,
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.width(68.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AnimatedWeatherConditionIcon(
+                        kind = day.condition,
+                        size = 20.dp,
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "${day.precipPercent}%",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (day.precipPercent >= 50) FontWeight.Bold else FontWeight.Medium,
+                        ),
+                        color = conditionTint(day.condition),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = formatTempString(day.minTempC, tempUnit),
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = SpaceMonoFamily),
+                        color = colors.textSub,
+                        modifier = Modifier.width(32.dp),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(CircleShape)
+                            .background(colors.surface),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(endFraction)
+                                .height(6.dp)
+                                .clip(CircleShape)
+                                .background(barColor),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = formatTempString(day.maxTempC, tempUnit),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = SpaceMonoFamily,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = colors.textMain,
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    tint = colors.textSub,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                ) {
+                    HorizontalDivider(color = colors.border.copy(alpha = 0.7f))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DailyDetailMetricCell(
+                            label = strings.detailConditionLabel,
+                            value = condText,
+                            modifier = Modifier.weight(1f),
+                        )
+                        DailyDetailMetricCell(
+                            label = strings.detailRainfallLabel,
+                            value = "${String.format(Locale.US, "%.1f", day.precipMm)} mm (${day.precipPercent}%)",
+                            modifier = Modifier.weight(1f),
+                        )
+                        DailyDetailMetricCell(
+                            label = strings.detailWindMaxLabel,
+                            value = "$windMaxVal $windUnitLabel",
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DailyDetailMetricCell(
+                            label = strings.detailHumidityLabel,
+                            value = "${day.humidityPercent}%",
+                            modifier = Modifier.weight(1f),
+                        )
+                        DailyDetailMetricCell(
+                            label = strings.detailUvPeakLabel,
+                            value = String.format(Locale.US, "%.1f", day.uvIndexMax),
+                            modifier = Modifier.weight(1f),
+                        )
+                        DailyDetailMetricCell(
+                            label = strings.detailTempRangeLabel,
+                            value = "${formatTempString(day.minTempC, tempUnit)} – ${formatTempString(day.maxTempC, tempUnit)}",
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyDetailMetricCell(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    val colors = veridiaColors
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = colors.surface.copy(alpha = 0.9f),
+        border = BorderStroke(1.dp, colors.border.copy(alpha = 0.7f)),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = colors.textSub,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = colors.textMain,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.HourlyForecastItem
 import com.example.data.model.TemperatureUnit
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 
@@ -48,6 +50,7 @@ fun HourlyForecast24hCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     VeridiaCard(
         modifier = modifier
             .fillMaxWidth()
@@ -67,7 +70,7 @@ fun HourlyForecast24hCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "24-HOUR FORECAST",
+                    text = strings.hourlyForecastTitle,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSub,
                 )
@@ -76,7 +79,7 @@ fun HourlyForecast24hCard(
                 LiveTelemetryPulseDot(color = colors.primary, size = 6.dp)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Next 24 Hours",
+                    text = strings.next24HoursBadge,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.primary,
                 )
@@ -123,7 +126,7 @@ fun HourlyForecast24hCard(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
-                            text = hour.timeLabel,
+                            text = VeridiaLocalizer.timeSlotLabel(hour.timeLabel, strings),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = if (hour.isCurrent) MaterialTheme.typography.labelSmall.fontFamily else SpaceMonoFamily,
                                 fontWeight = if (hour.isCurrent || hour.isSunset) FontWeight.Bold else FontWeight.Medium,

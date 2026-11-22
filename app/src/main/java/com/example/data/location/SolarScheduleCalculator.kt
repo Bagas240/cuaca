@@ -100,7 +100,7 @@ object SolarScheduleCalculator {
     ): SolarThemePhase {
         val dawnStart = sunriseMinutes - 45
         val dawnEnd = sunriseMinutes + 60
-        val afternoonStart = (sunsetMinutes - 150).coerceAtLeast(dawnEnd + 1)
+        val afternoonStart = (sunsetMinutes - 175).coerceAtLeast(dawnEnd + 1)
         val sunsetWindowStart = sunsetMinutes - 40
         val sunsetWindowEnd = sunsetMinutes + 35
         val duskEnd = sunsetMinutes + 75

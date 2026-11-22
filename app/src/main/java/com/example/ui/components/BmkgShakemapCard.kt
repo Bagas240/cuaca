@@ -1,16 +1,14 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -71,7 +69,8 @@ import coil.request.ImageRequest
 import com.example.data.location.LocationTracker
 import com.example.data.model.SeismicEventItem
 import com.example.data.model.SeismicSeverity
-import com.example.ui.navigation.rememberIsDestinationAnimating
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
@@ -94,6 +93,7 @@ fun BmkgShakemapCard(
 ) {
     val context = LocalContext.current
     val colors = veridiaColors
+    val strings = veridiaStrings
     val imageLoader = rememberMapImageLoader()
     var showInteractive2DMap by remember(shakemapUrl) {
         mutableStateOf(shakemapUrl.isNullOrBlank())
@@ -148,7 +148,7 @@ fun BmkgShakemapCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "BMKG Shakemap",
+                        text = strings.bmkgShakemapTab,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = if (shakemapSelected) Color.White else colors.textSub,
                     )
@@ -178,7 +178,7 @@ fun BmkgShakemapCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "2D Radar Map",
+                        text = strings.radar2dMapTab,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = if (showInteractive2DMap) colors.onPrimary else colors.textMain,
                     )
@@ -209,7 +209,7 @@ fun BmkgShakemapCard(
                     } else {
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
-                            contentDescription = "Refresh BMKG Seismic Feed",
+                            contentDescription = strings.refreshBmkgSeismicCd,
                             tint = colors.primary,
                             modifier = Modifier.size(17.dp),
                         )
@@ -304,7 +304,7 @@ fun BmkgShakemapCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Auto-Updating · $lastUpdatedLabel",
+                                text = "${strings.autoUpdatingPrefix} · ${VeridiaLocalizer.timestampLabel(lastUpdatedLabel, strings)}",
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                 color = colors.textMain,
                             )
@@ -320,7 +320,7 @@ fun BmkgShakemapCard(
                         border = BorderStroke(1.dp, colors.border),
                     ) {
                         Text(
-                            text = "Source: $dataSourceLabel",
+                            text = "${strings.sourcePrefix}: ${VeridiaLocalizer.dataSourceLabel(dataSourceLabel, strings)}",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
                             color = colors.dangerText,
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
@@ -380,42 +380,45 @@ private fun Epicenter2DRadarMap(
     onReset: () -> Unit,
 ) {
     val colors = veridiaColors
-    val isAnimating = rememberIsDestinationAnimating()
-    val pWavePhase: Float
-    val sWavePhase: Float
-    val sweepAngle: Float
-    if (isAnimating) {
-        val infiniteTransition = rememberInfiniteTransition(label = "seismic_2d_radar")
-        val animatedPWave by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart),
-            label = "p_wave_2d",
-        )
-        val animatedSWave by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(2900, easing = LinearEasing), RepeatMode.Restart),
-            label = "s_wave_2d",
-        )
-        val animatedSweep by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), RepeatMode.Restart),
-            label = "seismic_radar_sweep",
-        )
-        pWavePhase = animatedPWave
-        sWavePhase = animatedSWave
-        sweepAngle = animatedSweep
-    } else {
-        pWavePhase = 0.35f
-        sWavePhase = 0.65f
-        sweepAngle = 0f
+    val strings = veridiaStrings
+    val pWavePhase by rememberQuantizedCyclePhase(
+        enabled = true,
+        cycleDurationMs = 1800,
+        pingPong = false,
+        idleValue = 0.35f,
+        label = "p_wave_2d",
+    )
+    val sWavePhase by rememberQuantizedCyclePhase(
+        enabled = true,
+        cycleDurationMs = 2900,
+        pingPong = false,
+        idleValue = 0.65f,
+        label = "s_wave_2d",
+    )
+    val sweepNorm by rememberQuantizedCyclePhase(
+        enabled = true,
+        cycleDurationMs = 4200,
+        pingPong = false,
+        idleValue = 0f,
+        label = "seismic_radar_sweep",
+    )
+    val sweepAngle = sweepNorm * 360f
+    var mapTapCount by remember { mutableIntStateOf(0) }
+    val tapShockwave = remember { Animatable(0f) }
+    LaunchedEffect(mapTapCount) {
+        if (mapTapCount > 0) {
+            tapShockwave.snapTo(1f)
+            tapShockwave.animateTo(0f, tween(durationMillis = 820, easing = FastOutSlowInEasing))
+        }
     }
+    val feltDashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f) }
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(zoomLevel) {
+                detectTapGestures { mapTapCount += 1 }
+            }
             .pointerInput(zoomLevel) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -473,7 +476,7 @@ private fun Epicenter2DRadarMap(
                 color = colors.warning.copy(alpha = 0.65f),
                 radius = radarRadius,
                 center = epi,
-                style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)),
+                style = Stroke(width = 2f, pathEffect = feltDashEffect),
             )
 
             // Expanding S-Wave & P-Wave pulses
@@ -489,6 +492,15 @@ private fun Epicenter2DRadarMap(
                 center = epi,
                 style = Stroke(width = 3.2f),
             )
+            if (tapShockwave.value > 0.02f) {
+                val p = 1f - tapShockwave.value
+                drawCircle(
+                    color = DangerCrimson.copy(alpha = tapShockwave.value * 0.9f),
+                    radius = 12f + p * (radarRadius * 1.35f),
+                    center = epi,
+                    style = Stroke(width = 3.5f),
+                )
+            }
         }
 
         // 3. Clickable Earthquake Markers Across Indonesia / Region
@@ -550,7 +562,7 @@ private fun Epicenter2DRadarMap(
             border = BorderStroke(1.dp, colors.border),
         ) {
             Text(
-                text = "Drag islands · Tap M pin",
+                text = strings.dragIslandsHint,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
                 color = colors.textMain,
                 modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
@@ -576,7 +588,7 @@ private fun Epicenter2DRadarMap(
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Zoom In", tint = colors.textMain, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.Add, contentDescription = strings.zoomInLabel, tint = colors.textMain, modifier = Modifier.size(15.dp))
                 }
             }
             Surface(
@@ -591,7 +603,7 @@ private fun Epicenter2DRadarMap(
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "Zoom Out", tint = colors.textMain, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.Remove, contentDescription = strings.zoomOutLabel, tint = colors.textMain, modifier = Modifier.size(15.dp))
                 }
             }
             Surface(
@@ -606,7 +618,7 @@ private fun Epicenter2DRadarMap(
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.RestartAlt, contentDescription = "Recenter Epicenter", tint = colors.primary, modifier = Modifier.size(15.dp))
+                    Icon(Icons.Rounded.RestartAlt, contentDescription = strings.recenterLabel, tint = colors.primary, modifier = Modifier.size(15.dp))
                 }
             }
         }
@@ -636,7 +648,7 @@ private fun Epicenter2DRadarMap(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "Depth $activeDepthLabel · $activeMmiLabel · ${LocationTracker.formatCoordLabel(centerLat, centerLon)} · Source: BMKG",
+                        text = "${strings.depthLabel} $activeDepthLabel · $activeMmiLabel · ${LocationTracker.formatCoordLabel(centerLat, centerLon)} · ${strings.sourcePrefix}: BMKG",
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                         color = colors.textSub,
                         maxLines = 1,

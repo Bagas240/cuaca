@@ -43,6 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 import kotlin.math.abs
@@ -67,6 +69,7 @@ fun SunriseSunsetDashboardCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
 
     VeridiaCard(
         modifier = modifier
@@ -99,7 +102,7 @@ fun SunriseSunsetDashboardCard(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.WbTwilight,
-                        contentDescription = "Sunrise and sunset schedule",
+                        contentDescription = strings.sunriseSunsetCd,
                         tint = colors.sunset,
                         modifier = Modifier.size(18.dp),
                     )
@@ -107,7 +110,7 @@ fun SunriseSunsetDashboardCard(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "SUNRISE & SUNSET",
+                        text = strings.sunriseSunsetTitle,
                         style = MaterialTheme.typography.labelSmall.copy(
                             letterSpacing = 0.8.sp,
                             fontWeight = FontWeight.Bold,
@@ -115,7 +118,11 @@ fun SunriseSunsetDashboardCard(
                         color = colors.textSub,
                     )
                     Text(
-                        text = todayDateLabel.ifBlank { "Today" },
+                        text = if (todayDateLabel.isBlank()) {
+                            strings.todayLabel
+                        } else {
+                            VeridiaLocalizer.solarDateLabel(todayDateLabel, strings)
+                        },
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                         ),
@@ -135,7 +142,7 @@ fun SunriseSunsetDashboardCard(
                 border = BorderStroke(1.dp, colors.warning.copy(alpha = 0.32f)),
             ) {
                 Text(
-                    text = daylightDuration,
+                    text = VeridiaLocalizer.daylightDuration(daylightDuration, strings),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                     ),
@@ -169,7 +176,7 @@ fun SunriseSunsetDashboardCard(
                 ) {
                     Icon(
                         imageVector = if (isGpsActive) Icons.Rounded.MyLocation else Icons.Rounded.Public,
-                        contentDescription = if (isGpsActive) "Current GPS zone" else "Selected city location",
+                        contentDescription = if (isGpsActive) strings.currentGpsZoneCd else strings.selectedCityCd,
                         tint = colors.primary,
                         modifier = Modifier.size(14.dp),
                     )
@@ -237,7 +244,7 @@ fun SunriseSunsetDashboardCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.WbSunny,
-                            contentDescription = "Sunrise time",
+                            contentDescription = strings.sunriseTimeCd,
                             tint = colors.warning,
                             modifier = Modifier.size(17.dp),
                         )
@@ -254,7 +261,7 @@ fun SunriseSunsetDashboardCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Sunrise",
+                            text = strings.sunriseLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSub,
                         )
@@ -292,7 +299,7 @@ fun SunriseSunsetDashboardCard(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.NightsStay,
-                            contentDescription = "Sunset time",
+                            contentDescription = strings.sunsetTimeCd,
                             tint = colors.primary,
                             modifier = Modifier.size(17.dp),
                         )
@@ -309,7 +316,7 @@ fun SunriseSunsetDashboardCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Sunset",
+                            text = strings.sunsetLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSub,
                         )
@@ -356,7 +363,7 @@ fun SunriseSunsetDashboardCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "MOON PHASE",
+                            text = strings.moonPhaseTitle,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 9.sp,
                                 letterSpacing = 0.7.sp,
@@ -364,7 +371,7 @@ fun SunriseSunsetDashboardCard(
                             color = colors.textSub,
                         )
                         Text(
-                            text = moonPhaseName,
+                            text = VeridiaLocalizer.moonPhaseName(moonPhaseName, strings),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
                             ),
@@ -378,7 +385,7 @@ fun SunriseSunsetDashboardCard(
                     border = BorderStroke(1.dp, colors.border),
                 ) {
                     Text(
-                        text = "$moonIlluminationPercent% Lit",
+                        text = "$moonIlluminationPercent% ${strings.litSuffix}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontFamily = SpaceMonoFamily,
                             fontSize = 10.sp,
@@ -409,13 +416,13 @@ fun SunriseSunsetDashboardCard(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Schedule,
-                    contentDescription = "Solar noon time",
+                    contentDescription = strings.solarNoonLabel,
                     tint = colors.sunset,
                     modifier = Modifier.size(13.dp),
                 )
                 Spacer(modifier = Modifier.width(5.dp))
                 Text(
-                    text = "Solar Noon · $solarNoonTime",
+                    text = "${strings.solarNoonLabel} · $solarNoonTime",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = SpaceMonoFamily,
                         fontSize = 11.sp,
@@ -427,7 +434,7 @@ fun SunriseSunsetDashboardCard(
 
             if (nextSolarEventLabel.isNotBlank()) {
                 Text(
-                    text = nextSolarEventLabel,
+                    text = VeridiaLocalizer.nextSolarEventLabel(nextSolarEventLabel, strings),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 11.sp,

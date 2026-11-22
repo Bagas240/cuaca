@@ -1,7 +1,8 @@
 package com.example
 
-import android.app.Activity
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +21,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -35,11 +37,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -47,9 +52,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.alerts.DisasterNotificationManager
 import com.example.ui.components.ActiveDisasterAlertOverlay
 import com.example.ui.components.VeridiaBottomDock
 import com.example.ui.components.VeridiaRoute
+import com.example.ui.components.configureOsmdroidRuntime
 import com.example.ui.components.rememberGyroParallax
 import com.example.ui.navigation.LocalNavStateController
 import com.example.ui.navigation.ProvideNavDestinationState
@@ -61,14 +68,36 @@ import com.example.ui.screens.HomeDashboardScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.WeatherRadarScreen
 import com.example.ui.theme.VeridiaTheme
+import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.VeridiaViewModel
 
 class MainActivity : ComponentActivity() {
+
+    private var deepLinkRouteState by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        configureOsmdroidRuntime(applicationContext)
+        deepLinkRouteState = extractDeepLinkRoute(intent)
         setContent {
-            VeridiaApp()
+            VeridiaApp(
+                pendingDeepLinkRoute = deepLinkRouteState,
+                onDeepLinkConsumed = { deepLinkRouteState = null },
+            )
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        deepLinkRouteState = extractDeepLinkRoute(intent)
+    }
+
+    private fun extractDeepLinkRoute(intent: Intent?): String? {
+        return when (intent?.getStringExtra(DisasterNotificationManager.EXTRA_NAV_DESTINATION)) {
+            DisasterNotificationManager.DESTINATION_ALERTS -> VeridiaRoute.ALERTS
+            else -> null
         }
     }
 }
@@ -76,8 +105,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun VeridiaApp(
     viewModel: VeridiaViewModel = viewModel(),
+    pendingDeepLinkRoute: String? = null,
+    onDeepLinkConsumed: () -> Unit = {},
 ) {
-    val context = LocalContext.current
     val view = LocalView.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isDarkTheme = state.activeThemePhase == com.example.data.model.SolarThemePhase.NIGHT
@@ -89,10 +119,15 @@ fun VeridiaApp(
         insetsController.isAppearanceLightNavigationBars = !isDarkTheme
     }
 
-    VeridiaTheme(themePhase = state.activeThemePhase) {
+    VeridiaTheme(
+        themePhase = state.activeThemePhase,
+        appLanguage = state.settings.appLanguage,
+    ) {
         VeridiaAppContent(
             state = state,
             viewModel = viewModel,
+            pendingDeepLinkRoute = pendingDeepLinkRoute,
+            onDeepLinkConsumed = onDeepLinkConsumed,
         )
     }
 }
@@ -101,13 +136,24 @@ fun VeridiaApp(
 private fun VeridiaAppContent(
     state: com.example.ui.viewmodel.VeridiaUiState,
     viewModel: VeridiaViewModel,
+    pendingDeepLinkRoute: String? = null,
+    onDeepLinkConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val navController = rememberNavController()
     val navStateController = rememberNavStateController(navController)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: VeridiaRoute.HOME
     val gyroTilt by rememberGyroParallax(enabled = state.settings.gyroParallaxEnabled)
+
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { owner, _ ->
+            viewModel.setAppForeground(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var lastTopRoute by remember { mutableStateOf(currentRoute) }
     val homeWeatherSpringScale = remember { Animatable(1f) }
@@ -156,6 +202,13 @@ private fun VeridiaAppContent(
         }
     }
 
+    LaunchedEffect(pendingDeepLinkRoute) {
+        if (!pendingDeepLinkRoute.isNullOrBlank()) {
+            navigateTopLevel(pendingDeepLinkRoute)
+            onDeepLinkConsumed()
+        }
+    }
+
     val iosSpringSlide = spring<IntOffset>(
         dampingRatio = 0.72f,
         stiffness = Spring.StiffnessMediumLow,
@@ -166,7 +219,11 @@ private fun VeridiaAppContent(
     )
 
     CompositionLocalProvider(LocalNavStateController provides navStateController) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(veridiaColors.sky),
+        ) {
             NavHost(
                 navController = navController,
                 startDestination = VeridiaRoute.HOME,
@@ -237,6 +294,7 @@ private fun VeridiaAppContent(
                             onOpenAirQuality = { navigateTopLevel(VeridiaRoute.AIR) },
                             onOpenDetailedWeather = { navigateTopLevel(VeridiaRoute.WEATHER) },
                             onOpenRadar = { navController.navigate(VeridiaRoute.RADAR) },
+                            onSelectWeatherMapLayer = viewModel::selectWeatherMapLayer,
                             onThemeModeChange = viewModel::setThemeMode,
                         )
                     }
@@ -277,6 +335,7 @@ private fun VeridiaAppContent(
                             onTriggerSampleAlert = viewModel::triggerSampleDisasterAlert,
                             onStopSiren = viewModel::stopDisasterSiren,
                             onToggleSeismicSensor = viewModel::setSeismicSensorMonitoring,
+                            onCheckBackgroundAlertsNow = viewModel::checkBackgroundAlertsNow,
                         )
                     }
                 }
@@ -307,6 +366,7 @@ private fun VeridiaAppContent(
                             onGpsPrivacyModeChange = viewModel::setGpsPrivacyMode,
                             onBackgroundSyncChange = viewModel::setBackgroundSyncEnabled,
                             onThemeModeChange = viewModel::setThemeMode,
+                            onLanguageChange = viewModel::setAppLanguage,
                             onRefreshCache = viewModel::refreshOfflineCache,
                         )
                     }

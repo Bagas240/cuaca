@@ -13,7 +13,10 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
+import com.example.data.model.AppLanguage
 import com.example.data.model.SolarThemePhase
+import com.example.ui.i18n.LocalVeridiaStrings
+import com.example.ui.i18n.veridiaStringsFor
 
 val LocalVeridiaColors = compositionLocalOf { DayVeridiaPalette }
 
@@ -33,6 +36,7 @@ val VeridiaShapes = Shapes(
 @Composable
 fun VeridiaTheme(
     themePhase: SolarThemePhase = SolarThemePhase.DAY,
+    appLanguage: AppLanguage = AppLanguage.ENGLISH,
     content: @Composable () -> Unit,
 ) {
     val target = paletteForPhase(themePhase)
@@ -134,7 +138,10 @@ fun VeridiaTheme(
         )
     }
 
-    CompositionLocalProvider(LocalVeridiaColors provides animatedPalette) {
+    CompositionLocalProvider(
+        LocalVeridiaColors provides animatedPalette,
+        LocalVeridiaStrings provides veridiaStringsFor(appLanguage),
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = VeridiaTypography,

@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.data.model.AirQualityTelemetry
+import com.example.data.model.AppLanguage
 import com.example.data.model.CityLocation
 import com.example.data.model.SeismicTelemetry
 import com.example.data.model.UserSettings
@@ -77,14 +78,19 @@ class DisasterNotificationManager(private val context: Context) {
         }
     }
 
-    fun ensureNotificationChannel() {
+    fun ensureNotificationChannel(language: AppLanguage = AppLanguage.ENGLISH) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val isId = language == AppLanguage.INDONESIAN
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                if (isId) "Peringatan Dini Bencana & BMKG" else CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
-                description = "Critical earthquake, tsunami, extreme storm, and hazardous air alerts near your zone."
+                description = if (isId) {
+                    "Peringatan darurat gempa bumi, tsunami, badai ekstrem, dan udara berbahaya di sekitar zona Anda."
+                } else {
+                    "Critical earthquake, tsunami, extreme storm, and hazardous air alerts near your zone."
+                }
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 400, 200, 400, 200, 600)
                 setShowBadge(true)
@@ -100,6 +106,7 @@ class DisasterNotificationManager(private val context: Context) {
         airQuality: AirQualityTelemetry,
         seismic: SeismicTelemetry,
         settings: UserSettings,
+        language: AppLanguage = settings.appLanguage,
     ): DisasterAlertEvent? {
         val topEvent = seismic.recentEvents.firstOrNull()
         val distanceKm = haversineKm(
@@ -108,6 +115,8 @@ class DisasterNotificationManager(private val context: Context) {
             seismic.epicenterLat,
             seismic.epicenterLon,
         ).roundToInt()
+
+        val isId = language == AppLanguage.INDONESIAN
 
         // 1. Tsunami Warning (highest priority)
         val hasTsunamiPotential = !seismic.tsunamiStatus.contains("Tidak", ignoreCase = true) &&
@@ -118,9 +127,17 @@ class DisasterNotificationManager(private val context: Context) {
             return DisasterAlertEvent(
                 signature = "tsunami_${seismic.bannerMagnitude}_${topEvent?.timeAgoLabel ?: seismic.activeEventTitle}",
                 kind = DisasterKind.TSUNAMI,
-                title = "Tsunami Warning · ${seismic.bannerMagnitude}",
-                message = "${seismic.activeEventDescription} (${distanceKm} km from ${city.name})",
-                guidance = "Move immediately to higher ground away from coastal areas.",
+                title = if (isId) "Peringatan Tsunami · ${seismic.bannerMagnitude}" else "Tsunami Warning · ${seismic.bannerMagnitude}",
+                message = if (isId) {
+                    "${seismic.activeEventDescription} ($distanceKm km dari ${city.name})"
+                } else {
+                    "${seismic.activeEventDescription} ($distanceKm km from ${city.name})"
+                },
+                guidance = if (isId) {
+                    "Segera mengungsi ke tempat tinggi menjauhi kawasan pesisir."
+                } else {
+                    "Move immediately to higher ground away from coastal areas."
+                },
                 distanceKm = distanceKm,
             )
         }
@@ -133,9 +150,17 @@ class DisasterNotificationManager(private val context: Context) {
             return DisasterAlertEvent(
                 signature = "quake_${topMag}_${topEvent?.location ?: seismic.activeEventTitle}_${topEvent?.timeAgoLabel ?: ""}",
                 kind = DisasterKind.EARTHQUAKE,
-                title = "Earthquake ${seismic.bannerMagnitude} Detected",
-                message = "${topEvent?.location ?: seismic.activeEventTitle} · ${distanceKm} km from ${city.name} · Depth ${seismic.depthKm.roundToInt()} km",
-                guidance = "Drop, Cover, and Hold On. Stay clear of glass and unstable structures.",
+                title = if (isId) "Gempa Bumi ${seismic.bannerMagnitude} Terdeteksi" else "Earthquake ${seismic.bannerMagnitude} Detected",
+                message = if (isId) {
+                    "${topEvent?.location ?: seismic.activeEventTitle} · $distanceKm km dari ${city.name} · Kedalaman ${seismic.depthKm.roundToInt()} km"
+                } else {
+                    "${topEvent?.location ?: seismic.activeEventTitle} · $distanceKm km from ${city.name} · Depth ${seismic.depthKm.roundToInt()} km"
+                },
+                guidance = if (isId) {
+                    "Merunduk, berlindung di bawah meja kokoh, dan pegang erat. Jauhi kaca."
+                } else {
+                    "Drop, Cover, and Hold On. Stay clear of glass and unstable structures."
+                },
                 distanceKm = distanceKm,
             )
         }
@@ -160,19 +185,37 @@ class DisasterNotificationManager(private val context: Context) {
                 isHeavyTroughRain -> "trough_rain_${weather.pressureHpa / 5}"
                 else -> "imminent_${imminentSevereSlot?.timeLabel ?: "soon"}"
             }
-            val headlineDetail = when {
-                weather.conditionKind == WeatherConditionKind.THUNDERSTORM -> weather.conditionLabel
-                weather.windGustKmh >= 65 -> "Damaging Wind Gusts ${weather.windGustKmh} km/h"
-                weather.windSpeedKmh >= 48 -> "Gale Winds ${weather.windSpeedKmh} km/h"
-                isHeavyTroughRain -> "Heavy Monsoon Downpour (${weather.pressureHpa} hPa)"
-                else -> "Incoming Storm Cell at ${imminentSevereSlot?.timeLabel}"
+            val headlineDetail = if (isId) {
+                when {
+                    weather.conditionKind == WeatherConditionKind.THUNDERSTORM -> "Badai Petir Ekstrem"
+                    weather.windGustKmh >= 65 -> "Hembusan Angin Kencang ${weather.windGustKmh} km/j"
+                    weather.windSpeedKmh >= 48 -> "Angin Ribut ${weather.windSpeedKmh} km/j"
+                    isHeavyTroughRain -> "Hujan Lebat Monsun (${weather.pressureHpa} hPa)"
+                    else -> "Sel Badai Mendekat pukul ${imminentSevereSlot?.timeLabel}"
+                }
+            } else {
+                when {
+                    weather.conditionKind == WeatherConditionKind.THUNDERSTORM -> weather.conditionLabel
+                    weather.windGustKmh >= 65 -> "Damaging Wind Gusts ${weather.windGustKmh} km/h"
+                    weather.windSpeedKmh >= 48 -> "Gale Winds ${weather.windSpeedKmh} km/h"
+                    isHeavyTroughRain -> "Heavy Monsoon Downpour (${weather.pressureHpa} hPa)"
+                    else -> "Incoming Storm Cell at ${imminentSevereSlot?.timeLabel}"
+                }
             }
             return DisasterAlertEvent(
                 signature = "storm_${city.id}_$triggerTag",
                 kind = DisasterKind.SEVERE_STORM,
-                title = "Urgent Weather Alert · ${city.name}",
-                message = "$headlineDetail · Wind ${weather.windSpeedKmh} km/h ${weather.windDirectionLabel} · ${weather.precipChancePercent}% precip",
-                guidance = "Seek shelter indoors and avoid open water, trees, and power lines.",
+                title = if (isId) "Peringatan Cuaca Ekstrem · ${city.name}" else "Urgent Weather Alert · ${city.name}",
+                message = if (isId) {
+                    "$headlineDetail · Angin ${weather.windSpeedKmh} km/j · Peluang hujan ${weather.precipChancePercent}%"
+                } else {
+                    "$headlineDetail · Wind ${weather.windSpeedKmh} km/h ${weather.windDirectionLabel} · ${weather.precipChancePercent}% precip"
+                },
+                guidance = if (isId) {
+                    "Berlindung di dalam bangunan dan jauhi pohon, perairan terbuka, serta tiang listrik."
+                } else {
+                    "Seek shelter indoors and avoid open water, trees, and power lines."
+                },
                 distanceKm = 0,
             )
         }
@@ -182,9 +225,17 @@ class DisasterNotificationManager(private val context: Context) {
             return DisasterAlertEvent(
                 signature = "aqi_${city.id}_${airQuality.regionalAqi / 20}",
                 kind = DisasterKind.HAZARDOUS_AIR,
-                title = "Hazardous Air Alert · AQI ${airQuality.regionalAqi}",
-                message = "${city.name} PM2.5 ${String.format(Locale.US, "%.1f", airQuality.pm25)} µg/m³ (${airQuality.regionalCategory})",
-                guidance = "Keep windows closed, enable air filtration, and wear an N95 mask outdoors.",
+                title = if (isId) "Darurat Kualitas Udara · AQI ${airQuality.regionalAqi}" else "Hazardous Air Alert · AQI ${airQuality.regionalAqi}",
+                message = if (isId) {
+                    "${city.name} PM2.5 ${String.format(Locale.US, "%.1f", airQuality.pm25)} µg/m³"
+                } else {
+                    "${city.name} PM2.5 ${String.format(Locale.US, "%.1f", airQuality.pm25)} µg/m³ (${airQuality.regionalCategory})"
+                },
+                guidance = if (isId) {
+                    "Tutup rapat jendela, nyalakan pembersih udara, dan gunakan masker N95 di luar ruang."
+                } else {
+                    "Keep windows closed, enable air filtration, and wear an N95 mask outdoors."
+                },
                 distanceKm = 0,
             )
         }
@@ -258,38 +309,75 @@ class DisasterNotificationManager(private val context: Context) {
         }
     }
 
-    fun buildSampleEvent(kind: DisasterKind, city: CityLocation): DisasterAlertEvent {
+    fun buildSampleEvent(
+        kind: DisasterKind,
+        city: CityLocation,
+        language: AppLanguage = AppLanguage.ENGLISH,
+    ): DisasterAlertEvent {
+        val isId = language == AppLanguage.INDONESIAN
         return when (kind) {
             DisasterKind.EARTHQUAKE -> DisasterAlertEvent(
                 signature = "test_quake_${System.currentTimeMillis()}",
                 kind = DisasterKind.EARTHQUAKE,
-                title = "Earthquake M 5.8 · ${city.name} Zone",
-                message = "Simulated BMKG TEWS shake alert 28 km from ${city.name} · Depth 12 km · MMI IV",
-                guidance = "Drop, Cover, and Hold On. Evacuate calmly after shaking stops.",
+                title = if (isId) "Gempa Bumi M 5,8 · Zona ${city.name}" else "Earthquake M 5.8 · ${city.name} Zone",
+                message = if (isId) {
+                    "Simulasi peringatan guncangan BMKG 28 km dari ${city.name} · Kedalaman 12 km · MMI IV"
+                } else {
+                    "Simulated BMKG TEWS shake alert 28 km from ${city.name} · Depth 12 km · MMI IV"
+                },
+                guidance = if (isId) {
+                    "Merunduk, berlindung, dan bertahan. Evakuasi dengan tenang setelah guncangan berhenti."
+                } else {
+                    "Drop, Cover, and Hold On. Evacuate calmly after shaking stops."
+                },
                 distanceKm = 28,
             )
             DisasterKind.TSUNAMI -> DisasterAlertEvent(
                 signature = "test_tsunami_${System.currentTimeMillis()}",
                 kind = DisasterKind.TSUNAMI,
-                title = "Tsunami Warning · Coastal ${city.name}",
-                message = "Simulated coastal sea-level surge advisory near ${city.name} shoreline",
-                guidance = "Evacuate immediately to elevation above 20 meters.",
+                title = if (isId) "Peringatan Tsunami · Pesisir ${city.name}" else "Tsunami Warning · Coastal ${city.name}",
+                message = if (isId) {
+                    "Simulasi peringatan gelombang pasang pesisir di sekitar pantai ${city.name}"
+                } else {
+                    "Simulated coastal sea-level surge advisory near ${city.name} shoreline"
+                },
+                guidance = if (isId) {
+                    "Segera mengungsi menuju ketinggian di atas 20 meter."
+                } else {
+                    "Evacuate immediately to elevation above 20 meters."
+                },
                 distanceKm = 35,
             )
             DisasterKind.SEVERE_STORM -> DisasterAlertEvent(
                 signature = "test_storm_${System.currentTimeMillis()}",
                 kind = DisasterKind.SEVERE_STORM,
-                title = "Severe Thunderstorm & Gale · ${city.name}",
-                message = "Simulated convective squall · Gusts 68 km/h · Heavy rain & lightning",
-                guidance = "Stay indoors away from windows and avoid flooded roads.",
+                title = if (isId) "Badai Petir & Angin Kencang · ${city.name}" else "Severe Thunderstorm & Gale · ${city.name}",
+                message = if (isId) {
+                    "Simulasi badai konvektif · Hembusan 68 km/j · Hujan deras & petir"
+                } else {
+                    "Simulated convective squall · Gusts 68 km/h · Heavy rain & lightning"
+                },
+                guidance = if (isId) {
+                    "Tetap di dalam ruangan, jauhi jendela, dan hindari jalan tergenang."
+                } else {
+                    "Stay indoors away from windows and avoid flooded roads."
+                },
                 distanceKm = 5,
             )
             DisasterKind.HAZARDOUS_AIR -> DisasterAlertEvent(
                 signature = "test_aqi_${System.currentTimeMillis()}",
                 kind = DisasterKind.HAZARDOUS_AIR,
-                title = "Hazardous Air Emergency · ${city.name}",
-                message = "Simulated PM2.5 spike 142.0 µg/m³ · AQI 195 (Unhealthy)",
-                guidance = "Limit outdoor exertion and use respiratory protection.",
+                title = if (isId) "Darurat Udara Berbahaya · ${city.name}" else "Hazardous Air Emergency · ${city.name}",
+                message = if (isId) {
+                    "Simulasi lonjakan PM2.5 142,0 µg/m³ · AQI 195 (Tidak Sehat)"
+                } else {
+                    "Simulated PM2.5 spike 142.0 µg/m³ · AQI 195 (Unhealthy)"
+                },
+                guidance = if (isId) {
+                    "Batasi aktivitas luar ruangan dan gunakan masker pelindung pernapasan."
+                } else {
+                    "Limit outdoor exertion and use respiratory protection."
+                },
                 distanceKm = 0,
             )
         }

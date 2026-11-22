@@ -113,6 +113,8 @@ import com.example.data.model.PressureUnit
 import com.example.data.model.TemperatureUnit
 import com.example.data.model.WeatherConditionKind
 import com.example.data.model.WindUnit
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.navigation.LocalNavStateController
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.WarningAmber
@@ -159,6 +161,9 @@ fun VeridiaCard(
         label = "card_press_scale",
     )
 
+    val isDark = veridiaColors.isDark
+    val shadowTint = if (isDark) Color(0x40000000) else Color(0x14141E2D)
+
     Surface(
         modifier = modifier
             .graphicsLayer {
@@ -168,8 +173,8 @@ fun VeridiaCard(
             .shadow(
                 elevation = 4.dp,
                 shape = shape,
-                ambientColor = Color(0x14141E2D),
-                spotColor = Color(0x14141E2D),
+                ambientColor = shadowTint,
+                spotColor = shadowTint,
             )
             .clip(shape)
             .then(
@@ -233,9 +238,10 @@ fun VeridiaBackHeader(
                 shadowElevation = 2.dp,
             ) {
                 Box(contentAlignment = Alignment.Center) {
+                    val strings = veridiaStrings
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = stringResource(R.string.cd_back),
+                        contentDescription = strings.cdBack,
                         tint = veridiaColors.textMain,
                         modifier = Modifier.size(20.dp),
                     )
@@ -283,35 +289,36 @@ fun VeridiaBottomDock(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val tabs = listOf(
         DockTab(
             route = VeridiaRoute.HOME,
-            label = stringResource(R.string.nav_home),
+            label = strings.navHome,
             activeTint = colors.primary,
             testTag = "dock_tab_home",
         ),
         DockTab(
             route = VeridiaRoute.WEATHER,
-            label = stringResource(R.string.nav_weather),
+            label = strings.navWeather,
             activeTint = colors.primary,
             testTag = "dock_tab_weather",
         ),
         DockTab(
             route = VeridiaRoute.AIR,
-            label = stringResource(R.string.nav_air),
+            label = strings.navAir,
             activeTint = colors.primary,
             testTag = "dock_tab_air",
         ),
         DockTab(
             route = VeridiaRoute.ALERTS,
-            label = stringResource(R.string.nav_alerts),
+            label = strings.navAlerts,
             activeTint = DangerCrimson,
             hasBadge = true,
             testTag = "dock_tab_alerts",
         ),
         DockTab(
             route = VeridiaRoute.SETTINGS,
-            label = stringResource(R.string.nav_settings),
+            label = strings.navSettings,
             activeTint = colors.primary,
             testTag = "dock_tab_settings",
         ),
@@ -634,7 +641,7 @@ private fun DockAnimatedHomeIcon(isSelected: Boolean, tint: Color) {
 
     Icon(
         imageVector = if (isSelected) Icons.Rounded.Home else Icons.Outlined.Home,
-        contentDescription = stringResource(R.string.nav_home),
+        contentDescription = veridiaStrings.navHome,
         tint = tint,
         modifier = Modifier
             .size(19.dp)
@@ -669,7 +676,7 @@ private fun DockAnimatedWeatherIcon(isSelected: Boolean, tint: Color) {
         }
         Icon(
             imageVector = Icons.Rounded.Cloud,
-            contentDescription = stringResource(R.string.nav_weather),
+            contentDescription = veridiaStrings.navWeather,
             tint = tint,
             modifier = Modifier
                 .size(18.dp)
@@ -688,6 +695,7 @@ private fun DockAnimatedAirIcon(isSelected: Boolean, tint: Color) {
         cycleDurationMs = 1350,
         pingPong = false,
     )
+    val wavePath = remember { Path() }
 
     Canvas(modifier = Modifier.size(21.dp)) {
         val w = size.width
@@ -703,14 +711,13 @@ private fun DockAnimatedAirIcon(isSelected: Boolean, tint: Color) {
             } else {
                 0.78f
             }
-            val wavePath = Path().apply {
-                moveTo(w * 0.10f + shift * 0.35f, y)
-                cubicTo(
-                    w * 0.38f + shift * 0.35f, y - h * 0.11f,
-                    w * 0.62f + shift * 0.35f, y + h * 0.11f,
-                    w * 0.88f + shift * 0.35f, y - (if (i == 0) h * 0.08f else 0f),
-                )
-            }
+            wavePath.rewind()
+            wavePath.moveTo(w * 0.10f + shift * 0.35f, y)
+            wavePath.cubicTo(
+                w * 0.38f + shift * 0.35f, y - h * 0.11f,
+                w * 0.62f + shift * 0.35f, y + h * 0.11f,
+                w * 0.88f + shift * 0.35f, y - (if (i == 0) h * 0.08f else 0f),
+            )
             drawPath(
                 path = wavePath,
                 color = tint.copy(alpha = alpha),
@@ -783,7 +790,7 @@ private fun DockAnimatedSettingsGearIcon(isSelected: Boolean, tint: Color) {
 
     Icon(
         imageVector = if (isSelected) Icons.Rounded.Settings else Icons.Outlined.Settings,
-        contentDescription = stringResource(R.string.nav_settings),
+        contentDescription = veridiaStrings.navSettings,
         tint = tint,
         modifier = Modifier
             .size(19.dp)
@@ -816,6 +823,9 @@ fun ActiveDisasterAlertOverlay(
     ) {
         if (alert != null) {
             val colors = veridiaColors
+            val strings = veridiaStrings
+            val badgeText = VeridiaLocalizer.disasterKindBadge(alert.kind, strings)
+            val sirenProfileText = VeridiaLocalizer.disasterKindSirenProfile(alert.kind, strings)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -855,7 +865,7 @@ fun ActiveDisasterAlertOverlay(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "${alert.kind.badge} · ${alert.title}",
+                                    text = "$badgeText · ${alert.title}",
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                     color = colors.dangerText,
                                     maxLines = 1,
@@ -873,7 +883,7 @@ fun ActiveDisasterAlertOverlay(
                         IconButton(onClick = onDismiss) {
                             Icon(
                                 imageVector = Icons.Rounded.Close,
-                                contentDescription = "Dismiss alert",
+                                contentDescription = strings.dismissAlert,
                                 tint = colors.dangerText,
                             )
                         }
@@ -908,7 +918,7 @@ fun ActiveDisasterAlertOverlay(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Silence Disaster Siren (${alert.kind.sirenProfileLabel})",
+                                    text = "${strings.silenceSirenPrefix} ($sirenProfileText)",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White,
                                 )
@@ -936,9 +946,9 @@ fun conditionTint(kind: WeatherConditionKind): Color = when (kind) {
     WeatherConditionKind.RAIN -> veridiaColors.primary
     WeatherConditionKind.CLOUDY -> veridiaColors.textSub
     WeatherConditionKind.PARTLY_CLOUDY -> veridiaColors.primary
-    WeatherConditionKind.SUNNY -> WarningAmber
-    WeatherConditionKind.THUNDERSTORM -> WarningAmber
-    WeatherConditionKind.SUNSET -> WarningAmber
+    WeatherConditionKind.SUNNY -> veridiaColors.warning
+    WeatherConditionKind.THUNDERSTORM -> veridiaColors.warning
+    WeatherConditionKind.SUNSET -> veridiaColors.warning
     WeatherConditionKind.FOG -> veridiaColors.textSub
 }
 
@@ -970,9 +980,10 @@ fun formatPressureValue(hpa: Int, unit: PressureUnit): Pair<String, String> = wh
 @Composable
 fun rememberGyroParallax(enabled: Boolean): State<Offset> {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val tiltState = remember { mutableStateOf(Offset.Zero) }
 
-    DisposableEffect(enabled) {
+    DisposableEffect(enabled, lifecycleOwner) {
         if (!enabled) {
             tiltState.value = Offset.Zero
             return@DisposableEffect onDispose {}
@@ -982,6 +993,7 @@ fun rememberGyroParallax(enabled: Boolean): State<Offset> {
         if (sensorManager == null || accelerometer == null) {
             return@DisposableEffect onDispose {}
         }
+        var registered = false
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
                 val x = (event.values.getOrNull(0) ?: 0f).coerceIn(-4f, 4f) / 4f
@@ -991,9 +1003,26 @@ fun rememberGyroParallax(enabled: Boolean): State<Offset> {
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
         }
-        sensorManager.registerListener(listener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        fun updateSensorRegistration() {
+            val active = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+            if (active && !registered) {
+                sensorManager.registerListener(listener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+                registered = true
+            } else if (!active && registered) {
+                sensorManager.unregisterListener(listener)
+                registered = false
+                tiltState.value = Offset.Zero
+            }
+        }
+        val observer = LifecycleEventObserver { _, _ -> updateSensorRegistration() }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        updateSensorRegistration()
+
         onDispose {
-            sensorManager.unregisterListener(listener)
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (registered) {
+                sensorManager.unregisterListener(listener)
+            }
         }
     }
     return tiltState

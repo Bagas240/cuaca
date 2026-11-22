@@ -13,6 +13,8 @@ import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.example.alerts.DisasterAlertEvent
 import com.example.alerts.DisasterKind
 import com.example.alerts.DisasterNotificationManager
@@ -22,6 +24,7 @@ import com.example.data.location.LocationMaskingUtility
 import com.example.data.location.LocationTracker
 import com.example.data.location.SolarScheduleCalculator
 import com.example.data.model.AirQualityTelemetry
+import com.example.data.model.AppLanguage
 import com.example.data.model.AppThemeMode
 import com.example.data.model.AqiMapLayer
 import com.example.data.model.AtmosphereStratum
@@ -42,6 +45,7 @@ import com.example.data.repository.VeridiaRepository
 import com.example.data.security.SecurityGuard
 import com.example.data.security.SecurityPosture
 import com.example.work.SyncBatteryProfile
+import com.example.work.WeatherAlertWorker
 import com.example.work.WeatherSyncScheduler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -50,9 +54,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 enum class DashboardMetricCard {
@@ -101,6 +108,8 @@ data class VeridiaUiState(
     val securityPosture: SecurityPosture = SecurityGuard.currentPosture(),
     val syncBatteryProfile: SyncBatteryProfile = SyncBatteryProfile(),
     val activeThemePhase: SolarThemePhase = SolarThemePhase.DAY,
+    val backgroundAlertCheckStatus: String = "Auto-monitoring every 15m (Wi-Fi/Cellular)",
+    val isCheckingBackgroundAlerts: Boolean = false,
 )
 
 typealias WeatherViewModel = VeridiaViewModel
@@ -179,7 +188,9 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<VeridiaUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var alertScanJob: Job? = null
     private var isBatteryReceiverRegistered = false
+    private var isAppForeground = true
 
     private val batteryStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -300,7 +311,8 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             var tickCount = 0
             while (isActive) {
-                delay(20_000L) // Real-time 20-second telemetry cycle for wind, weather, AQI, radar & seismic
+                delay(20_000L) // Real-time 20-second telemetry cycle when app is foregrounded
+                if (!isAppForeground) continue
                 tickCount += 1
                 val activeCity = _uiState.value.selectedCity
                 val maskCoords = _uiState.value.settings.gpsPrivacyMode
@@ -486,9 +498,14 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
                 refreshTelemetryFor(gpsCity, preserveGpsActive = true)
             }.onFailure { error ->
                 _uiState.update {
+                    val isId = it.settings.appLanguage == AppLanguage.INDONESIAN
                     it.copy(
                         isLocatingGps = false,
-                        gpsErrorMessage = error.message ?: "Could not acquire coarse location.",
+                        gpsErrorMessage = if (isId) {
+                            "Tidak dapat menangkap lokasi zona wilayah."
+                        } else {
+                            error.message ?: "Could not acquire coarse location."
+                        },
                     )
                 }
             }
@@ -726,6 +743,23 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { settingsStore.setThemeMode(mode) }
     }
 
+    fun setAppLanguage(language: AppLanguage) {
+        _uiState.update { current ->
+            val updatedSettings = current.settings.copy(appLanguage = language)
+            val isId = language == AppLanguage.INDONESIAN
+            current.copy(
+                settings = updatedSettings,
+                backgroundAlertCheckStatus = if (isId) {
+                    "Pemantauan otomatis tiap 15 mnt (Wi-Fi/Seluler)"
+                } else {
+                    "Auto-monitoring every 15m (Wi-Fi/Cellular)"
+                },
+            )
+        }
+        disasterManager.ensureNotificationChannel(language)
+        viewModelScope.launch { settingsStore.setAppLanguage(language) }
+    }
+
     fun setGpsPrivacyMode(enabled: Boolean) {
         viewModelScope.launch {
             settingsStore.setGpsPrivacyMode(enabled)
@@ -750,6 +784,100 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun checkBackgroundAlertsNow() {
+        val appContext = getApplication<Application>().applicationContext
+        alertScanJob?.cancel()
+        alertScanJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isCheckingBackgroundAlerts = true,
+                    backgroundAlertCheckStatus = "Scanning live weather, AQI & seismic feeds...",
+                )
+            }
+            val workIdResult = runCatching {
+                WeatherSyncScheduler.triggerImmediateAlertCheck(appContext, forceNotify = false)
+            }
+            val workId = workIdResult.getOrNull()
+            if (workId != null) {
+                val finalInfo = runCatching {
+                    WorkManager.getInstance(appContext)
+                        .getWorkInfoByIdFlow(workId)
+                        .firstOrNull { info -> info != null && info.state.isFinished }
+                }.getOrNull()
+
+                if (finalInfo != null && finalInfo.state == WorkInfo.State.SUCCEEDED) {
+                    val statusKey = finalInfo.outputData.getString(WeatherAlertWorker.KEY_STATUS) ?: "all_clear"
+                    val alertTitle = finalInfo.outputData.getString(WeatherAlertWorker.KEY_ALERT_TITLE).orEmpty()
+                    val checkedMillis = finalInfo.outputData.getLong(
+                        WeatherAlertWorker.KEY_CHECKED_AT_MILLIS,
+                        System.currentTimeMillis(),
+                    )
+                    val timeStr = SimpleDateFormat("HH:mm", Locale.US).format(Date(checkedMillis))
+                    val statusText = when (statusKey) {
+                        "urgent_alert_notified" -> "Alert sent ($timeStr): $alertTitle"
+                        "urgent_alert_deduplicated" -> "Active alert ($timeStr): $alertTitle"
+                        "alerts_disabled" -> "Alert triggers disabled in Settings"
+                        "deferred_critical_battery" -> "Deferred · Critical battery saver active"
+                        else -> "All clear · Checked at $timeStr"
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isCheckingBackgroundAlerts = false,
+                            backgroundAlertCheckStatus = statusText,
+                        )
+                    }
+                    return@launch
+                }
+            }
+
+            // Fallback live evaluation if WorkManager was unavailable or offline
+            val current = _uiState.value
+            val alert = disasterManager.evaluateTelemetryForDisaster(
+                city = current.selectedCity,
+                weather = current.weather,
+                airQuality = current.airQuality,
+                seismic = current.seismic,
+                settings = current.settings,
+                language = current.settings.appLanguage,
+            )
+            val timeStr = SimpleDateFormat("HH:mm", Locale.US).format(Date())
+            val fallbackStatus = if (alert != null) {
+                disasterManager.notifyIfNew(alert, force = false)
+                "Active alert ($timeStr): ${alert.title}"
+            } else {
+                "All clear · Checked at $timeStr"
+            }
+            _uiState.update {
+                it.copy(
+                    isCheckingBackgroundAlerts = false,
+                    backgroundAlertCheckStatus = fallbackStatus,
+                )
+            }
+        }
+    }
+
+    fun setAppForeground(foreground: Boolean) {
+        if (isAppForeground == foreground) return
+        isAppForeground = foreground
+        if (foreground) {
+            if (_uiState.value.seismicSensorMonitoringEnabled) {
+                val sensor = accelerometerSensor
+                if (sensor != null && !isAccelerometerRegistered) {
+                    sensorManager?.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)
+                    isAccelerometerRegistered = true
+                }
+            }
+            _uiState.update { current ->
+                current.copy(activeThemePhase = resolveThemePhaseForState(current))
+            }
+        } else {
+            if (isAccelerometerRegistered) {
+                sensorManager?.unregisterListener(this)
+                isAccelerometerRegistered = false
+            }
+        }
+    }
+
     fun refreshOfflineCache() {
         viewModelScope.launch {
             _uiState.update { it.copy(cacheRefreshing = true) }
@@ -767,12 +895,14 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         airQuality: AirQualityTelemetry,
         seismic: SeismicTelemetry,
     ) {
+        val lang = _uiState.value.settings.appLanguage
         val alert = disasterManager.evaluateTelemetryForDisaster(
             city = city,
             weather = weather,
             airQuality = airQuality,
             seismic = seismic,
             settings = _uiState.value.settings,
+            language = lang,
         ) ?: return
 
         if (disasterManager.notifyIfNew(alert)) {
@@ -784,7 +914,11 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun triggerSampleDisasterAlert(kind: DisasterKind) {
-        val sample = disasterManager.buildSampleEvent(kind, _uiState.value.selectedCity)
+        val sample = disasterManager.buildSampleEvent(
+            kind = kind,
+            city = _uiState.value.selectedCity,
+            language = _uiState.value.settings.appLanguage,
+        )
         disasterManager.notifyIfNew(sample, force = true)
         _uiState.update { it.copy(activeDisasterAlert = sample, isSirenPlaying = true) }
         sirenPlayer.playSiren(kind = kind, cycles = 2) {
@@ -853,17 +987,26 @@ class VeridiaViewModel(application: Application) : AndroidViewModel(application)
         val nowMs = System.currentTimeMillis()
         if (result.patternRecognized) {
             val activeCity = _uiState.value.selectedCity
+            val isId = _uiState.value.settings.appLanguage == AppLanguage.INDONESIAN
             val alert = DisasterAlertEvent(
                 signature = "accel_seismic_${nowMs / 15_000L}",
                 kind = DisasterKind.EARTHQUAKE,
-                title = "Seismic Vibration Detected",
+                title = if (isId) "Getaran Gempa Terdeteksi" else "Seismic Vibration Detected",
                 message = String.format(
                     Locale.US,
-                    "Device accelerometer detected oscillatory tremor (%.1f m/s²) in %s.",
+                    if (isId) {
+                        "Akselerometer perangkat mendeteksi guncangan osilasi (%.1f m/dt²) di %s."
+                    } else {
+                        "Device accelerometer detected oscillatory tremor (%.1f m/s²) in %s."
+                    },
                     result.peakMagnitudeMs2,
                     activeCity.name,
                 ),
-                guidance = "Drop, Cover under sturdy furniture, and Hold On.",
+                guidance = if (isId) {
+                    "Merunduk, berlindung di bawah meja kokoh, dan bertahan."
+                } else {
+                    "Drop, Cover under sturdy furniture, and Hold On."
+                },
                 distanceKm = 0,
             )
             disasterManager.notifyIfNew(alert, force = true)

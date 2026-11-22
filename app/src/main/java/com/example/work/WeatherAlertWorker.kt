@@ -129,12 +129,14 @@ class WeatherAlertWorker(
         }
 
         val disasterManager = DisasterNotificationManager(applicationContext)
+        disasterManager.ensureNotificationChannel(settings.appLanguage)
         val alert = disasterManager.evaluateTelemetryForDisaster(
             city = weatherForEval.city,
             weather = weatherForEval,
             airQuality = aqiForEval,
             seismic = seismicForEval,
             settings = settings,
+            language = settings.appLanguage,
         )
 
         val notified = if (alert != null) {

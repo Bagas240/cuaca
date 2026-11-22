@@ -52,6 +52,8 @@ import com.example.data.model.AqiSeverity
 import com.example.ui.components.RegionalAqi2DMap
 import com.example.ui.components.VeridiaBackHeader
 import com.example.ui.components.VeridiaCard
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.veridiaColors
@@ -68,6 +70,7 @@ fun AirQualityMapScreen(
     onBack: () -> Unit,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val aqi = state.airQuality
 
     Box(
@@ -85,8 +88,8 @@ fun AirQualityMapScreen(
         ) {
             item {
                 VeridiaBackHeader(
-                    title = "Air Quality & Smog",
-                    subtitle = "${state.selectedCity.name} · Aerosol Sensor Array",
+                    title = strings.airQualitySmogTitle,
+                    subtitle = "${state.selectedCity.name} · ${strings.aerosolSensorArray}",
                     onBackClick = onBack,
                     trailingContent = {
                         Surface(
@@ -107,7 +110,7 @@ fun AirQualityMapScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "${aqi.activeSensorsCount} Sensors Live",
+                                    text = "${aqi.activeSensorsCount} ${strings.sensorsLiveSuffix}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = colors.textMain,
                                 )
@@ -149,7 +152,7 @@ fun AirQualityMapScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "REGIONAL AIR QUALITY INDEX",
+                                text = strings.regionalAqiUpper,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.textSub,
                             )
@@ -162,14 +165,19 @@ fun AirQualityMapScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = aqi.regionalCategory,
+                                    text = VeridiaLocalizer.aqiCategory(aqi.regionalCategory, strings),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = colors.sunset,
                                     modifier = Modifier.padding(bottom = 10.dp),
                                 )
                             }
                             Text(
-                                text = aqi.summaryDescription,
+                                text = VeridiaLocalizer.aqiSummary(
+                                    raw = aqi.summaryDescription,
+                                    aqi = aqi.regionalAqi,
+                                    cityName = state.selectedCity.name,
+                                    strings = strings,
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.textSub,
                             )
@@ -178,7 +186,7 @@ fun AirQualityMapScreen(
                                 Icon(Icons.Rounded.Public, null, tint = colors.primary, modifier = Modifier.size(13.dp))
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Source: ${aqi.dataSourceLabel} · Esri / OSM Map",
+                                    text = "${strings.sourcePrefix}: ${VeridiaLocalizer.dataSourceLabel(aqi.dataSourceLabel, strings)} · Esri / OSM",
                                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                     color = colors.primary,
                                 )
@@ -220,10 +228,10 @@ fun AirQualityMapScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("0 Good", style = MaterialTheme.typography.labelSmall, color = colors.greenText)
-                        Text("50 Moderate", style = MaterialTheme.typography.labelSmall, color = colors.sunset)
-                        Text("150 Poor", style = MaterialTheme.typography.labelSmall, color = DangerCrimson)
-                        Text("300+ Alert", style = MaterialTheme.typography.labelSmall, color = NeonPurple)
+                        Text(strings.aqiScale0Good, style = MaterialTheme.typography.labelSmall, color = colors.greenText)
+                        Text(strings.aqiScale50Mod, style = MaterialTheme.typography.labelSmall, color = colors.sunset)
+                        Text(strings.aqiScale150Poor, style = MaterialTheme.typography.labelSmall, color = DangerCrimson)
+                        Text(strings.aqiScale300Alert, style = MaterialTheme.typography.labelSmall, color = NeonPurple)
                     }
                 }
             }
@@ -241,10 +249,10 @@ fun AirQualityMapScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         PollutantMetricCard(
-                            title = "PM2.5 PARTICLES",
+                            title = strings.pm25ParticlesUpper,
                             value = String.format(Locale.US, "%.1f", aqi.pm25),
                             unit = "µg/m³",
-                            subtitle = "2.4x WHO Threshold",
+                            subtitle = strings.pm25WhoThreshold,
                             subtitleColor = colors.sunset,
                             icon = Icons.Rounded.Grain,
                             iconTint = colors.warning,
@@ -252,10 +260,10 @@ fun AirQualityMapScreen(
                             modifier = Modifier.weight(1f),
                         )
                         PollutantMetricCard(
-                            title = "PM10 COARSE",
+                            title = strings.pm10CoarseUpper,
                             value = String.format(Locale.US, "%.1f", aqi.pm10),
                             unit = "µg/m³",
-                            subtitle = "Within Safety Band",
+                            subtitle = strings.withinSafetyBand,
                             subtitleColor = colors.greenText,
                             icon = Icons.Rounded.BlurOn,
                             iconTint = colors.accent,
@@ -268,10 +276,10 @@ fun AirQualityMapScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         PollutantMetricCard(
-                            title = "CARBON MONOXIDE",
+                            title = strings.carbonMonoxideUpper,
                             value = aqi.coPpb.toString(),
                             unit = "ppb",
-                            subtitle = "Normal Urban Base",
+                            subtitle = strings.normalUrbanBase,
                             subtitleColor = colors.textSub,
                             icon = Icons.Rounded.Co2,
                             iconTint = colors.primary,
@@ -279,10 +287,10 @@ fun AirQualityMapScreen(
                             modifier = Modifier.weight(1f),
                         )
                         PollutantMetricCard(
-                            title = "NITROGEN DIOXIDE",
+                            title = strings.nitrogenDioxideUpper,
                             value = String.format(Locale.US, "%.1f", aqi.no2Ppb),
                             unit = "ppb",
-                            subtitle = "Traffic Corridor",
+                            subtitle = strings.trafficCorridor,
                             subtitleColor = DangerCrimson,
                             icon = Icons.Rounded.Factory,
                             iconTint = DangerCrimson,
@@ -304,7 +312,7 @@ fun AirQualityMapScreen(
                         Icon(Icons.Rounded.MedicalServices, null, tint = colors.warning, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Health & Activity Protocols",
+                            text = strings.healthActivityProtocols,
                             style = MaterialTheme.typography.headlineSmall,
                             color = colors.textMain,
                         )
@@ -317,22 +325,22 @@ fun AirQualityMapScreen(
                         HealthProtocolTile(
                             icon = Icons.Rounded.Masks,
                             iconTint = colors.warning,
-                            title = "Wear Mask",
-                            subtitle = "N95 for sensitive lungs",
+                            title = strings.wearMaskTitle,
+                            subtitle = strings.wearMaskSubtitle,
                             modifier = Modifier.weight(1f),
                         )
                         HealthProtocolTile(
                             icon = Icons.AutoMirrored.Rounded.DirectionsRun,
                             iconTint = DangerCrimson,
-                            title = "Limit Cardio",
-                            subtitle = "Reduce outdoor training",
+                            title = strings.limitCardioTitle,
+                            subtitle = strings.limitCardioSubtitle,
                             modifier = Modifier.weight(1f),
                         )
                         HealthProtocolTile(
                             icon = Icons.Rounded.SensorWindow,
                             iconTint = colors.primary,
-                            title = "Close Vents",
-                            subtitle = "Engage HEPA purifiers",
+                            title = strings.closeVentsTitle,
+                            subtitle = strings.closeVentsSubtitle,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -355,13 +363,13 @@ fun AirQualityMapScreen(
                             Icon(Icons.Rounded.Domain, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "District Comparison",
+                                text = strings.districtComparisonTitle,
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = colors.textMain,
                             )
                         }
                         Text(
-                            text = "${aqi.districts.size} Key Sectors",
+                            text = "${aqi.districts.size} ${strings.keySectorsSuffix}",
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.textSub,
                         )
@@ -395,12 +403,12 @@ fun AirQualityMapScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = district.name,
+                                        text = VeridiaLocalizer.aqiSectorName(district.name, strings),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = colors.textMain,
                                     )
                                     Text(
-                                        text = district.description,
+                                        text = VeridiaLocalizer.aqiDistrictDesc(district.description, strings),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colors.textSub,
                                     )
@@ -413,7 +421,7 @@ fun AirQualityMapScreen(
                                     color = valueColor,
                                 )
                                 Text(
-                                    text = district.statusLabel,
+                                    text = VeridiaLocalizer.aqiCategory(district.statusLabel, strings),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = valueColor,
                                 )

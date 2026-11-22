@@ -331,15 +331,7 @@ class VeridiaRepository(
             daylightDuration = solarSchedule.daylightDuration,
             solarProgress = solarSchedule.solarProgress,
             hourlyForecast = defaultTrend,
-            dailyForecast = listOf(
-                DailyForecastItem("Today", 75, conditionKind, baseTemp - 4, baseTemp + 1),
-                DailyForecastItem("Thu", 40, WeatherConditionKind.PARTLY_CLOUDY, baseTemp - 4, baseTemp + 2),
-                DailyForecastItem("Fri", 70, WeatherConditionKind.RAIN, baseTemp - 5, baseTemp),
-                DailyForecastItem("Sat", 25, WeatherConditionKind.CLOUDY, baseTemp - 4, baseTemp + 2),
-                DailyForecastItem("Sun", 60, WeatherConditionKind.THUNDERSTORM, baseTemp - 3, baseTemp + 1),
-                DailyForecastItem("Mon", 15, WeatherConditionKind.SUNNY, baseTemp - 4, baseTemp + 3),
-                DailyForecastItem("Tue", 20, WeatherConditionKind.PARTLY_CLOUDY, baseTemp - 4, baseTemp + 2),
-            ),
+            dailyForecast = buildDefaultDailyForecast(baseTemp = baseTemp, todayCondition = conditionKind),
             next24hForecast = defaultTrend,
             isLiveSynced = false,
             dataSourceLabel = if (isBmkg) "BMKG (api.bmkg.go.id)" else "Open-Meteo Live",
@@ -1165,6 +1157,68 @@ class VeridiaRepository(
         }
     }
 
+    private fun buildDefaultDailyForecast(
+        baseTemp: Int,
+        todayCondition: WeatherConditionKind,
+    ): List<DailyForecastItem> {
+        val baseCal = java.util.Calendar.getInstance()
+        val outDayFormat = SimpleDateFormat("EEE", Locale.US)
+        val outDateFormat = SimpleDateFormat("dd MMM", Locale.US)
+        val presets = listOf(
+            Triple(75, todayCondition, Pair(-4, 1)),
+            Triple(40, WeatherConditionKind.PARTLY_CLOUDY, Pair(-4, 2)),
+            Triple(70, WeatherConditionKind.RAIN, Pair(-5, 0)),
+            Triple(25, WeatherConditionKind.CLOUDY, Pair(-4, 2)),
+            Triple(60, WeatherConditionKind.THUNDERSTORM, Pair(-3, 1)),
+            Triple(15, WeatherConditionKind.SUNNY, Pair(-4, 3)),
+            Triple(20, WeatherConditionKind.PARTLY_CLOUDY, Pair(-4, 2)),
+        )
+        return presets.mapIndexed { idx, (precipPct, kind, delta) ->
+            val cal = (baseCal.clone() as java.util.Calendar).apply {
+                add(java.util.Calendar.DAY_OF_YEAR, idx)
+            }
+            val dayName = if (idx == 0) "Today" else outDayFormat.format(cal.time)
+            val dateStr = outDateFormat.format(cal.time)
+            val precipMm = when (kind) {
+                WeatherConditionKind.THUNDERSTORM -> 14.8
+                WeatherConditionKind.RAIN -> 8.6
+                WeatherConditionKind.PARTLY_CLOUDY -> 1.2
+                WeatherConditionKind.CLOUDY -> 0.6
+                else -> 0.0
+            }
+            val windMax = when (kind) {
+                WeatherConditionKind.THUNDERSTORM -> 34
+                WeatherConditionKind.RAIN -> 24
+                else -> 16 + idx % 5
+            }
+            val humidity = when (kind) {
+                WeatherConditionKind.THUNDERSTORM -> 86
+                WeatherConditionKind.RAIN -> 82
+                WeatherConditionKind.SUNNY -> 62
+                else -> 72
+            }
+            val uv = when (kind) {
+                WeatherConditionKind.SUNNY -> 9.0
+                WeatherConditionKind.PARTLY_CLOUDY -> 7.2
+                WeatherConditionKind.THUNDERSTORM -> 4.1
+                else -> 5.5
+            }
+            DailyForecastItem(
+                dayLabel = dayName,
+                precipPercent = precipPct,
+                condition = kind,
+                minTempC = baseTemp + delta.first,
+                maxTempC = baseTemp + delta.second,
+                dateLabel = dateStr,
+                precipMm = precipMm,
+                windMaxKmh = windMax,
+                humidityPercent = humidity,
+                uvIndexMax = uv,
+                conditionSummary = labelForConditionKind(kind),
+            )
+        }
+    }
+
     private fun parseOpenMeteoDaily(
         response: com.example.data.network.OpenMeteoForecastResponse?,
         fallbackTemp: Int,
@@ -1176,23 +1230,43 @@ class VeridiaRepository(
         val dailyMax = response?.daily?.temperature2mMax.orEmpty()
         val dailyMin = response?.daily?.temperature2mMin.orEmpty()
         val dailyPrecip = response?.daily?.precipitationProbabilityMax.orEmpty()
+        val dailyPrecipSum = response?.daily?.precipitationSum.orEmpty()
+        val dailyWindMax = response?.daily?.windSpeed10mMax.orEmpty()
+        val dailyUvMax = response?.daily?.uvIndexMax.orEmpty()
         val dayFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val outDayFormat = SimpleDateFormat("EEE", Locale.US)
+        val outDateFormat = SimpleDateFormat("dd MMM", Locale.US)
 
         for (i in 0 until minOf(7, dailyTimes.size)) {
-            val label = if (i == 0) "Today" else {
-                runCatching {
-                    val parsed = dayFormat.parse(dailyTimes[i])
-                    if (parsed != null) outDayFormat.format(parsed) else "Day ${i + 1}"
-                }.getOrDefault("Day ${i + 1}")
+            val parsed = runCatching { dayFormat.parse(dailyTimes[i]) }.getOrNull()
+            val label = if (i == 0) "Today" else parsed?.let { outDayFormat.format(it) } ?: "Day ${i + 1}"
+            val dateStr = parsed?.let { outDateFormat.format(it) }.orEmpty()
+            val kind = if (i == 0 && dailyCodes.getOrNull(i) == null) fallbackKind else mapWmoCodeToKind(dailyCodes.getOrNull(i) ?: 3)
+            val precipPct = dailyPrecip.getOrNull(i) ?: 15
+            val rawPrecipMm = dailyPrecipSum.getOrNull(i) ?: (precipPct / 10.0)
+            val precipMm = (rawPrecipMm * 10.0).roundToInt() / 10.0
+            val windMax = (dailyWindMax.getOrNull(i) ?: 18.0).roundToInt().coerceAtLeast(4)
+            val uvPeak = ((dailyUvMax.getOrNull(i) ?: 6.2) * 10.0).roundToInt() / 10.0
+            val estHumidity = when (kind) {
+                WeatherConditionKind.THUNDERSTORM -> 86
+                WeatherConditionKind.RAIN -> 82
+                WeatherConditionKind.FOG -> 88
+                WeatherConditionKind.SUNNY -> 62
+                else -> (66 + precipPct / 5).coerceIn(58, 92)
             }
             dailyList.add(
                 DailyForecastItem(
                     dayLabel = label,
-                    precipPercent = dailyPrecip.getOrNull(i) ?: 15,
-                    condition = mapWmoCodeToKind(dailyCodes.getOrNull(i) ?: 3),
+                    precipPercent = precipPct,
+                    condition = kind,
                     minTempC = (dailyMin.getOrNull(i) ?: (fallbackTemp - 4).toDouble()).roundToInt(),
                     maxTempC = (dailyMax.getOrNull(i) ?: (fallbackTemp + 2).toDouble()).roundToInt(),
+                    dateLabel = dateStr,
+                    precipMm = precipMm,
+                    windMaxKmh = windMax,
+                    humidityPercent = estHumidity,
+                    uvIndexMax = uvPeak,
+                    conditionSummary = labelForConditionKind(kind),
                 )
             )
         }

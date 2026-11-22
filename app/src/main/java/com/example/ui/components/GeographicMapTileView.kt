@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
@@ -24,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import com.example.ui.theme.veridiaColors
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.disk.DiskCache
@@ -250,11 +253,41 @@ fun Slippy2DMapBackground(
     val density = LocalDensity.current
     val imageLoader = rememberMapImageLoader()
     val tileDp = with(density) { SlippyMapMath.TILE_SIZE_PX.toFloat().toDp() }
+    val isDark = veridiaColors.isDark
+    val oceanColor = if (isDark) Color(0xFF0B1626) else Color(0xFFCBE2F6)
+    val gridColor = if (isDark) Color(0xFF1A2C47) else Color(0xFFB8D4EC)
+    val landColor = if (isDark) Color(0xFF1D2E46) else Color(0xFFEAE6D9)
+    val coastlineStroke = if (isDark) Color(0xFF47638A) else Color(0xFF7D9DB8)
+    val islandPath = remember { Path() }
+    val labelPaint = remember(isDark) {
+        Paint().apply {
+            color = if (isDark) android.graphics.Color.argb(195, 203, 213, 225) else android.graphics.Color.argb(175, 51, 65, 85)
+            textSize = 24f
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+    }
+    val tileDarkFilter = remember(isDark) {
+        if (!isDark) {
+            null
+        } else {
+            val matrix = ColorMatrix(
+                floatArrayOf(
+                    0.68f, 0f, 0f, 0f, 0f,
+                    0f, 0.74f, 0f, 0f, 0f,
+                    0f, 0f, 0.88f, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f,
+                ),
+            )
+            ColorFilter.colorMatrix(matrix)
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFCBE2F6)),
+            .background(oceanColor),
     ) {
         val viewportW = constraints.maxWidth.toDouble()
         val viewportH = constraints.maxHeight.toDouble()
@@ -276,26 +309,17 @@ fun Slippy2DMapBackground(
             val step = 72f
             var x = 0f
             while (x < size.width) {
-                drawLine(Color(0xFFB8D4EC), Offset(x, 0f), Offset(x, size.height), 1f)
+                drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), 1f)
                 x += step
             }
             var y = 0f
             while (y < size.height) {
-                drawLine(Color(0xFFB8D4EC), Offset(0f, y), Offset(size.width, y), 1f)
+                drawLine(gridColor, Offset(0f, y), Offset(size.width, y), 1f)
                 y += step
             }
 
-            // Projected Island Polygons
-            val labelPaint = Paint().apply {
-                color = android.graphics.Color.argb(175, 51, 65, 85)
-                textSize = 24f
-                isAntiAlias = true
-                textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            }
-
             archipelagoCoastlines.forEach { island ->
-                val path = Path()
+                islandPath.rewind()
                 var anyVisible = false
                 island.coords.forEachIndexed { idx, (lat, lon) ->
                     val (wx, wy) = SlippyMapMath.latLonToWorldPx(lat, lon, zoom)
@@ -304,12 +328,12 @@ fun Slippy2DMapBackground(
                     if (sx in -200f..(size.width + 200f) && sy in -200f..(size.height + 200f)) {
                         anyVisible = true
                     }
-                    if (idx == 0) path.moveTo(sx, sy) else path.lineTo(sx, sy)
+                    if (idx == 0) islandPath.moveTo(sx, sy) else islandPath.lineTo(sx, sy)
                 }
-                path.close()
+                islandPath.close()
                 if (anyVisible) {
-                    drawPath(path = path, color = Color(0xFFEAE6D9))
-                    drawPath(path = path, color = Color(0xFF7D9DB8), style = Stroke(width = 2f))
+                    drawPath(path = islandPath, color = landColor)
+                    drawPath(path = islandPath, color = coastlineStroke, style = Stroke(width = 2f))
                     val (lx, ly) = SlippyMapMath.latLonToWorldPx(island.labelLat, island.labelLon, zoom)
                     val slx = (lx - viewOriginX).toFloat()
                     val sly = (ly - viewOriginY).toFloat()
@@ -339,6 +363,7 @@ fun Slippy2DMapBackground(
                         imageLoader = imageLoader,
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        colorFilter = tileDarkFilter,
                         onError = {
                             if (providerIndex < candidates.lastIndex) {
                                 providerIndex += 1

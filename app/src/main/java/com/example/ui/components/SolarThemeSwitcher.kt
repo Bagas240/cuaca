@@ -37,13 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AppThemeMode
 import com.example.data.model.SolarThemePhase
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.veridiaColors
 
 fun solarPhaseDisplayLabel(phase: SolarThemePhase): String = when (phase) {
-    SolarThemePhase.SUNRISE_SUNSET -> "Sunrise/Sunset · Rose-White"
-    SolarThemePhase.DAY -> "Day · Bright & Warm"
-    SolarThemePhase.AFTERNOON_DUSK -> "Afternoon · Shaded Dusk"
-    SolarThemePhase.NIGHT -> "Night · Dark & Cool"
+    SolarThemePhase.SUNRISE_SUNSET -> "Sunrise/Sunset · Whitish Gold"
+    SolarThemePhase.DAY -> "Morning/Day · Warm Cream"
+    SolarThemePhase.AFTERNOON_DUSK -> "Afternoon · Cool Blue"
+    SolarThemePhase.NIGHT -> "Night · Dark Mode"
 }
 
 @Composable
@@ -56,6 +58,7 @@ fun SolarThemeSwitcherCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val phaseIcon = when (activePhase) {
         SolarThemePhase.SUNRISE_SUNSET -> Icons.Rounded.WbTwilight
         SolarThemePhase.DAY -> Icons.Rounded.WbSunny
@@ -85,14 +88,14 @@ fun SolarThemeSwitcherCard(
             ) {
                 Icon(
                     imageVector = phaseIcon,
-                    contentDescription = "Active solar theme phase",
+                    contentDescription = strings.activeSolarThemeCd,
                     tint = phaseTint,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = "ADAPTIVE SOLAR THEME",
+                        text = strings.adaptiveSolarThemeTitle,
                         style = MaterialTheme.typography.labelSmall.copy(
                             letterSpacing = 0.7.sp,
                             fontWeight = FontWeight.Bold,
@@ -100,7 +103,7 @@ fun SolarThemeSwitcherCard(
                         color = colors.textSub,
                     )
                     Text(
-                        text = solarPhaseDisplayLabel(activePhase),
+                        text = VeridiaLocalizer.solarPhaseLabel(activePhase, strings),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = colors.textMain,
                         maxLines = 1,
@@ -119,9 +122,9 @@ fun SolarThemeSwitcherCard(
             ) {
                 Text(
                     text = if (themeMode == AppThemeMode.AUTO_SOLAR) {
-                        "Auto · $sunriseTime–$sunsetTime"
+                        "${strings.autoLabel} · $sunriseTime–$sunsetTime"
                     } else {
-                        "Manual"
+                        strings.manualLabel
                     },
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                     color = colors.primary,
@@ -144,7 +147,7 @@ fun SolarThemeSwitcherCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 ThemeModePill(
-                    label = "Auto",
+                    label = strings.modeAuto,
                     icon = Icons.Rounded.AutoAwesome,
                     selected = themeMode == AppThemeMode.AUTO_SOLAR,
                     onClick = { onSelectThemeMode(AppThemeMode.AUTO_SOLAR) },
@@ -153,7 +156,7 @@ fun SolarThemeSwitcherCard(
                         .testTag("theme_switch_auto"),
                 )
                 ThemeModePill(
-                    label = "Dawn",
+                    label = strings.modeDawn,
                     icon = Icons.Rounded.WbTwilight,
                     selected = themeMode == AppThemeMode.SUNRISE_SUNSET,
                     onClick = { onSelectThemeMode(AppThemeMode.SUNRISE_SUNSET) },
@@ -162,7 +165,7 @@ fun SolarThemeSwitcherCard(
                         .testTag("theme_switch_sunrise_sunset"),
                 )
                 ThemeModePill(
-                    label = "Day",
+                    label = strings.modeDay,
                     icon = Icons.Rounded.WbSunny,
                     selected = themeMode == AppThemeMode.DAY,
                     onClick = { onSelectThemeMode(AppThemeMode.DAY) },
@@ -171,7 +174,7 @@ fun SolarThemeSwitcherCard(
                         .testTag("theme_switch_day"),
                 )
                 ThemeModePill(
-                    label = "Dusk",
+                    label = strings.modeDusk,
                     icon = Icons.Rounded.WbTwilight,
                     selected = themeMode == AppThemeMode.AFTERNOON_DUSK,
                     onClick = { onSelectThemeMode(AppThemeMode.AFTERNOON_DUSK) },
@@ -180,7 +183,7 @@ fun SolarThemeSwitcherCard(
                         .testTag("theme_switch_afternoon_dusk"),
                 )
                 ThemeModePill(
-                    label = "Night",
+                    label = strings.modeNight,
                     icon = Icons.Rounded.DarkMode,
                     selected = themeMode == AppThemeMode.NIGHT,
                     onClick = { onSelectThemeMode(AppThemeMode.NIGHT) },
@@ -219,7 +222,7 @@ private fun ThemeModePill(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = "$label theme mode",
+                    contentDescription = "$label ${veridiaStrings.themeModeCdSuffix}",
                     tint = if (selected) colors.primary else colors.textSub,
                     modifier = Modifier.size(14.dp),
                 )

@@ -3,6 +3,7 @@ package com.example.data.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.data.location.LocationMaskingUtility
+import com.example.data.model.AppLanguage
 import com.example.data.model.AppThemeMode
 import com.example.data.model.PressureUnit
 import com.example.data.model.TemperatureUnit
@@ -49,6 +50,7 @@ class SettingsDataStore(context: Context) {
         const val GPS_ZONE_LABEL = "gps_zone_label"
         const val GPS_UPDATED_AT = "gps_updated_at"
         const val THEME_MODE = "theme_mode"
+        const val APP_LANGUAGE = "app_language"
     }
 
     private val encryptedPrefs: SharedPreferences =
@@ -84,6 +86,7 @@ class SettingsDataStore(context: Context) {
         val pressureName = encryptedPrefs.getString(Keys.PRESSURE_UNIT, null)
 
         val themeName = encryptedPrefs.getString(Keys.THEME_MODE, null)
+        val langName = encryptedPrefs.getString(Keys.APP_LANGUAGE, null)
 
         return UserSettings(
             selectedCityId = encryptedPrefs.getString(Keys.SELECTED_CITY_ID, null) ?: "jakarta",
@@ -107,6 +110,9 @@ class SettingsDataStore(context: Context) {
             themeMode = themeName?.let {
                 runCatching { AppThemeMode.valueOf(it) }.getOrNull()
             } ?: AppThemeMode.AUTO_SOLAR,
+            appLanguage = langName?.let {
+                runCatching { AppLanguage.valueOf(it) }.getOrNull()
+            } ?: AppLanguage.ENGLISH,
         )
     }
 
@@ -228,6 +234,11 @@ class SettingsDataStore(context: Context) {
 
     suspend fun setThemeMode(mode: AppThemeMode) {
         encryptedPrefs.edit().putString(Keys.THEME_MODE, mode.name).apply()
+        _settingsFlow.value = readUserSettings()
+    }
+
+    suspend fun setAppLanguage(language: AppLanguage) {
+        encryptedPrefs.edit().putString(Keys.APP_LANGUAGE, language.name).apply()
         _settingsFlow.value = readUserSettings()
     }
 }

@@ -1,16 +1,12 @@
 package com.example.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,14 +23,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -50,7 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.WindUnit
-import com.example.ui.navigation.rememberIsDestinationAnimating
+import com.example.ui.i18n.VeridiaLocalizer
+import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
 import com.example.ui.theme.PastelPrimary
 import com.example.ui.theme.WarningAmber
@@ -169,35 +170,15 @@ private fun AnimatedWindArrowIconContent(
     }
 
     val homeController = LocalHomeWeatherIconController.current
-    val isAnimating = rememberIsDestinationAnimating() && (homeController?.isPlaying ?: true)
-    val breezeWave: Float
-    val haloAlpha: Float
-    if (isAnimating) {
-        val infiniteTransition = rememberInfiniteTransition(label = "wind_breeze_transition")
-        val animatedBreeze by infiniteTransition.animateFloat(
-            initialValue = -1f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = pulseDurationMs, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "wind_breeze_wave",
-        )
-        val animatedHalo by infiniteTransition.animateFloat(
-            initialValue = 0.14f,
-            targetValue = 0.34f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = pulseDurationMs, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "wind_halo_alpha",
-        )
-        breezeWave = animatedBreeze
-        haloAlpha = animatedHalo
-    } else {
-        breezeWave = 0f
-        haloAlpha = 0.22f
-    }
+    val breezeNorm by rememberQuantizedCyclePhase(
+        enabled = homeController?.isPlaying ?: true,
+        cycleDurationMs = pulseDurationMs * 2,
+        pingPong = true,
+        idleValue = 0.5f,
+        label = "wind_breeze",
+    )
+    val breezeWave = (breezeNorm * 2f) - 1f
+    val haloAlpha = 0.14f + breezeNorm * 0.20f
 
     val radians = (animatedBearing - 90f) * (PI / 180.0)
     val controllerSwayDeg = homeController?.windSwayAngleDeg ?: 0f
@@ -285,26 +266,52 @@ fun WindSpeedDirectionIndicator(
     modifier: Modifier = Modifier,
     style: WindIndicatorStyle = WindIndicatorStyle.COMPACT_PILL,
     useLargeReadout: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     val colors = veridiaColors
+    val strings = veridiaStrings
     val (speedValue, unitLabel) = formatWindValue(windSpeedKmh, windUnit)
-    val conditionText = windConditionSummary(windSpeedKmh)
+    val conditionText = VeridiaLocalizer.windSummary(windSpeedKmh, strings)
+    val localizedDirection = VeridiaLocalizer.windDirection(windDirectionLabel, strings)
     val cleanBearing = normalizeWindBearing(windBearingDeg).toInt()
     val rawAccent = windIntensityColor(windSpeedKmh)
     val accentColor = if (rawAccent == PastelPrimary) colors.primary else rawAccent
-    val accessibilityLabel = stringResource(
-        R.string.cd_wind_indicator,
+    val accessibilityLabel = strings.cdWindIndicator(
         speedValue,
         unitLabel,
-        windDirectionLabel,
+        localizedDirection,
         cleanBearing,
         conditionText,
     )
+    var tapCount by remember { mutableIntStateOf(0) }
+    val pillKick = remember { Animatable(1f) }
+    LaunchedEffect(tapCount) {
+        if (tapCount > 0) {
+            pillKick.snapTo(0.92f)
+            pillKick.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            )
+        }
+    }
 
     when (style) {
         WindIndicatorStyle.COMPACT_PILL -> {
             Surface(
                 modifier = modifier
+                    .minimumInteractiveComponentSize()
+                    .graphicsLayer {
+                        scaleX = pillKick.value
+                        scaleY = pillKick.value
+                    }
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        tapCount += 1
+                        onClick?.invoke()
+                    }
                     .semantics(mergeDescendants = true) {
                         contentDescription = accessibilityLabel
                     }
@@ -319,7 +326,7 @@ fun WindSpeedDirectionIndicator(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     AnimatedWindArrowIcon(
-                        windBearingDeg = windBearingDeg,
+                        windBearingDeg = windBearingDeg + (tapCount * 360),
                         windSpeedKmh = windSpeedKmh,
                         dialSize = 24.dp,
                         arrowColor = accentColor,
@@ -327,7 +334,7 @@ fun WindSpeedDirectionIndicator(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "$speedValue $unitLabel · $windDirectionLabel · $conditionText",
+                        text = "$speedValue $unitLabel · $localizedDirection · $conditionText",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -378,7 +385,7 @@ fun WindSpeedDirectionIndicator(
                         )
                     }
                     Text(
-                        text = "$windDirectionLabel (${cleanBearing}°) · $conditionText",
+                        text = "$localizedDirection (${cleanBearing}°) · $conditionText",
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                         color = colors.textSub,
                         maxLines = 1,
