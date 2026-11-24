@@ -393,6 +393,7 @@ fun BmkgInteractiveWeatherMap(
         }
     }
     var currentZoom by remember { mutableDoubleStateOf(5.8) }
+    var programmaticTargetZoom by remember { mutableStateOf<Double?>(null) }
 
     val selectedStation = stations.firstOrNull { it.id == selectedStationId } ?: stations.firstOrNull()
 
@@ -440,7 +441,16 @@ fun BmkgInteractiveWeatherMap(
             addMapListener(object : MapListener {
                 override fun onScroll(event: ScrollEvent?): Boolean = false
                 override fun onZoom(event: ZoomEvent?): Boolean {
-                    event?.zoomLevel?.let { currentZoom = it }
+                    val zoom = event?.zoomLevel ?: return false
+                    val target = programmaticTargetZoom
+                    if (target != null) {
+                        if (kotlin.math.abs(zoom - target) <= 0.15) {
+                            programmaticTargetZoom = null
+                            currentZoom = target
+                        }
+                        return false
+                    }
+                    currentZoom = zoom
                     return false
                 }
             })
@@ -472,8 +482,9 @@ fun BmkgInteractiveWeatherMap(
 
     // Recenter when user selects a different city (using privacy-masked coordinates)
     LaunchedEffect(mapCenterLat, mapCenterLon) {
-        mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 6.2, 420L)
+        programmaticTargetZoom = 6.2
         currentZoom = 6.2
+        mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 6.2, 420L)
     }
 
     // Keep BMKG precipitation overlay & optional RainViewer tile layer synchronized
@@ -513,6 +524,7 @@ fun BmkgInteractiveWeatherMap(
 
     fun applyMapZoom(targetZoom: Double) {
         val clamped = targetZoom.coerceIn(minZoom, maxZoom)
+        programmaticTargetZoom = clamped
         currentZoom = clamped
         runCatching {
             mapView.controller.animateTo(mapView.mapCenter, clamped, 220L)
@@ -672,14 +684,44 @@ fun BmkgInteractiveWeatherMap(
                     }
                 }
 
-                // Right-side Vertical Map Zoom In/Out & Recenter Overlay Controls
-                Column(
+                // Right-side Map Zoom In/Out & Recenter Overlay Controls (Row prevents overlap with bottom presets on compact map heights)
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = 8.dp, end = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
+                    IconButton(
+                        onClick = {
+                            programmaticTargetZoom = 5.8
+                            currentZoom = 5.8
+                            runCatching {
+                                mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 5.8, 360L)
+                            }
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("osmdroid_recenter"),
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(38.dp),
+                            shape = CircleShape,
+                            color = colors.surface.copy(alpha = 0.95f),
+                            border = BorderStroke(1.dp, colors.border),
+                            shadowElevation = 3.dp,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MyLocation,
+                                    contentDescription = strings.recenterMapCd,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = colors.surface.copy(alpha = 0.95f),
@@ -739,35 +781,6 @@ fun BmkgInteractiveWeatherMap(
                                     contentDescription = strings.zoomOutMapCd,
                                     tint = if (canZoomOut) colors.textMain else colors.textSub.copy(alpha = 0.35f),
                                     modifier = Modifier.size(20.dp),
-                                )
-                            }
-                        }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            currentZoom = 5.8
-                            runCatching {
-                                mapView.controller.animateTo(GeoPoint(mapCenterLat, mapCenterLon), 5.8, 360L)
-                            }
-                        },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .testTag("osmdroid_recenter"),
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(38.dp),
-                            shape = CircleShape,
-                            color = colors.surface.copy(alpha = 0.95f),
-                            border = BorderStroke(1.dp, colors.border),
-                            shadowElevation = 3.dp,
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MyLocation,
-                                    contentDescription = strings.recenterMapCd,
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
@@ -865,7 +878,7 @@ fun BmkgInteractiveWeatherMap(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            text = "${selectedStation.name} · ${VeridiaLocalizer.conditionLabel(selectedStation.conditionLabel, selectedStation.condition, strings)}",
+                                            text = "${selectedStation.name} · ${VeridiaLocalizer.conditionLabel(selectedStation.conditionLabel, selectedStation.conditionKind, strings)}",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                             color = colors.textMain,
                                             maxLines = 1,

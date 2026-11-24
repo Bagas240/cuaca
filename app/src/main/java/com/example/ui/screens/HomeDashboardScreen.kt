@@ -121,6 +121,10 @@ import com.example.ui.components.rememberHomeWeatherIconAnimationController
 import com.example.ui.i18n.VeridiaLocalizer
 import com.example.ui.i18n.veridiaStrings
 import com.example.ui.theme.DangerCrimson
+import com.example.ui.theme.SevereAqiCardBgDark
+import com.example.ui.theme.SevereAqiCardBgLight
+import com.example.ui.theme.SevereAqiCardBorder
+import com.example.ui.theme.SevereAqiCardSubText
 import com.example.ui.theme.SpaceMonoFamily
 import com.example.ui.theme.veridiaColors
 import com.example.ui.viewmodel.DashboardMetricCard
@@ -234,7 +238,8 @@ fun HomeDashboardScreen(
         LazyColumn(
             modifier = Modifier
                 .widthIn(max = 600.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .testTag("home_dashboard_list"),
             contentPadding = PaddingValues(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -371,56 +376,62 @@ fun HomeDashboardScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(
-                            interactionSource = heroInteractionSource,
-                            indication = null,
-                        ) {
-                            skyImpulseCount += 1
-                            iconController.triggerTelemetryImpulse()
-                        }
-                        .padding(horizontal = 20.dp, vertical = 4.dp)
-                        .testTag("hero_weather_interactive_area"),
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Row(verticalAlignment = Alignment.Top) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = heroInteractionSource,
+                                indication = null,
+                            ) {
+                                skyImpulseCount += 1
+                                iconController.triggerTelemetryImpulse()
+                            }
+                            .testTag("hero_weather_interactive_area"),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text(
+                                text = formatTempValue(weather.currentTempC, tempUnit).toString(),
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontSize = 60.sp,
+                                    shadow = Shadow(
+                                        color = Color(0x80000000),
+                                        offset = Offset(0f, 3f),
+                                        blurRadius = 16f,
+                                    ),
+                                ),
+                                color = Color.White,
+                            )
+                            Text(
+                                text = "°",
+                                style = MaterialTheme.typography.displayMedium.copy(
+                                    shadow = Shadow(
+                                        color = Color(0x80000000),
+                                        offset = Offset(0f, 2f),
+                                        blurRadius = 12f,
+                                    ),
+                                ),
+                                color = Color.White.copy(alpha = 0.92f),
+                                modifier = Modifier.padding(top = 6.dp),
+                            )
+                        }
+
                         Text(
-                            text = formatTempValue(weather.currentTempC, tempUnit).toString(),
-                            style = MaterialTheme.typography.displayLarge.copy(
-                                fontSize = 60.sp,
+                            text = "${strings.feelsLikePrefix} ${formatTempString(weather.feelsLikeC, tempUnit)}",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium,
                                 shadow = Shadow(
-                                    color = Color(0x80000000),
-                                    offset = Offset(0f, 3f),
-                                    blurRadius = 16f,
+                                    color = Color(0x66000000),
+                                    offset = Offset(0f, 1f),
+                                    blurRadius = 8f,
                                 ),
                             ),
-                            color = Color.White,
-                        )
-                        Text(
-                            text = "°",
-                            style = MaterialTheme.typography.displayMedium.copy(
-                                shadow = Shadow(
-                                    color = Color(0x80000000),
-                                    offset = Offset(0f, 2f),
-                                    blurRadius = 12f,
-                                ),
-                            ),
-                            color = Color.White.copy(alpha = 0.92f),
-                            modifier = Modifier.padding(top = 6.dp),
+                            color = Color.White.copy(alpha = 0.95f),
                         )
                     }
-
-                    Text(
-                        text = "${strings.feelsLikePrefix} ${formatTempString(weather.feelsLikeC, tempUnit)}",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium,
-                            shadow = Shadow(
-                                color = Color(0x66000000),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 8f,
-                            ),
-                        ),
-                        color = Color.White.copy(alpha = 0.95f),
-                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -947,47 +958,49 @@ fun HomeDashboardScreen(
                             }
                         }
 
-                        // Interactive Card 4: Air Quality (Clean icon on left + small red dot on right ONLY when severe)
-                        val isSeverePollution = state.airQuality.homeCardAqi >= 101
+                        // Interactive Card 4: Air Quality
+                        // Moving wind logo on the left of title; no side radar dot; entire box glows static red when air quality is bad
+                        val isBadAirQuality = state.airQuality.homeCardAqi >= 101 ||
+                            state.airQuality.regionalCategory.equals("Unhealthy", ignoreCase = true) ||
+                            state.airQuality.regionalCategory.equals("Poor", ignoreCase = true) ||
+                            state.airQuality.regionalCategory.equals("Hazardous", ignoreCase = true)
+                        val aqiBoxContainerColor = if (isBadAirQuality) {
+                            if (colors.isDark) SevereAqiCardBgDark else SevereAqiCardBgLight
+                        } else {
+                            colors.mint.copy(alpha = 0.94f)
+                        }
+                        val aqiBoxBorderColor = if (isBadAirQuality) SevereAqiCardBorder else colors.border
+                        val aqiTitleTint = if (isBadAirQuality) Color.White else colors.greenText
+                        val aqiMainTextColor = if (isBadAirQuality) Color.White else colors.textMain
+                        val aqiCategoryColor = if (isBadAirQuality) SevereAqiCardSubText else colors.greenText
+                        val aqiProgressColor = if (isBadAirQuality) Color.White else colors.accent
+                        val aqiTrackColor = if (isBadAirQuality) Color.White.copy(alpha = 0.28f) else colors.surface
+
                         VeridiaCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("home_aqi_tile"),
-                            containerColor = colors.mint.copy(alpha = 0.94f),
-                            borderColor = colors.border,
+                            containerColor = aqiBoxContainerColor,
+                            borderColor = aqiBoxBorderColor,
                             onClick = onOpenAirQuality,
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    AnimatedAirQualityWindIcon(
-                                        size = 18.dp,
-                                        tint = colors.greenText,
-                                    )
-                                    Spacer(modifier = Modifier.width(5.dp))
-                                    Text(
-                                        text = strings.airQualityTileTitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = colors.greenText,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                                if (isSeverePollution) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(DangerCrimson)
-                                            .testTag("home_aqi_severe_dot"),
-                                    )
-                                }
+                                AnimatedAirQualityWindIcon(
+                                    size = 18.dp,
+                                    tint = aqiTitleTint,
+                                    modifier = Modifier.testTag("home_aqi_wind_icon"),
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = strings.airQualityTileTitle,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = aqiTitleTint,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -996,20 +1009,20 @@ fun HomeDashboardScreen(
                                 Text(
                                     text = state.airQuality.homeCardAqi.toString(),
                                     style = MaterialTheme.typography.displaySmall,
-                                    color = colors.textMain,
+                                    color = aqiMainTextColor,
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = VeridiaLocalizer.aqiCategory(state.airQuality.regionalCategory, strings),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = colors.greenText,
+                                    color = aqiCategoryColor,
                                     modifier = Modifier.padding(bottom = 5.dp),
                                 )
                             }
                             Text(
                                 text = "PM2.5: ${String.format(Locale.US, "%.1f", state.airQuality.homeCardPm25)} µg/m³",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = colors.textMain,
+                                color = aqiMainTextColor,
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -1025,8 +1038,8 @@ fun HomeDashboardScreen(
                                     .fillMaxWidth()
                                     .height(6.dp)
                                     .clip(CircleShape),
-                                color = colors.accent,
-                                trackColor = colors.surface,
+                                color = aqiProgressColor,
+                                trackColor = aqiTrackColor,
                                 strokeCap = StrokeCap.Round,
                             )
                         }

@@ -132,7 +132,8 @@ fun DetailedWeatherScreen(
         LazyColumn(
             modifier = Modifier
                 .widthIn(max = 600.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .testTag("detailed_weather_list"),
             contentPadding = PaddingValues(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -594,10 +595,6 @@ fun DetailedWeatherScreen(
 
             // Detailed Expandable Multi-Day Forecast (Today, Tomorrow, Day After & Week)
             item {
-                val weekMin = weather.dailyForecast.minOfOrNull { it.minTempC } ?: 20
-                val weekMax = (weather.dailyForecast.maxOfOrNull { it.maxTempC } ?: 35)
-                    .coerceAtLeast(weekMin + 1)
-
                 VeridiaCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -644,27 +641,28 @@ fun DetailedWeatherScreen(
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = colors.textSub,
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(color = colors.border)
-                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        weather.dailyForecast.forEachIndexed { idx, day ->
-                            DetailedDailyForecastCardRow(
-                                idx = idx,
-                                day = day,
-                                isExpanded = expandedDayIndex == idx,
-                                weekMin = weekMin,
-                                weekMax = weekMax,
-                                tempUnit = tempUnit,
-                                windUnit = windUnit,
-                                strings = strings,
-                                onToggle = {
-                                    expandedDayIndex = if (expandedDayIndex == idx) -1 else idx
-                                },
-                            )
-                        }
-                    }
+            val weekMin = weather.dailyForecast.minOfOrNull { it.minTempC } ?: 20
+            val weekMax = (weather.dailyForecast.maxOfOrNull { it.maxTempC } ?: 35)
+                .coerceAtLeast(weekMin + 1)
+            items(weather.dailyForecast.size) { idx ->
+                val day = weather.dailyForecast[idx]
+                Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    DetailedDailyForecastCardRow(
+                        idx = idx,
+                        day = day,
+                        isExpanded = expandedDayIndex == idx,
+                        weekMin = weekMin,
+                        weekMax = weekMax,
+                        tempUnit = tempUnit,
+                        windUnit = windUnit,
+                        strings = strings,
+                        onToggle = {
+                            expandedDayIndex = if (expandedDayIndex == idx) -1 else idx
+                        },
+                    )
                 }
             }
         }

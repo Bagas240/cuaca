@@ -1426,6 +1426,16 @@ class VeridiaRepository(
         else -> "Rain"
     }
 
+    private fun labelForConditionKind(kind: WeatherConditionKind): String = when (kind) {
+        WeatherConditionKind.SUNNY -> "Clear & Sunny"
+        WeatherConditionKind.PARTLY_CLOUDY -> "Partly Cloudy"
+        WeatherConditionKind.CLOUDY -> "Cloudy"
+        WeatherConditionKind.RAIN -> "Rain Showers"
+        WeatherConditionKind.THUNDERSTORM -> "Thunderstorms"
+        WeatherConditionKind.SUNSET -> "Clear Dusk"
+        WeatherConditionKind.FOG -> "Mist & Fog"
+    }
+
     private fun bearingToLabel(deg: Int): String = when (((deg % 360) + 360) % 360) {
         in 23..67 -> "Northeast"
         in 68..112 -> "East"

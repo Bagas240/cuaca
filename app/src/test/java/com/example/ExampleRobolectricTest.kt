@@ -47,6 +47,7 @@ import com.example.data.local.VeridiaDatabase
 import com.example.data.location.LocationMaskingUtility
 import com.example.data.location.LocationTracker
 import com.example.data.location.SolarScheduleCalculator
+import com.example.data.model.AppLanguage
 import com.example.data.model.AppThemeMode
 import com.example.data.model.HourlyForecastItem
 import com.example.data.model.PressureUnit
@@ -62,11 +63,11 @@ import com.example.data.repository.VeridiaRepository
 import com.example.data.security.SecurityGuard
 import com.example.data.security.TelemetryCrypto
 import com.example.ui.components.ActiveDisasterAlertOverlay
+import com.example.ui.components.AnimatedAirQualityWindIcon
 import com.example.ui.components.AnimatedHomeWeatherAvdIcon
 import com.example.ui.components.AnimatedWindSwayAvdIcon
 import com.example.ui.components.HomeWeatherIconAnimationController
 import com.example.ui.components.HourlyForecast24hCard
-import com.example.ui.components.PulsatingAqiGlowAvdBadge
 import com.example.ui.components.SolarThemeSwitcherCard
 import com.example.ui.components.SunCycleCard
 import com.example.ui.components.SunriseSunsetDashboardCard
@@ -74,7 +75,6 @@ import com.example.ui.components.VeridiaBottomDock
 import com.example.ui.components.VeridiaRoute
 import com.example.ui.components.WindIndicatorStyle
 import com.example.ui.components.WindSpeedDirectionIndicator
-import com.example.ui.components.aqiGlowColorFor
 import com.example.ui.components.formatPressureValue
 import com.example.ui.components.formatTempValue
 import com.example.ui.components.formatWindConditionsLabel
@@ -612,11 +612,7 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `home weather icon animation controller drives avd wind sway and aqi glow`() {
-        assertEquals(PastelAccent, aqiGlowColorFor(32))
-        assertEquals(WarningAmber, aqiGlowColorFor(75))
-        assertEquals(DangerCrimson, aqiGlowColorFor(145))
-
+    fun `home weather icon animation controller drives avd wind sway and clean air wind icon`() {
         var capturedController: HomeWeatherIconAnimationController? = null
 
         composeRule.setContent {
@@ -629,14 +625,13 @@ class ExampleRobolectricTest {
                 androidx.compose.foundation.layout.Row {
                     AnimatedHomeWeatherAvdIcon(controller = controller)
                     AnimatedWindSwayAvdIcon(controller = controller)
-                    PulsatingAqiGlowAvdBadge(aqiScore = 44, controller = controller)
+                    AnimatedAirQualityWindIcon()
                 }
             }
         }
 
         composeRule.onNodeWithTag("avd_weather_icon").assertIsDisplayed()
         composeRule.onNodeWithTag("avd_wind_sway_icon").assertIsDisplayed()
-        composeRule.onNodeWithTag("avd_aqi_pulse_badge").assertIsDisplayed()
 
         val controller = capturedController
         assertNotNull(controller)
@@ -644,7 +639,6 @@ class ExampleRobolectricTest {
 
         val initialWeatherEnd = controller.weatherAvdAtEnd
         val initialWindEnd = controller.windAvdAtEnd
-        val initialAqiEnd = controller.aqiAvdAtEnd
 
         composeRule.runOnIdle {
             controller.triggerTelemetryImpulse()
@@ -654,7 +648,6 @@ class ExampleRobolectricTest {
         assertFalse(controller.isPlaying)
         assertEquals(!initialWeatherEnd, controller.weatherAvdAtEnd)
         assertEquals(!initialWindEnd, controller.windAvdAtEnd)
-        assertEquals(!initialAqiEnd, controller.aqiAvdAtEnd)
         assertEquals(1, controller.telemetryImpulseCount)
 
         composeRule.runOnIdle {
@@ -1349,7 +1342,7 @@ class ExampleRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNode(hasScrollToNodeAction())
+        composeRule.onNodeWithTag("home_dashboard_list")
             .performScrollToNode(hasTestTag("home_live_precipitation_map_card"))
         composeRule.waitForIdle()
 
@@ -1357,5 +1350,217 @@ class ExampleRobolectricTest {
         composeRule.onNodeWithText("LIVE PRECIPITATION TRACKER").assertIsDisplayed()
         composeRule.onNodeWithTag("bmkg_osmdroid_weather_map").assertIsDisplayed()
     }
+
+    @Test
+    fun `home dashboard places 24h forecast on home, moves solar theme to settings, and scopes gps & seismic cards`() {
+        val repo = VeridiaRepository()
+        val jakarta = repo.presetCities.first()
+        val farSeismic = repo.defaultSeismicTelemetry().copy(
+            epicenterLat = -3.69, // Ambon (> 2,300 km from Jakarta)
+            epicenterLon = 128.18,
+            bannerSubtitle = "12 min ago · Ambon",
+            activeEventDescription = "Depth 25 km · Ambon",
+        )
+        val syncedState = com.example.ui.viewmodel.VeridiaUiState(
+            selectedCity = jakarta,
+            presetCities = repo.presetCities,
+            weather = repo.defaultWeatherFor(jakarta),
+            airQuality = repo.defaultAirQuality(jakarta).copy(homeCardAqi = 42),
+            seismic = farSeismic,
+            radar = repo.defaultRadarTelemetry(),
+            hasLocationPermission = true,
+            isGpsActive = true,
+            isLocatingGps = false,
+            gpsErrorMessage = null,
+            gpsCoordinatesLabel = "~6.2°S, 106.8°E · Masked Zone",
+        )
+
+        var testState by mutableStateOf(syncedState)
+
+        composeRule.setContent {
+            VeridiaTheme(
+                themePhase = testState.activeThemePhase,
+                appLanguage = testState.settings.appLanguage,
+            ) {
+                com.example.ui.screens.HomeDashboardScreen(
+                    state = testState,
+                    gyroTilt = androidx.compose.ui.geometry.Offset.Zero,
+                    onRefreshNow = {},
+                    onOpenCityModal = {},
+                    onCloseCityModal = {},
+                    onSearchQueryChange = {},
+                    onSelectCity = {},
+                    onPermissionResult = {},
+                    onSyncPermissionState = {},
+                    onFetchCurrentGpsWeather = {},
+                    onToggleMetricCard = {},
+                    onOpenDisasterMonitor = {},
+                    onOpenAirQuality = {},
+                    onOpenDetailedWeather = {},
+                    onOpenRadar = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        // 1. Clean hero readout + 24h forecast directly on Home
+        composeRule.onNodeWithTag("weather_source_badge").assertIsDisplayed()
+        composeRule.onNodeWithTag("hourly_forecast_24h_card").assertIsDisplayed()
+
+        // 2. Solar Theme Switcher must NOT appear on Home (lives in Settings)
+        composeRule.onNodeWithTag("solar_theme_switcher_card").assertDoesNotExist()
+
+        // 3. GPS status card auto-hides when synced with permission & no error
+        composeRule.onNodeWithTag("gps_status_card").assertDoesNotExist()
+
+        // 4. Distant earthquake (> 380 km) does NOT clutter Home dashboard
+        composeRule.onNodeWithTag("seismic_notice_banner").assertDoesNotExist()
+
+        // 5. Small radar dot next to Air Quality is completely removed
+        composeRule.onNodeWithTag("home_aqi_severe_dot").assertDoesNotExist()
+
+        // 6. Trigger GPS error, nearby quake, and severe AQI -> cards & full red AQI box appear (still no side dot)
+        composeRule.runOnIdle {
+            testState = syncedState.copy(
+                gpsErrorMessage = "Could not acquire coarse location.",
+                airQuality = syncedState.airQuality.copy(homeCardAqi = 132, regionalCategory = "Unhealthy"),
+                seismic = farSeismic.copy(
+                    epicenterLat = jakarta.latitude + 0.25,
+                    epicenterLon = jakarta.longitude + 0.15,
+                    bannerSubtitle = "3 min ago · Bekasi",
+                ),
+            )
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home_dashboard_list")
+            .performScrollToNode(hasTestTag("gps_status_card"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("gps_status_card").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("home_dashboard_list")
+            .performScrollToNode(hasTestTag("seismic_notice_banner"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("seismic_notice_banner").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("home_dashboard_list")
+            .performScrollToNode(hasTestTag("home_aqi_tile"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("home_aqi_wind_icon", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("home_aqi_severe_dot", useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithText("132").assertIsDisplayed()
+    }
+
+    @Test
+    fun `detailed weather screen shows expandable multi-day cards and full indonesian localization works`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val store = SettingsDataStore(context)
+        runBlocking {
+            store.setAppLanguage(AppLanguage.INDONESIAN)
+            assertEquals(AppLanguage.INDONESIAN, store.settingsFlow.first().appLanguage)
+        }
+
+        val repo = VeridiaRepository()
+        val jakarta = repo.presetCities.first()
+        val idState = com.example.ui.viewmodel.VeridiaUiState(
+            selectedCity = jakarta,
+            presetCities = repo.presetCities,
+            weather = repo.defaultWeatherFor(jakarta),
+            airQuality = repo.defaultAirQuality(jakarta),
+            seismic = repo.defaultSeismicTelemetry(),
+            radar = repo.defaultRadarTelemetry(),
+            settings = UserSettings(appLanguage = AppLanguage.INDONESIAN),
+        )
+
+        composeRule.setContent {
+            VeridiaTheme(
+                themePhase = SolarThemePhase.DAY,
+                appLanguage = AppLanguage.INDONESIAN,
+            ) {
+                com.example.ui.screens.DetailedWeatherScreen(
+                    state = idState,
+                    onBack = {},
+                    onSelectStratum = {},
+                    onSelectWeatherMapLayer = {},
+                    onRefreshNow = {},
+                    onOpenRadar = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("detailed_weather_list")
+            .performScrollToNode(hasTestTag("daily_forecast_card_0"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Hari Ini").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("detailed_weather_list")
+            .performScrollToNode(hasTestTag("daily_forecast_card_1"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Besok").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("detailed_weather_list")
+            .performScrollToNode(hasTestTag("daily_forecast_card_2"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Lusa").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("detailed_weather_list")
+            .performScrollToNode(hasTestTag("daily_forecast_card_0"))
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("daily_forecast_card_0").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("daily_forecast_card_0").assertIsDisplayed()
+    }
+
+    @Test
+    fun `settings screen hosts solar theme switcher and switches app to full Bahasa Indonesia`() {
+        val repo = VeridiaRepository()
+        val jakarta = repo.presetCities.first()
+        var currentLang by mutableStateOf(AppLanguage.ENGLISH)
+
+        composeRule.setContent {
+            val state = com.example.ui.viewmodel.VeridiaUiState(
+                selectedCity = jakarta,
+                presetCities = repo.presetCities,
+                weather = repo.defaultWeatherFor(jakarta),
+                airQuality = repo.defaultAirQuality(jakarta),
+                seismic = repo.defaultSeismicTelemetry(),
+                radar = repo.defaultRadarTelemetry(),
+                settings = UserSettings(appLanguage = currentLang),
+            )
+            VeridiaTheme(
+                themePhase = SolarThemePhase.DAY,
+                appLanguage = currentLang,
+            ) {
+                com.example.ui.screens.SettingsScreen(
+                    state = state,
+                    onBack = {},
+                    onSeismicAlertChange = {},
+                    onTyphoonWatchChange = {},
+                    onAqiAlertChange = {},
+                    onTempUnitChange = {},
+                    onWindUnitChange = {},
+                    onPressureUnitChange = {},
+                    onGyroParallaxChange = {},
+                    onGpsPrivacyModeChange = {},
+                    onLanguageChange = { currentLang = it },
+                    onRefreshCache = {},
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("language_selector_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("solar_theme_switcher_card").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("language_option_id").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(AppLanguage.INDONESIAN, currentLang)
+        composeRule.onNodeWithText("Setelan").assertIsDisplayed()
+        composeRule.onNodeWithText("Bahasa Aplikasi").assertIsDisplayed()
+        composeRule.onNodeWithText("TEMA SURYA ADAPTIF").assertIsDisplayed()
+    }
 }
+
 
